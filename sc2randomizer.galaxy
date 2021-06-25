@@ -3,7 +3,7 @@ include "TriggerLibs/NativeLib"
 // https://mapster.talv.space/galaxy/reference#catalog
 // https://sc2mapster.fandom.com/wiki/Tutorials
 
-string number_types;
+//string number_types;
 fixed min_percent;
 fixed max_percent;
 int seed;
@@ -59,15 +59,38 @@ void notes_log()
     }
 }
 
+void debug(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void info(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void warning(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void error(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void fatal(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
 bool add_change(int self, string entry, string field, fixed oldval, fixed newval)
 {
-    string message;
     int len;
 
     len = race_changes[self].len;
     if( len >= 64 ) {
-        message = "add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5);
-        TriggerDebugOutput(1, StringToText(message), false );
+        error("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
         return false;
     }
     race_changes[self].changes[len].entry = entry;
@@ -100,7 +123,7 @@ void log_changes(int self)
             + " to "+FixedToString(race_changes[self].changes[i].newval,5);
     }
 
-    TriggerDebugOutput(1, StringToText(message), false );
+    debug(message );
 
     //UIDisplayMessage( PlayerGroupAll(), c_messageAreaChat, StringToText(message) );
     //UIShowTextCrawl( PlayerGroupAll(), StringToText(race_changes[self].name + " Changes: "), StringToText(message), 6, SoundLink("Silent", -1), SoundLink("Silent", -1));
@@ -159,13 +182,11 @@ bool rando_field_fixed(int cat, string entry, string field, int changes_id)
 {
     fixed getval;
     fixed setval;
-    string message;
     fixed value;
 
     getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
     if( getval == 0 ) {
-        message = entry+" "+field+" failed to read";
-        TriggerDebugOutput(1, StringToText(message), false );
+        error(entry+" "+field+" failed to read");
         return false;
     }
     value = randomize(getval);
@@ -173,8 +194,7 @@ bool rando_field_fixed(int cat, string entry, string field, int changes_id)
         return false;
     }
     if( ! set_field_fixed(cat, entry, field, value ) ) {
-        message = entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5);
-        TriggerDebugOutput(1, StringToText(message), false );
+        error(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
         return false;
     }
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
@@ -184,11 +204,13 @@ bool rando_field_fixed(int cat, string entry, string field, int changes_id)
 
     if( field == "LifeMax" ) {
         if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
+            error(entry+" LifeStart failed to set to "+FixedToString(value,5));
             return false;
         }
     }
     if( field == "ShieldsMax" ) {
         if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
+            error(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
             return false;
         }
     }
@@ -200,13 +222,11 @@ bool rando_field_int(int cat, string entry, string field, int changes_id)
 {
     int getval;
     int setval;
-    string message;
     int value;
 
     getval = CatalogFieldValueGetAsInt(cat, entry, field, 1);
     if( getval == 0 ) {
-        message = entry+" "+field+" failed to read";
-        TriggerDebugOutput(1, StringToText(message), false );
+        error(entry+" "+field+" failed to read");
         return false;
     }
     value = FixedToInt( randomize(getval) );
@@ -214,8 +234,7 @@ bool rando_field_int(int cat, string entry, string field, int changes_id)
         return false;
     }
     if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
-        message = entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value);
-        TriggerDebugOutput(1, StringToText(message), false );
+        error(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
         return false;
     }
     setval = CatalogFieldValueGetAsInt(cat, entry, field, 1);
@@ -225,235 +244,19 @@ bool rando_field_int(int cat, string entry, string field, int changes_id)
 
     if( field == "LifeMax" ) {
         if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
+            error(entry+" LifeStart failed to set to "+FixedToString(value,5));
             return false;
         }
     }
     if( field == "ShieldsMax" ) {
         if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
+            error(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
             return false;
         }
     }
     return true;
 }
 
-
-bool rando_field_array(int cat, string entry, string field, string scope, string type, int changes_id)
-{
-    fixed getval;
-    string old;
-    string message;
-    string setval;
-    string tfield;
-    int len;
-    int i;
-
-    len = CatalogFieldValueCount(cat, entry, field, 1);
-    message = scope+" "+entry+" "+field+" "+type+" with len "+IntToString(len);
-    TriggerDebugOutput(1, StringToText(message), false );
-    //return false;
-
-    for( i=0; i<len; i+=1 ) {
-        tfield = field+"["+IntToString(i)+"]";
-        getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, tfield, 1);
-        if( i>0 ) {
-            old += "|";
-        }
-        old += FixedToString(getval, 5);
-        if( ! set_field_string(cat, entry, tfield, FixedToString(randomize(getval), 5) ) ) {
-            message = scope+" "+entry+" "+field+" "+type+" was "+old+", failed to change";
-            TriggerDebugOutput(1, StringToText(message), false );
-            return false;
-        }
-    }
-    setval = "";
-    for( i=0; i<len; i+=1 ) {
-        tfield = field+"["+IntToString(i)+"]";
-        getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, tfield, 1);
-        if( i>0 ) {
-            setval += "|";
-        }
-        setval += FixedToString(getval, 5);
-    }
-    if( old == setval ) {
-        return false;
-    }
-    message = entry+" "+field+" was "+old+", changed to "+setval;
-    TriggerDebugOutput(1, StringToText(message), false );
-    return true;
-}
-
-
-bool rando_SAbilBuildInfo(int cat, string entry, string field, string scope, string type, int changes_id)
-{
-    string unitname;
-    string tfield;
-    string message;
-    fixed oldtime;
-    fixed newtime;
-    fixed value;
-    int len;
-    int i;
-
-    len = CatalogFieldValueCount(cat, entry, field, 1);
-    for( i=0; i<len; i+=1 ) {
-        tfield = field+"["+IntToString(i)+"].Unit";
-        unitname = CatalogFieldValueGet(cat, entry, tfield, 1);
-
-        tfield = field+"["+IntToString(i)+"].Time";
-        oldtime = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, tfield, 1);
-        value = randomize(oldtime);
-        if( ! set_field_fixed(cat, entry, tfield, value) ) {
-            return false;
-        }
-        newtime = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, tfield, 1);
-        return add_change(changes_id, entry, field+" "+unitname, oldtime, newtime);
-    }
-
-    return true;
-}
-
-
-bool rando_unknown_type(int cat, string entry, string field, string scope, string type, int changes_id)
-{
-    string message;
-    message = entry+" "+field+" "+type+" unknown type";
-    TriggerDebugOutput(1, StringToText(message), false );
-    return false;
-}
-
-
-bool rando_field(int cat, string scope, string entry, string field, int changes_id)
-{
-    string message;
-    string type;
-    bool is_array;
-
-    //if( entry != "TerranBuild" && entry != "ProtossBuild" && entry != "ZergBuild" ) { return; }
-    //if( field != "InfoArray" ) {return;}
-
-    type = CatalogFieldType(scope, field);
-    is_array = CatalogFieldIsArray(scope, field);
-
-    if( type == "SAbilBuildInfo" ) {
-        return rando_SAbilBuildInfo(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SAbilTrainInfo" ) {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SAbilSpecializeInfo" ) {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SAbilResearchInfo") {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SAbilMergeInfo") {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SAbilArmMagazine" ) {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SMarker" ) {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( type == "SCost" ) {
-        return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-    }
-    else if( StringContains(number_types, " "+type+" ", c_stringAnywhere, c_stringCase) ) {
-        if( is_array ) {
-            return rando_field_array(cat, entry, field, scope, type, changes_id);
-            //return rando_unknown_type(cat, entry, field, scope, type, changes_id);
-        } else {
-            return rando_field_fixed(cat, entry, field, changes_id);
-        }
-    }
-
-    return false;
-}
-
-
-void rando_entry(int cat, string scope, string entry, int changes_id)
-{
-    string field;
-    string value;
-    int num_fields;
-    int i;
-    int slot;
-
-    num_fields = CatalogFieldCount(scope);
-    for( i=0; i<num_fields; i+=1 ) {
-        slot = RandomInt(0, num_fields);
-        field = CatalogFieldGet(scope, slot);
-        if( field == "" ) {
-            continue;
-        }
-        if( rando_field(cat, scope, entry, field, changes_id) ) {
-            return;
-        }
-    }
-}
-
-
-void rando_catalog(int cat, int num_changes)
-{
-    string entry;
-    string scope;
-    string race;
-    string EditorCategories;
-    int num_data;
-    int i;
-    int slot;
-    int changes_id;
-
-    num_data = CatalogEntryCount(cat);
-    //UIDisplayMessage( PlayerGroupAll(), c_messageAreaChat, StringToText(IntToString(cat)+" found "+IntToString(num_data)+" num_data") );
-
-    for( i=1; i<=num_data; i+=1 ) {
-        if( race_changes[terran].len >= num_changes
-            && race_changes[protoss].len >= num_changes
-            && race_changes[zerg].len >= num_changes )
-        {
-            return;
-        }
-
-        slot = RandomInt(1, num_data);
-        entry = CatalogEntryGet(cat, slot);
-        scope = CatalogEntryScope(cat, entry);
-        if( CatalogFieldExists(scope, "EditorCategories") ) {
-            EditorCategories = CatalogFieldValueGet(cat, entry, "EditorCategories", 1);
-            if( ! StringContains(EditorCategories, "ObjectFamily:Melee", c_stringAnywhere, c_stringCase) ) {
-                continue;
-            }
-        } else {
-            EditorCategories = "";
-        }
-
-        if( CatalogFieldExists(scope, "Race") ) {
-            race = "Race:" + CatalogFieldValueGet(cat, entry, "Race", 1);
-        }
-        else {
-            race = EditorCategories;
-        }
-
-        if( StringContains(race, "Race:Terr", c_stringAnywhere, c_stringCase) ) {
-            changes_id = terran;
-        }
-        else if( StringContains(race, "Race:Prot", c_stringAnywhere, c_stringCase) ) {
-            changes_id = protoss;
-        }
-        else if( StringContains(race, "Race:Zerg", c_stringAnywhere, c_stringCase) ) {
-            changes_id = zerg;
-        }
-        else {
-            continue;
-        }
-
-        if( race_changes[changes_id].len >= num_changes ) {
-            continue;
-        }
-
-        rando_entry(cat, scope, entry, changes_id);
-    }
-}
 
 int get_race_id(int cat, string scope, string entry) {
     string EditorCategories;
@@ -524,6 +327,15 @@ void randomize_weapon(string entry, int race_id, int num_fields) {
 }
 
 
+void randomize_upgrade(string entry, int race_id, int num_fields) {
+    int cat = c_gameCatalogUpgrade;
+
+    if( entry == "" ) {
+        return;
+    }
+}
+
+
 void randomize_ability(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogAbil;
     string scope;
@@ -561,7 +373,7 @@ void randomize_ability(string entry, int race_id, int num_fields) {
     // CAbilRedirectTarget
 
     // InfoArray types
-    // SAbilBuildInfo
+    // SAbilBuildInfo has [i].Unit for unit name and [i].Time for build time
     // SAbilMorphInfo
     // SAbilArmMagazineInfo
     // SAbilResearchInfo
@@ -586,10 +398,10 @@ void randomize_unit(string entry, int race_id, int num_fields) {
 
     for( i=0; i<32; i+=1 ) {
         if( unit_fixed_fields[i] != "" ) {
-            //rando_field_fixed(cat, entry, unit_fixed_fields[i], race_id);
+            rando_field_fixed(cat, entry, unit_fixed_fields[i], race_id);
         }
         if( unit_int_fields[i] != "" ) {
-            //rando_field_int(cat, entry, unit_int_fields[i], race_id);
+            rando_field_int(cat, entry, unit_int_fields[i], race_id);
         }
     }
 
@@ -656,7 +468,7 @@ void randomize_units(int changes_per_race) {
 void main () {
     bool seed_was_locked;
     int oldseed;
-    int changes_per_category;
+    //int changes_per_category;
     int i;
 
     seed=1337;
@@ -677,15 +489,10 @@ void main () {
     seed_was_locked = GameIsSeedLocked();
     GameSetSeed(seed);
 
-    number_types = " CFixed CGameTime CGameAcceleration CGameSpeed CGameRate SAccumulatedFixed int32 ";
+    //number_types = " CFixed CGameTime CGameAcceleration CGameSpeed CGameRate SAccumulatedFixed int32 ";
 
-    changes_per_category = changes_per_race/5;
-    //rando_catalog(c_gameCatalogUnit, changes_per_race*1);
-    //rando_catalog(c_gameCatalogAbil, changes_per_race*2);
-    //rando_catalog(c_gameCatalogUpgrade, changes_per_race*3);
-    //rando_catalog(c_gameCatalogWeapon, changes_per_race*4);
-    //rando_catalog(c_gameCatalogEffect, changes_per_race*5);
-
+    randomize_workers();
+    randomize_start();
     randomize_units(changes_per_race);
 
     race_changes[no_race].name = "General";
