@@ -29,20 +29,37 @@ const int zerg=3;
 RaceChanges[4] race_changes;
 
 struct RandomizedField {
-    int cat;
+    //int cat;
     int type;
+    string scope;
     string name;
 };
 RandomizedField[100] randomized_fields;
 const int type_fixed = 0;
 const int type_int = 1;
+// scopes, is this going too far?
+const int type_unit = 2;
+const int type_ability = 3;
+const int type_effect = 4;
+const int type_weapon = 5;
+const int type_upgrade = 6;
+const int type_behavior = 7;
+// field types, is this going too far?
+const int type_SCost = 8;
+const int type_SAbilMergeInfo = 9;
+const int type_SAbilMorphInfo = 10;
+const int type_SAbilResearchInfo = 11;
+const int type_SAbilBuildInfo = 12;
+const int type_SAbilTrainInfo = 13;
+const int type_SAbilArmMagazineInfo = 14;
+const int type_SAbilWarpTrainInfo = 15;
 
-void AddRandomizedField(int cat, int type, string name)
+void AddRandomizedField(string scope, int type, string name)
 {
     int i;
     for( i=0; i<100; i+=1 ) {
         if( randomized_fields[i].name == "" ) {
-            randomized_fields[i].cat = cat;
+            randomized_fields[i].scope = scope;
             randomized_fields[i].type = type;
             randomized_fields[i].name = name;
             return;
@@ -50,21 +67,21 @@ void AddRandomizedField(int cat, int type, string name)
     }
 }
 
-int GetRandomField(int cat)
+int GetRandomField(string scope)
 {
     int num;
     int i;
 
     num = 0;
     for( i=0; i<100; i+=1 ) {
-        if( randomized_fields[i].cat == cat && randomized_fields[i].name != "" ) {
+        if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
             num+=1;
         }
     }
 
     num = RandomInt(0, num-1);
     for( i=0; i<100; i+=1 ) {
-        if( randomized_fields[i].cat == cat && randomized_fields[i].name != "" ) {
+        if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
             if( num == 0 ) {
                 return i;
             }
@@ -76,18 +93,19 @@ int GetRandomField(int cat)
 }
 
 string[100] notes;
-void note_add(string val)
+bool note_add(string val)
 {
     int i;
     for( i=0; i<100; i+=1 ) {
         if( notes[i] == val ) {
-            return;
+            return false;
         }
         if( notes[i] == "" ) {
             notes[i] = val;
-            return;
+            return true;
         }
     }
+    return false;
 }
 
 void notes_log()
@@ -343,21 +361,30 @@ void randomize_workers() {
 }
 
 
-int randomize_fields(int cat, string entry, int race_id, int num_fields) {
+int randomize_fields(int cat, string scope, string entry, int race_id, int num_fields) {
     int i;
     int slot;
     int num;
     bool[100] mask;
+    bool is_array;
+    int len;
 
     num = 0;
     for( i=0; num<num_fields && i<32; i+=1 ) {
-        slot = GetRandomField(cat);
+        slot = GetRandomField(scope);
         if( slot == -1 ) {
             return num;
         }
         if( mask[slot] ) { continue; }
         mask[slot] = true;
 
+        // will need this if I want to use randomize_fields for calling randomize_ability and stuff like that
+        is_array = CatalogFieldIsArray(scope, field);
+        if( is_array ) {
+            len = CatalogFieldValueCount(cat, entry, field, 1);
+        }
+
+        // probably move this into a new function randomize_field so I can loop over it if it's an array
         if( randomized_fields[slot].type == type_fixed ) {
             if( rando_field_fixed(cat, entry, randomized_fields[slot].name, race_id) ) {
                 num+=1;
@@ -376,11 +403,21 @@ int randomize_fields(int cat, string entry, int race_id, int num_fields) {
 
 void randomize_effect(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogEffect;
+    string scope;
     if( entry == "" ) {
         return;
     }
 
-    randomize_fields(cat, entry, race_id, num_fields);
+    scope = CatalogEntryScope(cat, entry);
+    randomize_fields(cat, scope, entry, race_id, num_fields);
+
+    // PsiStormPersistent is a CEffectCreatePersistent with a PeriodCount, PeriodEffectArray, PeriodicPeriodArray
+    // PsiStormSearch is a CEffectEnumArea with a AreaArray[i].Radius, AreaArray[i].Effect
+    // PsiStormApplyBehavior is a CEffectApplyBehavior with a Behavior == PsiStorm (a CBehaviorBuff)
+    // PsiStormDamageInitial is a CEffectDamage with an Amount == 10, PsiStormDamage is the same
+
+    // ArbiterMPRecallSet is a CEffectSet with an array EffectArray
+    // ArbiterMPRecallTeleport is a CEffectTeleport with a PlacementRange of 15, Range of 1000
 
     note_add(CatalogEntryScope(cat, entry));
 }
@@ -388,18 +425,20 @@ void randomize_effect(string entry, int race_id, int num_fields) {
 
 void randomize_weapon(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogWeapon;
+    string scope;
 
     if( entry == "" ) {
         return;
     }
 
-    randomize_fields(cat, entry, race_id, num_fields);
+    scope = CatalogEntryScope(cat, entry);
+    randomize_fields(cat, scope, entry, race_id, num_fields);
 
     // CWeapon_DisplayEffect is where the damage is defined?
 
     // scopes
-    // CWeaponLegacy
-    // CWeaponStrafe
+    // CWeaponLegacy has Period, Range, MinimumRange, MinScanRange, SCost Cost, 
+    // InterceptorBeam is the only CWeaponStrafe with a Period, Range, Arc
 
     //set_add(CatalogEntryScope(cat, entry));
 }
@@ -407,6 +446,7 @@ void randomize_weapon(string entry, int race_id, int num_fields) {
 
 void randomize_upgrade(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogUpgrade;
+    string scope;
 
     if( entry == "" ) {
         return;
@@ -414,7 +454,8 @@ void randomize_upgrade(string entry, int race_id, int num_fields) {
 
     // CUpgrade BattlecruiserBehemothReactor has <EffectArray Reference="Unit,Battlecruiser,EnergyStart" Value="25"/>
     // maybe if EffectArray[i].Operation is anything except Set, then it can be randomized
-    randomize_fields(cat, entry, race_id, num_fields);
+    scope = CatalogEntryScope(cat, entry);
+    randomize_fields(cat, scope, entry, race_id, num_fields);
 }
 
 
@@ -430,7 +471,8 @@ void randomize_ability(string entry, int race_id, int num_fields) {
         return;
     }
 
-    randomize_fields(cat, entry, race_id, num_fields);
+    scope = CatalogEntryScope(cat, entry);
+    randomize_fields(cat, scope, entry, race_id, num_fields);
 
     // scopes
     // CAbilBuild
@@ -456,20 +498,46 @@ void randomize_ability(string entry, int race_id, int num_fields) {
     // CAbilRedirectInstant
     // CAbilRedirectTarget
 
-    // InfoArray types
-    // SAbilBuildInfo has [i].Unit for unit name and [i].Time for build time
-    // SAbilMorphInfo
-    // SAbilArmMagazineInfo
-    // SAbilResearchInfo
-    // SAbilTrainInfo
-    // SAbilRallyInfo
+    // BarracksTechLabMorph is a CAbilMorph with InfoArray SAbilMorphInfo, and with Cost SCost
+    // FactoryLand is a CAbilMorphPlacement with InfoArray SAbilMorphInfo, and with Cost SCost
+    // FactoryTechLabResearch is a CAbilResearch with InfoArray SAbilResearchInfo
+        // with InfoArray[3].Upgrade == TerranInfantryWeaponsLevel1, .Time=160, .Resource[Minerals/Vespene]
+    // Rally is a CAbilRally with InfoArray SAbilRallyInfo
+    // BuildNydusCanal is a CAbilBuild with InfoArray SAbilBuildInfo has [i].Unit for unit name and [i].Time for build time
+    // TrainQueen is a CAbilTrain with InfoArray SAbilTrainInfo
+    // ArmSiloWithNuke is a CAbilArmMagazine with InfoArray SAbilArmMagazineInfo, and with Cost SCost
+    // WarpGateTrain is a CAbilWarpTrain with InfoArray SAbilWarpTrainInfo
 
-    // "EngineeringBayResearch" is a CAbilResearch with InfoArray[3].Upgrade == TerranInfantryWeaponsLevel1, .Time=160, .Resource[Minerals/Vespene]
-    scope = CatalogEntryScope(cat, entry);
-    //set_add(scope);
-    //len = CatalogFieldValueCount(cat, entry, "InfoArray", 1);
-    //TriggerDebugOutput(1, StringToText(entry+" has InfoArray "+IntToString(len)), false );
-    //TriggerDebugOutput(1, StringToText(entry+" has scope: "+scope), false );
+    // GhostCloak is a CAbilBehavior with Cost SCost
+        // has an array of structs named Cost, Cost[i].Charge, .Cooldown.TimeStart, .Cooldown.TimeUse, .Vital.Life, .Vital.Shields, .Vital.Energy, .VitalFraction
+    
+    // ArchonWarp is a CAbilMerge with InfoArray 
+        // Info is a SAbilMergeInfo with Info.Resource.Minerals/Vespene, Info.Time, Info.Unit==Archon, Info.Cooldown, Info.Vital, Info.VitalFraction (seems to be same type as a CAbilBehavior.Cost)
+    
+    // Charge is a CAbilAugment with Cost SCost
+        // has struct Cooldown (probably same type as Cooldown in CAbilBehavior)
+
+    // TacNukeStrike is a CAbilEffectTarget with Cost SCost
+        // has arrays for Effect, FinishTime (fixed), Range (fixed or maybe int?)
+    
+    // NydusCanalTransport is a CAbilTransport with InfoArray 
+        // has MaxCargoCount, MaxCargoSize, Range, TotalCargoSpace, UnloadPeriod
+
+    // BuildInProgress is a CAbilBuildable with InfoArray 
+    // que5Addon is a CAbilQueue with InfoArray 
+    // stop is a CAbilStop with InfoArray 
+    // attack is a CAbilAttack with InfoArray 
+    // move is a CAbilMove with InfoArray 
+    // GhostHoldFire is a CAbilEffectInstant with InfoArray 
+    // StimpackRedirect is a CAbilRedirectInstant with InfoArray 
+    // AttackRedirect is a CAbilRedirectTarget with InfoArray 
+    // Warpable is a CAbilWarpable with InfoArray 
+    // Mergeable is a CAbilMergeable with InfoArray 
+
+    //type = CatalogFieldType(scope, "Cost");
+    //if( note_add(scope) ) {
+    //    note_add(entry+" is a "+scope+" with Cost "+type);
+    //}
 }
 
 
@@ -481,7 +549,9 @@ void randomize_unit(string entry, int race_id, int num_fields) {
     int slot;
     string val;
 
-    randomize_fields(cat, entry, race_id, num_fields);
+    if( entry == "" ) { return; }
+
+    randomize_fields(cat, scope, entry, race_id, num_fields);
 
     // check abilities, weapons, and upgrades
     len = CatalogFieldValueCount(cat, entry, "AbilArray", 1);
@@ -553,20 +623,23 @@ void main () {
     min_percent = 50;
     max_percent = 150;
     changes_per_race = 50;
-    changes_per_unit = 3;
+    changes_per_unit = 1;
     
-    AddRandomizedField(c_gameCatalogUnit, type_int, "CostResource[Minerals]");
-    AddRandomizedField(c_gameCatalogUnit, type_int, "CostResource[Vespene]");
-    AddRandomizedField(c_gameCatalogUnit, type_int, "Food");
-    AddRandomizedField(c_gameCatalogUnit, type_int, "LifeMax");
-    AddRandomizedField(c_gameCatalogUnit, type_int, "ShieldsMax");
-    AddRandomizedField(c_gameCatalogUnit, type_int, "EnergyMax");
-    AddRandomizedField(c_gameCatalogUnit, type_fixed, "Acceleration");
-    AddRandomizedField(c_gameCatalogUnit, type_fixed, "Speed");
+    AddRandomizedField("CUnit", type_int, "CostResource[Minerals]");
+    AddRandomizedField("CUnit", type_int, "CostResource[Vespene]");
+    AddRandomizedField("CUnit", type_int, "Food");
+    AddRandomizedField("CUnit", type_int, "LifeMax");
+    AddRandomizedField("CUnit", type_int, "ShieldsMax");
+    AddRandomizedField("CUnit", type_int, "EnergyMax");
+    AddRandomizedField("CUnit", type_fixed, "Acceleration");
+    AddRandomizedField("CUnit", type_fixed, "Speed");
 
-    AddRandomizedField(c_gameCatalogWeapon, type_fixed, "Range");
+    AddRandomizedField("CWeaponLegacy", type_fixed, "Range");
+    AddRandomizedField("CWeaponLegacy", type_fixed, "Period");
+    AddRandomizedField("CWeaponStrafe", type_fixed, "Range");
+    AddRandomizedField("CWeaponStrafe", type_fixed, "Period");
 
-    AddRandomizedField(c_gameCatalogEffect, type_int, "Amount");
+    AddRandomizedField("CEffectDamage", type_int, "Amount");
 
     seed_was_locked = GameIsSeedLocked();
     GameSetSeed(seed);
