@@ -35,24 +35,25 @@ struct RandomizedField {
     string name;
 };
 RandomizedField[100] randomized_fields;
-const int type_fixed = 0;
-const int type_int = 1;
+const int type_unknown = 0;
+const int type_fixed = 1;
+const int type_int = 2;
 // scopes, is this going too far?
-const int type_unit = 2;
-const int type_ability = 3;
-const int type_effect = 4;
-const int type_weapon = 5;
-const int type_upgrade = 6;
-const int type_behavior = 7;
+const int type_unit = 3;
+const int type_ability = 4;
+const int type_effect = 5;
+const int type_weapon = 6;
+const int type_upgrade = 7;
+const int type_behavior = 8;
 // field types, is this going too far?
-const int type_SCost = 8;
-const int type_SAbilMergeInfo = 9;
-const int type_SAbilMorphInfo = 10;
-const int type_SAbilResearchInfo = 11;
-const int type_SAbilBuildInfo = 12;
-const int type_SAbilTrainInfo = 13;
-const int type_SAbilArmMagazineInfo = 14;
-const int type_SAbilWarpTrainInfo = 15;
+const int type_SCost = 9;
+const int type_SAbilMergeInfo = 10;
+const int type_SAbilMorphInfo = 11;
+const int type_SAbilResearchInfo = 12;
+const int type_SAbilBuildInfo = 13;
+const int type_SAbilTrainInfo = 14;
+const int type_SAbilArmMagazineInfo = 15;
+const int type_SAbilWarpTrainInfo = 16;
 
 void AddRandomizedField(string scope, int type, string name)
 {
@@ -385,7 +386,12 @@ int randomize_fields(int cat, string scope, string entry, int race_id, int num_f
         }
 
         // probably move this into a new function randomize_field so I can loop over it if it's an array
-        if( randomized_fields[slot].type == type_fixed ) {
+        if( randomize_fields[slot].type == type_unknown ) {
+            string name = randomized_fields[slot].name;
+            string type = CatalogFieldType(scope, name);
+            note_add(scope+" "+entry+" has "+type+" "+name+", is_array: "+BoolToString(is_array)+", len: "+IntToString(len) );
+        }
+        else if( randomized_fields[slot].type == type_fixed ) {
             if( rando_field_fixed(cat, entry, randomized_fields[slot].name, race_id) ) {
                 num+=1;
             }
