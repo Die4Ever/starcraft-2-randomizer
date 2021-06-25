@@ -1,5 +1,8 @@
 include "TriggerLibs/NativeLib"
 
+// https://mapster.talv.space/galaxy/reference#catalog
+// https://sc2mapster.fandom.com/wiki/Tutorials
+
 string number_types;
 fixed min_percent;
 fixed max_percent;
@@ -18,10 +21,43 @@ struct RaceChanges {
     Change[64] changes;
     int len;
 };
-const int terran=0;
-const int protoss=1;
-const int zerg=2;
-RaceChanges[3] race_changes;
+const int no_race=0;
+const int terran=1;
+const int protoss=2;
+const int zerg=3;
+RaceChanges[4] race_changes;
+
+string[32] unit_fixed_fields;
+string[32] unit_int_fields;
+
+string[32] weapon_fixed_fields;// Range, 
+string[32] effect_int_fields;// Amount
+
+string[100] notes;
+void note_add(string val)
+{
+    int i;
+    for( i=0; i<100; i+=1 ) {
+        if( notes[i] == val ) {
+            return;
+        }
+        if( notes[i] == "" ) {
+            notes[i] = val;
+            return;
+        }
+    }
+}
+
+void notes_log()
+{
+    int i;
+    for( i=0; i<100; i+=1 ) {
+        if( notes[i] == "" ) {
+            continue;
+        }
+        TriggerDebugOutput(1, StringToText(notes[i]), false );
+    }
+}
 
 bool add_change(int self, string entry, string field, fixed oldval, fixed newval)
 {
@@ -77,6 +113,7 @@ fixed rng(fixed min, fixed max) {
 }
 
 fixed randomize(fixed val) {
+    // probably should make all changes far away from 100%, since there will be few things changed
     return val * rng(min_percent, max_percent) / 100.0;
 }
 
@@ -118,26 +155,70 @@ bool set_field_fixed(int cat, string entry, string field, fixed value)
 }
 
 
-bool rando_field_fixed(int cat, string entry, string field, string scope, string type, int changes_id)
+bool rando_field_fixed(int cat, string entry, string field, int changes_id)
 {
     fixed getval;
     fixed setval;
     string message;
     fixed value;
 
-    if( field == "LifeStart" || field == "ShieldsStart" ) { return false; }
-
     getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
     if( getval == 0 ) {
+        message = entry+" "+field+" failed to read";
+        TriggerDebugOutput(1, StringToText(message), false );
         return false;
     }
     value = randomize(getval);
-    if( ! set_field_fixed(cat, entry, field, value) ) {
-        message = scope+" "+entry+" "+field+" "+type+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5);
+    if( value == getval ) {
+        return false;
+    }
+    if( ! set_field_fixed(cat, entry, field, value ) ) {
+        message = entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5);
         TriggerDebugOutput(1, StringToText(message), false );
         return false;
     }
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
+    if( getval == setval ) { return false; }
+
+    add_change(changes_id, entry, field, getval, setval);
+
+    if( field == "LifeMax" ) {
+        if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
+            return false;
+        }
+    }
+    if( field == "ShieldsMax" ) {
+        if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+bool rando_field_int(int cat, string entry, string field, int changes_id)
+{
+    int getval;
+    int setval;
+    string message;
+    int value;
+
+    getval = CatalogFieldValueGetAsInt(cat, entry, field, 1);
+    if( getval == 0 ) {
+        message = entry+" "+field+" failed to read";
+        TriggerDebugOutput(1, StringToText(message), false );
+        return false;
+    }
+    value = FixedToInt( randomize(getval) );
+    if( value == getval ) {
+        return false;
+    }
+    if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
+        message = entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value);
+        TriggerDebugOutput(1, StringToText(message), false );
+        return false;
+    }
+    setval = CatalogFieldValueGetAsInt(cat, entry, field, 1);
     if( getval == setval ) { return false; }
 
     add_change(changes_id, entry, field, getval, setval);
@@ -169,7 +250,7 @@ bool rando_field_array(int cat, string entry, string field, string scope, string
     len = CatalogFieldValueCount(cat, entry, field, 1);
     message = scope+" "+entry+" "+field+" "+type+" with len "+IntToString(len);
     TriggerDebugOutput(1, StringToText(message), false );
-    return false;
+    //return false;
 
     for( i=0; i<len; i+=1 ) {
         tfield = field+"["+IntToString(i)+"]";
@@ -280,8 +361,9 @@ bool rando_field(int cat, string scope, string entry, string field, int changes_
     else if( StringContains(number_types, " "+type+" ", c_stringAnywhere, c_stringCase) ) {
         if( is_array ) {
             return rando_field_array(cat, entry, field, scope, type, changes_id);
+            //return rando_unknown_type(cat, entry, field, scope, type, changes_id);
         } else {
-            return rando_field_fixed(cat, entry, field, scope, type, changes_id);
+            return rando_field_fixed(cat, entry, field, changes_id);
         }
     }
 
@@ -373,6 +455,203 @@ void rando_catalog(int cat, int num_changes)
     }
 }
 
+int get_race_id(int cat, string scope, string entry) {
+    string EditorCategories;
+    string race;
+
+    if( CatalogFieldExists(scope, "EditorCategories") ) {
+        EditorCategories = CatalogFieldValueGet(cat, entry, "EditorCategories", 1);
+        if( ! StringContains(EditorCategories, "ObjectFamily:Melee", c_stringAnywhere, c_stringCase) ) {
+            return no_race;
+        }
+    } else {
+        EditorCategories = "";
+    }
+
+    if( CatalogFieldExists(scope, "Race") ) {
+        race = "Race:" + CatalogFieldValueGet(cat, entry, "Race", 1);
+    }
+    else {
+        race = EditorCategories;
+    }
+
+    if( StringContains(race, "Race:Terr", c_stringAnywhere, c_stringCase) ) {
+        return terran;
+    }
+    else if( StringContains(race, "Race:Prot", c_stringAnywhere, c_stringCase) ) {
+        return protoss;
+    }
+    else if( StringContains(race, "Race:Zerg", c_stringAnywhere, c_stringCase) ) {
+        return zerg;
+    }
+    
+    return no_race;
+}
+
+
+void randomize_start() {
+    // starting workers, mineral patches, geysers...
+}
+
+
+void randomize_workers() {
+}
+
+
+void randomize_effect(string entry, int race_id, int num_fields) {
+    int cat = c_gameCatalogEffect;
+    if( entry == "" ) {
+        return;
+    }
+
+    note_add(CatalogEntryScope(cat, entry));
+}
+
+
+void randomize_weapon(string entry, int race_id, int num_fields) {
+    int cat = c_gameCatalogWeapon;
+
+    if( entry == "" ) {
+        return;
+    }
+    // CWeapon_DisplayEffect is where the damage is defined?
+
+    // scopes
+    // CWeaponLegacy
+    // CWeaponStrafe
+
+    //set_add(CatalogEntryScope(cat, entry));
+}
+
+
+void randomize_ability(string entry, int race_id, int num_fields) {
+    int cat = c_gameCatalogAbil;
+    string scope;
+    string type;
+    int len;
+    int i;
+    string val;
+
+    if( entry == "" ) {
+        return;
+    }
+
+    // scopes
+    // CAbilBuild
+    // CAbilMorphPlacement
+    // CAbilMove
+    // CAbilStop
+    // CAbilBuildable
+    // CAbilQueue
+    // CAbilArmMagazine
+    // CAbilResearch
+    // CAbilMorph
+    // CAbilAttack
+    // CAbilWarpable
+    // CAbilEffectTarget
+    // CAbilTrain
+    // CAbilRally
+    // CAbilEffectInstant
+    // CAbilAugment
+    // CAbilMerge
+    // CAbilTransport
+    // CAbilMergeable
+    // CAbilBehavior
+    // CAbilRedirectInstant
+    // CAbilRedirectTarget
+
+    // InfoArray types
+    // SAbilBuildInfo
+    // SAbilMorphInfo
+    // SAbilArmMagazineInfo
+    // SAbilResearchInfo
+    // SAbilTrainInfo
+    // SAbilRallyInfo
+
+    // "EngineeringBayResearch" is a CAbilResearch with InfoArray[3].Upgrade == TerranInfantryWeaponsLevel1, .Time=160, .Resource[Minerals/Vespene]
+    scope = CatalogEntryScope(cat, entry);
+    //set_add(scope);
+    //len = CatalogFieldValueCount(cat, entry, "InfoArray", 1);
+    //TriggerDebugOutput(1, StringToText(entry+" has InfoArray "+IntToString(len)), false );
+    //TriggerDebugOutput(1, StringToText(entry+" has scope: "+scope), false );
+}
+
+
+void randomize_unit(string entry, int race_id, int num_fields) {
+    int cat = c_gameCatalogUnit;
+    string scope = "CUnit";
+    int i;
+    int len;
+    string val;
+
+    for( i=0; i<32; i+=1 ) {
+        if( unit_fixed_fields[i] != "" ) {
+            //rando_field_fixed(cat, entry, unit_fixed_fields[i], race_id);
+        }
+        if( unit_int_fields[i] != "" ) {
+            //rando_field_int(cat, entry, unit_int_fields[i], race_id);
+        }
+    }
+
+    // check abilities, weapons, and upgrades
+    len = CatalogFieldValueCount(cat, entry, "AbilArray", 1);
+    for( i=0; i<len; i+=1 ) {
+        val = CatalogFieldValueGet(cat, entry, "AbilArray["+IntToString(i)+"].Link", 1);
+        randomize_ability(val, race_id, num_fields);
+    }
+
+    len = CatalogFieldValueCount(cat, entry, "WeaponArray", 1);
+    for( i=0; i<len; i+=1 ) {
+        val = CatalogFieldValueGet(cat, entry, "WeaponArray["+IntToString(i)+"].Link", 1);
+        randomize_weapon(val, race_id, num_fields);
+    }
+}
+
+
+void randomize_units(int changes_per_race) {
+    int cat = c_gameCatalogUnit;
+    string scope = "CUnit";
+    string entry;
+    string cost_category;
+    int num_data;
+    int race_id;
+    int i;
+    int slot;
+
+    num_data = CatalogEntryCount(cat);
+
+    for( i=1; i<=num_data; i+=1 ) {
+
+        if( race_changes[terran].len >= changes_per_race
+            && race_changes[protoss].len >= changes_per_race
+            && race_changes[zerg].len >= changes_per_race
+        ) {
+            break;
+        }
+        GameSetSeed( 5 + seed + i);
+        slot = RandomInt(1, num_data);
+
+        entry = CatalogEntryGet(cat, slot);
+        race_id = get_race_id(cat, scope, entry);
+        if( race_id == no_race ) {
+            continue;
+        }
+        if( race_changes[race_id].len >= changes_per_race ) {
+            continue;
+        }
+
+        cost_category = CatalogFieldValueGet(cat, entry, "CostCategory", 1);
+        if( cost_category != "Army" && cost_category != "Technology" ) {
+            continue;
+        }
+
+        GameSetSeed( 5 + seed + slot);
+        randomize_unit(entry, race_id, 0);
+    }
+
+    GameSetSeed(seed);
+}
+
 
 void main () {
     bool seed_was_locked;
@@ -384,6 +663,16 @@ void main () {
     min_percent = 50;
     max_percent = 150;
     changes_per_race = 50;
+    
+    unit_int_fields[0] = "CostResource[Minerals]";
+    unit_int_fields[1] = "CostResource[Vespene]";
+    unit_int_fields[2] = "Food";
+    unit_int_fields[3] = "LifeMax";
+    unit_int_fields[4] = "ShieldsMax";
+    unit_int_fields[5] = "EnergyMax";
+
+    unit_fixed_fields[0] = "Acceleration";
+    unit_fixed_fields[1] = "Speed";
 
     seed_was_locked = GameIsSeedLocked();
     GameSetSeed(seed);
@@ -391,18 +680,22 @@ void main () {
     number_types = " CFixed CGameTime CGameAcceleration CGameSpeed CGameRate SAccumulatedFixed int32 ";
 
     changes_per_category = changes_per_race/5;
-    rando_catalog(c_gameCatalogUnit, changes_per_race*1);
-    rando_catalog(c_gameCatalogAbil, changes_per_race*2);
-    rando_catalog(c_gameCatalogUpgrade, changes_per_race*3);
-    rando_catalog(c_gameCatalogWeapon, changes_per_race*4);
-    rando_catalog(c_gameCatalogEffect, changes_per_race*5);
+    //rando_catalog(c_gameCatalogUnit, changes_per_race*1);
+    //rando_catalog(c_gameCatalogAbil, changes_per_race*2);
+    //rando_catalog(c_gameCatalogUpgrade, changes_per_race*3);
+    //rando_catalog(c_gameCatalogWeapon, changes_per_race*4);
+    //rando_catalog(c_gameCatalogEffect, changes_per_race*5);
 
+    randomize_units(changes_per_race);
+
+    race_changes[no_race].name = "General";
     race_changes[terran].name = "Terran";
     race_changes[protoss].name = "Protoss";
     race_changes[zerg].name = "Zerg";
-    for(i=0; i <3 ; i+=1 ) {
+    for(i=0; i<4 ; i+=1 ) {
         log_changes(i);
     }
 
+    notes_log();
     GameSetSeedLocked(seed_was_locked);
 }
