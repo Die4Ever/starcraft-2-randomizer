@@ -298,9 +298,9 @@ bool rando_field_fixed(int cat, string entry, string field, int changes_id)
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
     if( getval == setval ) { return false; }
 
-    add_change(changes_id, entry, field, getval, setval);
+    add_change(changes_id, entry, field, getval, setval);// TODO: maybe need to save the type too, and a friendly name
 
-    if( field == "LifeMax" ) {
+    if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
         if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
             error(entry+" LifeStart failed to set to "+FixedToString(value,5));
             return false;
@@ -391,7 +391,18 @@ int get_race_id(int cat, string scope, string entry) {
 
 
 void randomize_start() {
-    // starting workers, mineral patches, geysers...
+    int i;
+    // TODO: starting workers, mineral patches, geysers...
+    // TODO: for some reason it's able to read the starting workers, but trying to write them says
+    // Catalog field 'StartingUnitArray[1].Count' could not be written (Core: access denied to required object or service)
+    //for( i=0; i<16; i+=1 ) {
+    //    info("Terr "+CatalogFieldValueGet(c_gameCatalogRace, "Terr", "StartingUnitArray[1].Count", i ));
+    //    CatalogFieldValueSet(c_gameCatalogRace, "Terr", "StartingUnitArray[1].Count", i, IntToString(i) );
+    //    info("Prot "+CatalogFieldValueGet(c_gameCatalogRace, "Prot", "StartingUnitArray[1].Count", i ));
+    //    CatalogFieldValueSet(c_gameCatalogRace, "Prot", "StartingUnitArray[1].Count", i, IntToString(i) );
+    //    info("Zerg "+CatalogFieldValueGet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i ));
+    //    CatalogFieldValueSet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i, IntToString(i) );
+    //}
 }
 
 
@@ -444,11 +455,27 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
             field_type = CatalogFieldType(scope, prefix+field);
             for( k=0; k<len; k+=1 ) {
                 // need to pick random slot actually
-                val = CatalogFieldValueGet(cat, entry, prefix+field+"["+IntToString(k)+"]", 1);
+                if( type != type_struct ) {
+                    val = CatalogFieldValueGet(cat, entry, prefix+field+"["+IntToString(k)+"]", 1);
+                    if( val == "" ) {
+                        //note_add(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field+"["+IntToString(k)+"]");
+                        continue;
+                    }
+                } else {
+                    val = "";
+                }
                 num += randomize_field(cat, scope, entry, prefix+field+"["+IntToString(k)+"]", val, type, field_type, race_id, num_fields );
             }
         } else {
-            val = CatalogFieldValueGet(cat, entry, prefix+field, 1);
+            if( type != type_struct ) {
+                val = CatalogFieldValueGet(cat, entry, prefix+field, 1);
+                if( val == "" ) {
+                    //note_add(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field);
+                    continue;
+                }
+            } else {
+                val = "";
+            }
             num += randomize_field(cat, scope, entry, prefix+field, val, type, "", race_id, num_fields );
         }
     }
@@ -462,6 +489,9 @@ int randomize_behavior(string entry, int race_id, int num_fields) {
     string scope;
     if( entry == "" ) {
         note_add("randomize_behavior empty entry");
+        return 0;
+    }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
         return 0;
     }
 
@@ -479,6 +509,9 @@ int randomize_effect(string entry, int race_id, int num_fields) {
     string scope;
     if( entry == "" ) {
         note_add("randomize_effect empty entry");
+        return 0;
+    }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
         return 0;
     }
 
@@ -503,6 +536,9 @@ int randomize_weapon(string entry, int race_id, int num_fields) {
     if( entry == "" ) {
         return 0;
     }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
+        return 0;
+    }
 
     scope = CatalogEntryScope(cat, entry);
     randomize_fields(cat, scope, entry, "", race_id, num_fields);
@@ -525,6 +561,9 @@ int randomize_upgrade(string entry, int race_id, int num_fields) {
     if( entry == "" ) {
         return 0;
     }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
+        return 0;
+    }
 
     // CUpgrade BattlecruiserBehemothReactor has <EffectArray Reference="Unit,Battlecruiser,EnergyStart" Value="25"/>
     // maybe if EffectArray[i].Operation is anything except Set, then it can be randomized
@@ -543,6 +582,9 @@ int randomize_ability(string entry, int race_id, int num_fields) {
     string val;
 
     if( entry == "" ) {
+        return 0;
+    }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
         return 0;
     }
 
@@ -626,6 +668,9 @@ int randomize_unit(string entry, int race_id, int num_fields) {
     string val;
 
     if( entry == "" ) {
+        return 0;
+    }
+    if( ! CatalogEntryIsValid(cat, entry) ) {
         return 0;
     }
 
@@ -735,8 +780,8 @@ void main () {
     seed=1337;
     min_percent = 50;
     max_percent = 150;
-    changes_per_race = 150;
-    changes_per_unit = 5;
+    changes_per_race = 20;
+    changes_per_unit = 2;
     
     // CUnit
     AddRandomizedField("CUnit", type_int, "CostResource[Minerals]");
