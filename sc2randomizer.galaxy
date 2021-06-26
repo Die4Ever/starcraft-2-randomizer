@@ -428,7 +428,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
         slot = GetRandomField(scope);
         if( slot == -1 ) {
             if( num==0 ) {
-                error(scope+" "+entry+" GetRandomField failed");
+                //error(scope+" "+entry+" GetRandomField failed");
                 note_add(scope+" GetRandomField failed");
             }
             return num;
@@ -788,17 +788,17 @@ void main () {
     AddRandomizedFieldArray("CAbilEffectInstant", type_int, "FinishTime");
     AddRandomizedField("CAbilEffectInstant", type_int, "Arc");
 
-    AddRandomizedField("CAbilTrain", type_struct, "InfoArray");
+    AddRandomizedFieldArray("CAbilTrain", type_struct, "InfoArray");
 
-    AddRandomizedField("CAbilArmMagazine", type_struct, "InfoArray");
+    AddRandomizedFieldArray("CAbilArmMagazine", type_struct, "InfoArray");
     AddRandomizedField("CAbilArmMagazine", type_struct, "Cost");
 
-    AddRandomizedField("CAbilWarpTrain", type_struct, "InfoArray");
+    AddRandomizedFieldArray("CAbilWarpTrain", type_struct, "InfoArray");
 
-    AddRandomizedField("CAbilMorph", type_struct, "InfoArray");
+    AddRandomizedFieldArray("CAbilMorph", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorph", type_struct, "Cost");
 
-    AddRandomizedField("CAbilMorphPlacement", type_struct, "InfoArray");
+    AddRandomizedFieldArray("CAbilMorphPlacement", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorphPlacement", type_struct, "Cost");
 
     AddRandomizedField("CAbilBehavior", type_struct, "Cost");
