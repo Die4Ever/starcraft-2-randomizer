@@ -19,7 +19,7 @@ struct Change {
 
 struct RaceChanges {
     string name;
-    Change[64] changes;
+    Change[1024] changes;
     int len;
 };
 const int no_race=0;
@@ -39,26 +39,40 @@ RandomizedField[1024] randomized_fields;
 const int type_unknown = 0;
 const int type_fixed = 1;
 const int type_int = 2;
-// scopes, is this going too far?
+// scopes
 const int type_unit = 3;
 const int type_ability = 4;
 const int type_effect = 5;
 const int type_weapon = 6;
 const int type_upgrade = 7;
 const int type_behavior = 8;
-// field types, is this going too far?
-//const int type_SCost = 9;
-//const int type_SAbilMergeInfo = 10;
-//const int type_SAbilMorphInfo = 11;
-//const int type_SAbilResearchInfo = 12;
-//const int type_SAbilBuildInfo = 13;
-//const int type_SAbilTrainInfo = 14;
-//const int type_SAbilArmMagazineInfo = 15;
-//const int type_SAbilWarpTrainInfo = 16;
-//const int type_SUnitAbilData = 17;
-//const int type_SUnitWeaponData = 18;
 
 const int type_struct = 100;
+
+void debug(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void info(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void warning(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void error(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
+
+void fatal(string message)
+{
+    TriggerDebugOutput(1, StringToText(message), false );
+}
 
 void AddRandomizedField(string scope, int type, string name)
 {
@@ -74,17 +88,6 @@ void AddRandomizedField(string scope, int type, string name)
     }
 }
 
-void AddRandomizedSCost(string scope)
-{
-    AddRandomizedField(scope, type_int, ".Cooldown.TimeStart");
-    AddRandomizedField(scope, type_int, ".Cooldown.TimeUse");
-    AddRandomizedField(scope, type_int, ".Resource[Minerals]");
-    AddRandomizedField(scope, type_int, ".Resource[Vespene]");
-    AddRandomizedField(scope, type_int, ".Vital[Life]");
-    AddRandomizedField(scope, type_int, ".Vital[Shields]");
-    AddRandomizedField(scope, type_int, ".Vital[Energy]");
-}
-
 void AddRandomizedFieldArray(string scope, int type, string name)
 {
     int i;
@@ -95,6 +98,21 @@ void AddRandomizedFieldArray(string scope, int type, string name)
             randomized_fields[i].name = name;
             randomized_fields[i].is_array = true;
             return;
+        }
+    }
+}
+
+void CopyRandomizedFields(string from, string scope)
+{
+    int i;
+    for( i=0; i<1024; i+=1 ) {
+        if( randomized_fields[i].scope == from ) {
+            if( randomized_fields[i].is_array ) {
+                AddRandomizedFieldArray(scope, randomized_fields[i].type, randomized_fields[i].name);
+            }
+            else {
+                AddRandomizedField(scope, randomized_fields[i].type, randomized_fields[i].name);
+            }
         }
     }
 }
@@ -137,6 +155,7 @@ bool note_add(string val)
             return false;
         }
         if( notes[i] == "" ) {
+            info("note_add "+val);
             notes[i] = val;
             return true;
         }
@@ -155,37 +174,13 @@ void notes_log()
     }
 }
 
-void debug(string message)
-{
-    TriggerDebugOutput(1, StringToText(message), false );
-}
-
-void info(string message)
-{
-    TriggerDebugOutput(1, StringToText(message), false );
-}
-
-void warning(string message)
-{
-    TriggerDebugOutput(1, StringToText(message), false );
-}
-
-void error(string message)
-{
-    TriggerDebugOutput(1, StringToText(message), false );
-}
-
-void fatal(string message)
-{
-    TriggerDebugOutput(1, StringToText(message), false );
-}
 
 bool add_change(int self, string entry, string field, fixed oldval, fixed newval)
 {
     int len;
 
     len = race_changes[self].len;
-    if( len >= 64 ) {
+    if( len >= 1024 ) {
         error("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
         return false;
     }
@@ -401,6 +396,7 @@ void randomize_start() {
 
 
 void randomize_workers() {
+    // CAbilHarvest, CBehaviorResource
 }
 
 
@@ -418,7 +414,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
     int k;
     int slot;
     int num;
-    bool[100] mask;
+    bool[1024] mask;
     int len;
     string field;
     string val;
@@ -432,8 +428,8 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
         slot = GetRandomField(scope);
         if( slot == -1 ) {
             if( num==0 ) {
-                //error(scope+" "+entry+" GetRandomField failed");
-                //note_add(scope+" GetRandomField failed");
+                error(scope+" "+entry+" GetRandomField failed");
+                note_add(scope+" GetRandomField failed");
             }
             return num;
         }
@@ -465,15 +461,16 @@ int randomize_behavior(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogBehavior;
     string scope;
     if( entry == "" ) {
+        note_add("randomize_behavior empty entry");
         return 0;
     }
 
     scope = CatalogEntryScope(cat, entry);
-    randomize_fields(cat, scope, entry, "", race_id, num_fields);
+    //note_add("randomize_behavior "+scope);
+    return randomize_fields(cat, scope, entry, "", race_id, num_fields);
     // Behavior PsiStorm is a CBehaviorBuff
 
     //note_add(CatalogEntryScope(cat, entry));
-    return 0;
 }
 
 
@@ -481,11 +478,13 @@ int randomize_effect(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogEffect;
     string scope;
     if( entry == "" ) {
+        note_add("randomize_effect empty entry");
         return 0;
     }
 
     scope = CatalogEntryScope(cat, entry);
-    randomize_fields(cat, scope, entry, "", race_id, num_fields);
+    //note_add("randomize_effect "+scope);
+    return randomize_fields(cat, scope, entry, "", race_id, num_fields);
 
     // PsiStormPersistent is a CEffectCreatePersistent with a PeriodCount, PeriodEffectArray, PeriodicPeriodArray
     // PsiStormSearch is a CEffectEnumArea with a AreaArray[i].Radius, AreaArray[i].Effect
@@ -494,9 +493,6 @@ int randomize_effect(string entry, int race_id, int num_fields) {
 
     // ArbiterMPRecallSet is a CEffectSet with an array EffectArray
     // ArbiterMPRecallTeleport is a CEffectTeleport with a PlacementRange of 15, Range of 1000
-
-    //note_add(CatalogEntryScope(cat, entry));
-    return 0;
 }
 
 
@@ -736,11 +732,11 @@ void main () {
     //int changes_per_category;
     int i;
 
-    seed=13371;
+    seed=1337;
     min_percent = 50;
     max_percent = 150;
-    changes_per_race = 500;
-    changes_per_unit = 100;
+    changes_per_race = 150;
+    changes_per_unit = 5;
     
     // CUnit
     AddRandomizedField("CUnit", type_int, "CostResource[Minerals]");
@@ -749,7 +745,7 @@ void main () {
     AddRandomizedField("CUnit", type_int, "LifeMax");
     AddRandomizedField("CUnit", type_int, "ShieldsMax");
     AddRandomizedField("CUnit", type_int, "EnergyMax");
-    AddRandomizedField("CUnit", type_fixed, "Acceleration");
+    //AddRandomizedField("CUnit", type_fixed, "Acceleration");
     AddRandomizedField("CUnit", type_fixed, "Speed");
     AddRandomizedFieldArray("CUnit", type_struct, "AbilArray");
     AddRandomizedFieldArray("CUnit", type_struct, "WeaponArray");
@@ -764,12 +760,14 @@ void main () {
 
     // Effects
     AddRandomizedField("CEffectDamage", type_int, "Amount");
-    AddRandomizedField("CEffectCreatePersistent", type_unknown, "PeriodCount");
-    AddRandomizedField("CEffectCreatePersistent", type_unknown, "PeriodEffectArray");
-    AddRandomizedField("CEffectCreatePersistent", type_unknown, "PeriodicPeriodArray");
-    AddRandomizedField("CEffectEnumArea", type_unknown, "AreaArray");
+    AddRandomizedField("CEffectCreatePersistent", type_effect, "InitialEffect");
+    AddRandomizedField("CEffectCreatePersistent", type_effect, "AINotifyEffect");
+    AddRandomizedField("CEffectCreatePersistent", type_int, "PeriodCount");
+    AddRandomizedFieldArray("CEffectCreatePersistent", type_effect, "PeriodicEffectArray");
+    AddRandomizedFieldArray("CEffectCreatePersistent", type_fixed, "PeriodicPeriodArray");
+    AddRandomizedFieldArray("CEffectEnumArea", type_struct, "AreaArray");
     AddRandomizedField("CEffectApplyBehavior", type_behavior, "Behavior");
-    AddRandomizedField("CEffectSet", type_behavior, "EffectArray");
+    AddRandomizedFieldArray("CEffectSet", type_behavior, "EffectArray");
     AddRandomizedField("CEffectTeleport", type_behavior, "PlacementRange");
     AddRandomizedField("CEffectTeleport", type_behavior, "Range");
 
@@ -777,22 +775,45 @@ void main () {
     AddRandomizedFieldArray("CAbilBuild", type_struct, "InfoArray");
     AddRandomizedField("CAbilBuild", type_int, "Range");
     AddRandomizedFieldArray("CAbilBuild", type_effect, "EffectArray");
-    //AddRandomizedFieldArray("CAbilBuild", type_struct, "InfoArray");
+
     AddRandomizedFieldArray("CAbilResearch", type_struct, "InfoArray");
-    //AddRandomizedField("CAbilResearch", type_struct, "Cost");
+
     AddRandomizedFieldArray("CAbilEffectInstant", type_effect, "Effect");
+    AddRandomizedField("CAbilEffectInstant", type_effect, "AINotifyEffect");
+    AddRandomizedFieldArray("CAbilEffectInstant", type_struct, "Cost");
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "CastIntroTime");
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "PrepTime");
+    AddRandomizedField("CAbilEffectInstant", type_fixed, "AutoCastRange");
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "Range");
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "FinishTime");
+    AddRandomizedField("CAbilEffectInstant", type_int, "Arc");
+
     AddRandomizedField("CAbilTrain", type_struct, "InfoArray");
+
     AddRandomizedField("CAbilArmMagazine", type_struct, "InfoArray");
     AddRandomizedField("CAbilArmMagazine", type_struct, "Cost");
+
     AddRandomizedField("CAbilWarpTrain", type_struct, "InfoArray");
+
     AddRandomizedField("CAbilMorph", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorph", type_struct, "Cost");
+
     AddRandomizedField("CAbilMorphPlacement", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorphPlacement", type_struct, "Cost");
+
     AddRandomizedField("CAbilBehavior", type_struct, "Cost");
+    AddRandomizedFieldArray("CAbilBehavior", type_behavior, "BehaviorArray");
+
     AddRandomizedField("CAbilMerge", type_struct, "Info");
+
     AddRandomizedField("CAbilAugment", type_struct, "Cost");
-    AddRandomizedField("CAbilEffectTarget", type_struct, "Cost");
+    AddRandomizedField("CAbilAugment", type_effect, "Effect");
+
+    AddRandomizedFieldArray("CAbilEffectTarget", type_struct, "Cost");
+    AddRandomizedFieldArray("CAbilEffectTarget", type_effect, "Effect");
+    AddRandomizedFieldArray("CAbilEffectTarget", type_int, "FinishTime");
+    AddRandomizedFieldArray("CAbilEffectTarget", type_int, "Range");
+
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoCount");
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoSize");
     AddRandomizedField("CAbilTransport", type_int, "TotalCargoSpace");
@@ -802,33 +823,61 @@ void main () {
     //AddRandomizedField("CAbilTransport", type_int, "SearchRadius");
 
     // Behaviors
+    AddRandomizedField("CBehaviorBuff", type_effect, "InitialEffect");
+    AddRandomizedField("CBehaviorBuff", type_effect, "PeriodicEffect");
+    AddRandomizedField("CBehaviorBuff", type_effect, "AINotifyEffect");
+    AddRandomizedFieldArray("CBehaviorBuff", type_effect, "PeriodicDisplayEffect");
+    AddRandomizedField("CBehaviorBuff", type_fixed, "Duration");
+    AddRandomizedField("CBehaviorBuff", type_fixed, "Period");
+    AddRandomizedField("CBehaviorBuff", type_struct, "Cost");
 
+    // Upgrades
+    //AddRandomizedFieldArray("CUpgrade", type_unknown, "EffectArray");
 
     // structs
-    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// we need the .Unit for the friendly name, also need 
-    AddRandomizedSCost("SAbilBuildInfo");
+    AddRandomizedField("SCost", type_int, ".Cooldown.TimeStart");
+    AddRandomizedField("SCost", type_int, ".Cooldown.TimeUse");
+    AddRandomizedField("SCost", type_int, ".Resource[Minerals]");
+    AddRandomizedField("SCost", type_int, ".Resource[Vespene]");
+    AddRandomizedField("SCost", type_int, ".Vital[Life]");
+    AddRandomizedField("SCost", type_int, ".Vital[Shields]");
+    AddRandomizedField("SCost", type_int, ".Vital[Energy]");
+
+    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    CopyRandomizedFields("SCost", "SAbilBuildInfo");
+
     AddRandomizedField("SAbilResearchInfo", type_int, ".Time");// we need the .Upgrade for the friendly name
     AddRandomizedField("SAbilResearchInfo", type_upgrade, ".Upgrade");
-    AddRandomizedSCost("SAbilResearchInfo");
+    CopyRandomizedFields("SCost", "SAbilResearchInfo");
 
-    AddRandomizedField("SUnitAbilData", type_ability, "Link");
-    AddRandomizedField("SUnitWeaponData", type_weapon, "Link");
+    AddRandomizedField("SAbilTrainInfo", type_int, ".Time");// we need the .Unit[0] or .Effect for the friendly name
+    AddRandomizedField("SAbilTrainInfo", type_effect, ".Effect");
+    CopyRandomizedFields("SCost", "SAbilTrainInfo");// idk if this is needed
 
-    AddRandomizedSCost("SCost");
+    AddRandomizedField("SUnitAbilData", type_ability, ".Link");
+    AddRandomizedField("SUnitWeaponData", type_weapon, ".Link");
+
+    AddRandomizedField("SAbilArmMagazineInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    CopyRandomizedFields("SCost", "SAbilArmMagazineInfo");
+
+    AddRandomizedField("SAbilWarpTrainInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    CopyRandomizedFields("SCost", "SAbilWarpTrainInfo");
+
+    AddRandomizedField("SEffectEnumArea", type_effect, ".Effect");
+    AddRandomizedField("SEffectEnumArea", type_fixed, ".Radius");
 
     seed_was_locked = GameIsSeedLocked();
-    GameSetSeed(seed);
+    //GameSetSeed(seed);
 
-    //number_types = " CFixed CGameTime CGameAcceleration CGameSpeed CGameRate SAccumulatedFixed int32 ";
+    //randomize_fields(c_gameCatalogAbil, "CAbilBuild", "ProtossBuild", "", protoss, 50);
+    //randomize_fields(c_gameCatalogAbil, "CAbilBuild", "ZergBuild", "", zerg, 50);
+    //randomize_fields(c_gameCatalogAbil, "CAbilResearch", "FactoryTechLabResearch", "", terran, 50);
+    //randomize_fields(c_gameCatalogAbil, "CAbilResearch", "evolutionchamberresearch", "", zerg, 50);
+    //randomize_fields(c_gameCatalogAbil, "CAbilEffectTarget", "PsiStorm", "", protoss, 50);
 
-    //randomize_workers();
-    //randomize_start();
-    //randomize_units(changes_per_race);
-
-    randomize_fields(c_gameCatalogAbil, "CAbilBuild", "ProtossBuild", "", protoss, 50);
-    randomize_fields(c_gameCatalogAbil, "CAbilBuild", "ZergBuild", "", zerg, 50);
-    randomize_fields(c_gameCatalogAbil, "CAbilResearch", "FactoryTechLabResearch", "", terran, 50);
-    randomize_fields(c_gameCatalogAbil, "CAbilResearch", "evolutionchamberresearch", "", zerg, 50);
+    randomize_workers();
+    randomize_start();
+    randomize_units(changes_per_race);
 
     race_changes[no_race].name = "General";
     race_changes[terran].name = "Terran";
