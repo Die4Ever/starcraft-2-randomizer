@@ -35,7 +35,7 @@ struct RandomizedField {
     string name;
     bool is_array;
 };
-RandomizedField[100] randomized_fields;
+RandomizedField[1024] randomized_fields;
 const int type_unknown = 0;
 const int type_fixed = 1;
 const int type_int = 2;
@@ -47,23 +47,23 @@ const int type_weapon = 6;
 const int type_upgrade = 7;
 const int type_behavior = 8;
 // field types, is this going too far?
-const int type_SCost = 9;
-const int type_SAbilMergeInfo = 10;
-const int type_SAbilMorphInfo = 11;
-const int type_SAbilResearchInfo = 12;
-const int type_SAbilBuildInfo = 13;
-const int type_SAbilTrainInfo = 14;
-const int type_SAbilArmMagazineInfo = 15;
-const int type_SAbilWarpTrainInfo = 16;
-const int type_SUnitAbilData = 17;
-const int type_SUnitWeaponData = 18;
+//const int type_SCost = 9;
+//const int type_SAbilMergeInfo = 10;
+//const int type_SAbilMorphInfo = 11;
+//const int type_SAbilResearchInfo = 12;
+//const int type_SAbilBuildInfo = 13;
+//const int type_SAbilTrainInfo = 14;
+//const int type_SAbilArmMagazineInfo = 15;
+//const int type_SAbilWarpTrainInfo = 16;
+//const int type_SUnitAbilData = 17;
+//const int type_SUnitWeaponData = 18;
 
 const int type_struct = 100;
 
 void AddRandomizedField(string scope, int type, string name)
 {
     int i;
-    for( i=0; i<100; i+=1 ) {
+    for( i=0; i<1024; i+=1 ) {
         if( randomized_fields[i].name == "" ) {
             randomized_fields[i].scope = scope;
             randomized_fields[i].type = type;
@@ -74,10 +74,21 @@ void AddRandomizedField(string scope, int type, string name)
     }
 }
 
+void AddRandomizedSCost(string scope)
+{
+    AddRandomizedField(scope, type_int, ".Cooldown.TimeStart");
+    AddRandomizedField(scope, type_int, ".Cooldown.TimeUse");
+    AddRandomizedField(scope, type_int, ".Resource[Minerals]");
+    AddRandomizedField(scope, type_int, ".Resource[Vespene]");
+    AddRandomizedField(scope, type_int, ".Vital[Life]");
+    AddRandomizedField(scope, type_int, ".Vital[Shields]");
+    AddRandomizedField(scope, type_int, ".Vital[Energy]");
+}
+
 void AddRandomizedFieldArray(string scope, int type, string name)
 {
     int i;
-    for( i=0; i<100; i+=1 ) {
+    for( i=0; i<1024; i+=1 ) {
         if( randomized_fields[i].name == "" ) {
             randomized_fields[i].scope = scope;
             randomized_fields[i].type = type;
@@ -94,7 +105,7 @@ int GetRandomField(string scope)
     int i;
 
     num = 0;
-    for( i=0; i<100; i+=1 ) {
+    for( i=0; i<1024; i+=1 ) {
         if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
             num+=1;
         }
@@ -105,7 +116,7 @@ int GetRandomField(string scope)
     }
 
     num = RandomInt(0, num-1);
-    for( i=0; i<100; i+=1 ) {
+    for( i=0; i<1024; i+=1 ) {
         if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
             if( num == 0 ) {
                 return i;
@@ -414,7 +425,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
     int type;
     string field_type;
 
-    info("randomize_fields("+IntToString(cat)+", "+scope+", "+entry+", "+prefix+")");
+    //info("randomize_fields("+IntToString(cat)+", "+scope+", "+entry+", "+prefix+")");
 
     num = 0;
     for( i=0; num<num_fields && i<32; i+=1 ) {
@@ -447,48 +458,6 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
     }
 
     return num;
-}
-
-
-int randomize_SAbilBuildInfo(int cat, string entry, string field, int race_id, int num_fields) {
-    rando_field_int(cat, entry, field+".Time", race_id);
-    // Vital, Resource, Cooldown...
-    return 0;
-}
-
-
-int randomize_SAbilResearchInfo(int cat, string entry, string field, int race_id, int num_fields) {
-    int num;
-    int i;
-    int slot;
-
-    for( i=0; i<4; i+=1 ) {
-        slot = RandomInt(0,3);
-
-        if( slot == 0 ) {
-            if( rando_field_int(cat, entry, field+".Time", race_id) ) {
-                return 1;
-            }
-        }
-        else if( slot == 1 ) {
-            if( rando_field_int(cat, entry, field+".Resource[Minerals]", race_id) ) {
-                return 1;
-            }
-        }
-        else if( slot == 2 ) {
-            if( rando_field_int(cat, entry, field+".Resource[Vespene]", race_id) ) {
-                return 1;
-            }
-        }
-        else {
-            num = randomize_upgrade( CatalogFieldValueGet(cat, entry, field+".Upgrade", 1), race_id, num_fields );
-            if( num > 0 ) {
-                return num;
-            }
-        }
-    }
-    
-    return 0;
 }
 
 
@@ -748,23 +717,6 @@ int randomize_field(int cat, string scope, string entry, string field, string va
         }
         return randomize_fields(cat, field_type, entry, field, race_id, num_fields);
     }
-    else if( type == type_SCost ) {
-
-    }
-    else if( type == type_SUnitAbilData ) {
-        val = CatalogFieldValueGet(cat, entry, field+".Link", 1);
-        return randomize_ability(val, race_id, num_fields);
-    }
-    else if( type == type_SUnitWeaponData ) {
-        val = CatalogFieldValueGet(cat, entry, field+".Link", 1);
-        return randomize_weapon(val, race_id, num_fields);
-    }
-    else if( type == type_SAbilBuildInfo ) {
-        return randomize_SAbilBuildInfo(cat, entry, field, race_id, num_fields);
-    }
-    else if( type == type_SAbilResearchInfo ) {
-        return randomize_SAbilResearchInfo(cat, entry, field, race_id, num_fields);
-    }
     else {
         if( field_type == "" ) {
             field_type = CatalogFieldType(CatalogEntryScope(cat, entry), field);
@@ -799,8 +751,8 @@ void main () {
     AddRandomizedField("CUnit", type_int, "EnergyMax");
     AddRandomizedField("CUnit", type_fixed, "Acceleration");
     AddRandomizedField("CUnit", type_fixed, "Speed");
-    AddRandomizedFieldArray("CUnit", type_SUnitAbilData, "AbilArray");
-    AddRandomizedFieldArray("CUnit", type_SUnitWeaponData, "WeaponArray");
+    AddRandomizedFieldArray("CUnit", type_struct, "AbilArray");
+    AddRandomizedFieldArray("CUnit", type_struct, "WeaponArray");
 
     // Weapons
     AddRandomizedField("CWeaponLegacy", type_fixed, "Range");
@@ -829,18 +781,18 @@ void main () {
     AddRandomizedFieldArray("CAbilResearch", type_struct, "InfoArray");
     //AddRandomizedField("CAbilResearch", type_struct, "Cost");
     AddRandomizedFieldArray("CAbilEffectInstant", type_effect, "Effect");
-    AddRandomizedField("CAbilTrain", type_SAbilTrainInfo, "InfoArray");
-    AddRandomizedField("CAbilArmMagazine", type_SAbilArmMagazineInfo, "InfoArray");
-    AddRandomizedField("CAbilArmMagazine", type_SCost, "Cost");
-    AddRandomizedField("CAbilWarpTrain", type_SAbilWarpTrainInfo, "InfoArray");
-    AddRandomizedField("CAbilMorph", type_SAbilMorphInfo, "InfoArray");
-    AddRandomizedField("CAbilMorph", type_SCost, "Cost");
-    AddRandomizedField("CAbilMorphPlacement", type_SAbilMorphInfo, "InfoArray");
-    AddRandomizedField("CAbilMorphPlacement", type_SCost, "Cost");
-    AddRandomizedField("CAbilBehavior", type_SCost, "Cost");
-    AddRandomizedField("CAbilMerge", type_SAbilMergeInfo, "Info");
-    AddRandomizedField("CAbilAugment", type_SCost, "Cost");
-    AddRandomizedField("CAbilEffectTarget", type_SCost, "Cost");
+    AddRandomizedField("CAbilTrain", type_struct, "InfoArray");
+    AddRandomizedField("CAbilArmMagazine", type_struct, "InfoArray");
+    AddRandomizedField("CAbilArmMagazine", type_struct, "Cost");
+    AddRandomizedField("CAbilWarpTrain", type_struct, "InfoArray");
+    AddRandomizedField("CAbilMorph", type_struct, "InfoArray");
+    AddRandomizedField("CAbilMorph", type_struct, "Cost");
+    AddRandomizedField("CAbilMorphPlacement", type_struct, "InfoArray");
+    AddRandomizedField("CAbilMorphPlacement", type_struct, "Cost");
+    AddRandomizedField("CAbilBehavior", type_struct, "Cost");
+    AddRandomizedField("CAbilMerge", type_struct, "Info");
+    AddRandomizedField("CAbilAugment", type_struct, "Cost");
+    AddRandomizedField("CAbilEffectTarget", type_struct, "Cost");
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoCount");
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoSize");
     AddRandomizedField("CAbilTransport", type_int, "TotalCargoSpace");
@@ -853,19 +805,16 @@ void main () {
 
 
     // structs
-    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// we need the .Unit for the friendly name, also need 
+    AddRandomizedSCost("SAbilBuildInfo");
     AddRandomizedField("SAbilResearchInfo", type_int, ".Time");// we need the .Upgrade for the friendly name
-    AddRandomizedField("SAbilResearchInfo", type_int, ".Resource[Minerals]");
-    AddRandomizedField("SAbilResearchInfo", type_int, ".Resource[Vespene]");
+    AddRandomizedField("SAbilResearchInfo", type_upgrade, ".Upgrade");
+    AddRandomizedSCost("SAbilResearchInfo");
 
-    AddRandomizedField("SCost", type_int, ".Cooldown.TimeStart");
-    AddRandomizedField("SCost", type_int, ".Cooldown.TimeUse");
-    AddRandomizedField("SCost", type_int, ".Resource.Minerals");
-    AddRandomizedField("SCost", type_int, ".Resource.Vespene");
-    AddRandomizedField("SCost", type_int, ".Vital.Life");
-    AddRandomizedField("SCost", type_int, ".Vital.Shields");
-    AddRandomizedField("SCost", type_int, ".Vital.Energy");
+    AddRandomizedField("SUnitAbilData", type_ability, "Link");
+    AddRandomizedField("SUnitWeaponData", type_weapon, "Link");
 
+    AddRandomizedSCost("SCost");
 
     seed_was_locked = GameIsSeedLocked();
     GameSetSeed(seed);
