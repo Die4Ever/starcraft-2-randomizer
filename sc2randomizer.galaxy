@@ -51,7 +51,7 @@ const int type_struct = 100;
 
 void debug(string message)
 {
-    TriggerDebugOutput(1, StringToText(message), false );
+    //TriggerDebugOutput(1, StringToText(message), false );
 }
 
 void info(string message)
@@ -175,6 +175,17 @@ void notes_log()
 }
 
 
+int find_change(int self, string entry, string field)
+{
+    int i;
+    for( i=0; i < race_changes[self].len; i+=1 ) {
+        if( race_changes[self].changes[i].entry == entry && race_changes[self].changes[i].field == field ) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 bool add_change(int self, string entry, string field, fixed oldval, fixed newval)
 {
     int len;
@@ -214,7 +225,7 @@ void log_changes(int self)
             + " to "+FixedToString(race_changes[self].changes[i].newval,5);
     }
 
-    debug(message );
+    info( message );
 
     //UIDisplayMessage( PlayerGroupAll(), c_messageAreaChat, StringToText(message) );
     //UIShowTextCrawl( PlayerGroupAll(), StringToText(race_changes[self].name + " Changes: "), StringToText(message), 6, SoundLink("Silent", -1), SoundLink("Silent", -1));
@@ -282,9 +293,13 @@ bool rando_field_fixed(int cat, string entry, string field, int changes_id)
     fixed setval;
     fixed value;
 
+    if( find_change(changes_id, entry, field) != -1 ) {
+        return false;
+    }
+
     getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, 1);
     if( getval == 0 ) {
-        //error(entry+" "+field+" failed to read");
+        debug(entry+" "+field+" failed to read");
         return false;
     }
     value = randomize(getval);
@@ -322,9 +337,13 @@ bool rando_field_int(int cat, string entry, string field, int changes_id)
     int setval;
     int value;
 
+    if( find_change(changes_id, entry, field) != -1 ) {
+        return false;
+    }
+
     getval = CatalogFieldValueGetAsInt(cat, entry, field, 1);
     if( getval == 0 ) {
-        //error(entry+" "+field+" failed to read");
+        debug(entry+" "+field+" failed to read");
         return false;
     }
     value = FixedToInt( randomize(getval) );
@@ -390,9 +409,122 @@ int get_race_id(int cat, string scope, string entry) {
 }
 
 
-void randomize_start() {
+void modify_resources(string name, fixed percent) {
     int i;
-    // TODO: starting workers, mineral patches, geysers...
+    int num;
+    int val;
+    unitgroup units;
+    unit u;
+
+    units = UnitGroup(name, 0, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
+    num = UnitGroupCount(units, c_unitCountAll);
+    debug("found "+IntToString(num)+" of "+name);
+    for( i=0; i<num; i+=1 ) {
+        u = UnitGroupUnit(units, i);
+        val = UnitGetPropertyInt(u, c_unitPropResources, true);
+        val = FixedToInt(IntToFixed(val) * percent / 100.0);
+        UnitSetPropertyInt(u, c_unitPropResources, val);
+    }
+}
+
+
+void modify_behavior_resource(string name, fixed amount_percent, fixed amount, fixed time) {
+    fixed val;
+
+    // TODO:
+    // Catalog field 'HarvestAmount' could not be written (Core: access denied to required object or service)
+    // Catalog field 'HarvestTime' could not be written (Core: access denied to required object or service)
+    // Catalog field 'Capacity' could not be written (Core: access denied to required object or service)
+    // Catalog field 'Contents' could not be written (Core: access denied to required object or service)
+    return;
+
+    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestAmount", 1);
+    val = val * amount / 100.0;
+    set_field_fixed(c_gameCatalogBehavior, name, "HarvestAmount", val );
+
+    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestTime", 1);
+    val = val * time / 100.0;
+    set_field_fixed(c_gameCatalogBehavior, name, "HarvestTime", val );
+
+    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Capacity", 1);
+    val = val * amount_percent / 100.0;
+    set_field_string(c_gameCatalogBehavior, name, "Capacity", FixedToString(val,0) );
+
+    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Contents", 1);
+    val = val * amount_percent / 100.0;
+    set_field_string(c_gameCatalogBehavior, name, "Contents", FixedToString(val,0) );
+}
+
+
+void randomize_economy() {
+    fixed amount_percent;
+    fixed harvestamount_percent;
+    fixed harvesttime_percent;
+    //fixed delay_percent;
+
+    // CBehaviorResource minerals
+    amount_percent = randomize(100);
+    harvestamount_percent = randomize(100);
+    harvesttime_percent = randomize(100);
+    modify_behavior_resource("HighYieldMineralFieldMinerals", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HighYieldMineralFieldMinerals750", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMinerals", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMinerals450", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMinerals750", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMineralsNoRemove", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMineralsOpaque", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("MineralFieldMineralsOpaque900", amount_percent, harvestamount_percent, harvesttime_percent);
+    //add_change(no_race, "Minerals Harvest", "Amount", 5, 5.0*harvestamount_percent/100);
+    //add_change(no_race, "Minerals Harvest", "Time", 2.786, 2.786*harvesttime_percent/100);
+
+    // minerals
+    modify_resources("MineralField", amount_percent);
+    modify_resources("MineralField450", amount_percent);
+    modify_resources("MineralField750", amount_percent);
+    modify_resources("LabMineralField", amount_percent);
+    modify_resources("LabMineralField750", amount_percent);
+    modify_resources("BattleStationMineralField", amount_percent);
+    modify_resources("BattleStationMineralField750", amount_percent);
+    modify_resources("MineralFieldDefault", amount_percent);
+    modify_resources("MineralFieldOpaque", amount_percent);
+    modify_resources("MineralFieldOpaque900", amount_percent);
+    modify_resources("PurifierMineralField", amount_percent);
+    modify_resources("PurifierMineralField750", amount_percent);
+    modify_resources("PurifierRichMineralField", amount_percent);
+    modify_resources("PurifierRichMineralField750", amount_percent);
+    modify_resources("RichMineralField", amount_percent);
+    modify_resources("RichMineralField750", amount_percent);
+    modify_resources("RichMineralFieldDefault", amount_percent);
+    add_change(no_race, "Minerals", "%", 100, amount_percent);
+
+    // CBehaviorResource gas
+    amount_percent = randomize(100);
+    harvestamount_percent = randomize(100);
+    harvesttime_percent = randomize(100);
+    modify_behavior_resource("HarvestableRichVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableRichVespeneGeyserGasProtoss", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableRichVespeneGeyserGasZerg", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableTerrazineGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableTerrazineGeyserGasProtoss", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableTerrazineGeyserGasZerg", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableVespeneGeyserGasProtoss", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("HarvestableVespeneGeyserGasZerg", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("RawRichVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("RawTerrazineGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    modify_behavior_resource("RawVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    //add_change(no_race, "Gas Harvest", "Amount", 4, 4.0*harvestamount_percent/100);
+    //add_change(no_race, "Gas Harvest", "Time", 1.981, 1.981*harvesttime_percent/100);
+
+    // gasses
+    modify_resources("ProtossVespeneGeyser", amount_percent);
+    modify_resources("PurifierVespeneGeyser", amount_percent);
+    modify_resources("RichVespeneGeyser", amount_percent);
+    modify_resources("ShakurasVespeneGeyser", amount_percent);
+    modify_resources("SpacePlatformGeyser", amount_percent);
+    modify_resources("VespeneGeyser", amount_percent);
+    add_change(no_race, "Gas", "%", 100, amount_percent);
+
     // TODO: for some reason it's able to read the starting workers, but trying to write them says
     // Catalog field 'StartingUnitArray[1].Count' could not be written (Core: access denied to required object or service)
     //for( i=0; i<16; i+=1 ) {
@@ -403,11 +535,6 @@ void randomize_start() {
     //    info("Zerg "+CatalogFieldValueGet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i ));
     //    CatalogFieldValueSet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i, IntToString(i) );
     //}
-}
-
-
-void randomize_workers() {
-    // CAbilHarvest, CBehaviorResource
 }
 
 
@@ -432,14 +559,14 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
     int type;
     string field_type;
 
-    //info("randomize_fields("+IntToString(cat)+", "+scope+", "+entry+", "+prefix+")");
+    debug("randomize_fields("+IntToString(cat)+", "+scope+", "+entry+", "+prefix+")");
 
     num = 0;
     for( i=0; num<num_fields && i<32; i+=1 ) {
         slot = GetRandomField(scope);
         if( slot == -1 ) {
             if( num==0 ) {
-                //error(scope+" "+entry+" GetRandomField failed");
+                debug(scope+" "+entry+" GetRandomField failed");
                 note_add(scope+" GetRandomField failed");
             }
             return num;
@@ -458,7 +585,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
                 if( type != type_struct ) {
                     val = CatalogFieldValueGet(cat, entry, prefix+field+"["+IntToString(k)+"]", 1);
                     if( val == "" ) {
-                        //note_add(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field+"["+IntToString(k)+"]");
+                        debug(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field+"["+IntToString(k)+"]");
                         continue;
                     }
                 } else {
@@ -470,7 +597,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
             if( type != type_struct ) {
                 val = CatalogFieldValueGet(cat, entry, prefix+field, 1);
                 if( val == "" ) {
-                    //note_add(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field);
+                    debug(scope+" "+entry+" failed CatalogFieldValueGet "+prefix+field);
                     continue;
                 }
             } else {
@@ -496,11 +623,8 @@ int randomize_behavior(string entry, int race_id, int num_fields) {
     }
 
     scope = CatalogEntryScope(cat, entry);
-    //note_add("randomize_behavior "+scope);
     return randomize_fields(cat, scope, entry, "", race_id, num_fields);
     // Behavior PsiStorm is a CBehaviorBuff
-
-    //note_add(CatalogEntryScope(cat, entry));
 }
 
 
@@ -516,7 +640,6 @@ int randomize_effect(string entry, int race_id, int num_fields) {
     }
 
     scope = CatalogEntryScope(cat, entry);
-    //note_add("randomize_effect "+scope);
     return randomize_fields(cat, scope, entry, "", race_id, num_fields);
 
     // PsiStormPersistent is a CEffectCreatePersistent with a PeriodCount, PeriodEffectArray, PeriodicPeriodArray
@@ -541,16 +664,13 @@ int randomize_weapon(string entry, int race_id, int num_fields) {
     }
 
     scope = CatalogEntryScope(cat, entry);
-    randomize_fields(cat, scope, entry, "", race_id, num_fields);
+    return randomize_fields(cat, scope, entry, "", race_id, num_fields);
 
     // CWeapon_DisplayEffect is where the damage is defined?
 
     // scopes
     // CWeaponLegacy has Period, Range, MinimumRange, MinScanRange, SCost Cost, 
     // InterceptorBeam is the only CWeaponStrafe with a Period, Range, Arc
-
-    //set_add(CatalogEntryScope(cat, entry));
-    return 0;
 }
 
 
@@ -568,8 +688,7 @@ int randomize_upgrade(string entry, int race_id, int num_fields) {
     // CUpgrade BattlecruiserBehemothReactor has <EffectArray Reference="Unit,Battlecruiser,EnergyStart" Value="25"/>
     // maybe if EffectArray[i].Operation is anything except Set, then it can be randomized
     scope = CatalogEntryScope(cat, entry);
-    randomize_fields(cat, scope, entry, "", race_id, num_fields);
-    return 0;
+    return randomize_fields(cat, scope, entry, "", race_id, num_fields);
 }
 
 
@@ -762,7 +881,7 @@ int randomize_field(int cat, string scope, string entry, string field, string va
         if( field_type == "" ) {
             field_type = CatalogFieldType(CatalogEntryScope(cat, entry), field);
         }
-        //note_add(scope+" "+entry+" has "+field_type+" ("+IntToString(type)+") "+field+", value: "+val );
+        info(scope+" "+entry+" has "+field_type+" ("+IntToString(type)+") "+field+", value: "+val );
         note_add(scope+" has "+field_type+" ("+IntToString(type)+") "+field+", value: "+val );
         return 0;
     }
@@ -840,10 +959,10 @@ void main () {
 
     AddRandomizedFieldArray("CAbilWarpTrain", type_struct, "InfoArray");
 
-    AddRandomizedFieldArray("CAbilMorph", type_struct, "InfoArray");
+    //AddRandomizedFieldArray("CAbilMorph", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorph", type_struct, "Cost");
 
-    AddRandomizedFieldArray("CAbilMorphPlacement", type_struct, "InfoArray");
+    //AddRandomizedFieldArray("CAbilMorphPlacement", type_struct, "InfoArray");
     AddRandomizedField("CAbilMorphPlacement", type_struct, "Cost");
 
     AddRandomizedField("CAbilBehavior", type_struct, "Cost");
@@ -920,8 +1039,7 @@ void main () {
     //randomize_fields(c_gameCatalogAbil, "CAbilResearch", "evolutionchamberresearch", "", zerg, 50);
     //randomize_fields(c_gameCatalogAbil, "CAbilEffectTarget", "PsiStorm", "", protoss, 50);
 
-    randomize_workers();
-    randomize_start();
+    randomize_economy();
     randomize_units(changes_per_race);
 
     race_changes[no_race].name = "General";
