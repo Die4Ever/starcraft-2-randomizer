@@ -223,9 +223,16 @@ void log_changes(int self)
             + " changed from "
             + FixedToString(race_changes[self].changes[i].oldval,5)
             + " to "+FixedToString(race_changes[self].changes[i].newval,5);
+
+        if( StringLength(message) > 200 ) {
+            info( message );
+            message = "--- ";
+        }
     }
 
-    info( message );
+    if( message != "" ) {
+        info( message );
+    }
 
     //UIDisplayMessage( PlayerGroupAll(), c_messageAreaChat, StringToText(message) );
     //UIShowTextCrawl( PlayerGroupAll(), StringToText(race_changes[self].name + " Changes: "), StringToText(message), 6, SoundLink("Silent", -1), SoundLink("Silent", -1));
@@ -899,7 +906,7 @@ void main () {
     seed=1337;
     min_percent = 50;
     max_percent = 150;
-    changes_per_race = 20;
+    changes_per_race = 50;
     changes_per_unit = 2;
     
     // CUnit
@@ -1047,9 +1054,13 @@ void main () {
     race_changes[protoss].name = "Protoss";
     race_changes[zerg].name = "Zerg";
     for(i=0; i<4 ; i+=1 ) {
+        info(" ");
         log_changes(i);
     }
+    info(" ");
 
     notes_log();
     GameSetSeedLocked(seed_was_locked);
+
+    GameSetGlobalTimeScale(5);
 }
