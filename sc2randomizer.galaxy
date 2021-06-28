@@ -10,6 +10,8 @@ int seed;
 int changes_per_race;
 int changes_per_unit;
 
+int dialog;
+
 struct Change {
     string entry;
     string field;
@@ -814,6 +816,8 @@ void randomize_units(int changes_per_race) {
     int i;
     int slot;
 
+    // TODO: can we do 1 per frame or per tick?
+
     num_data = CatalogEntryCount(cat);
 
     for( i=1; i<=num_data; i+=1 ) {
@@ -894,6 +898,86 @@ int randomize_field(int cat, string scope, string entry, string field, string va
     }
 
     return 0;
+}
+
+
+bool start_rando_button_pressed(bool testConds, bool runActions) {
+    int i;
+    DialogSetVisible(dialog, PlayerGroupAll(), false);
+    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
+    for( i=0; i<16; i+=1 ) {
+        CameraLockInput(i, false);
+    }
+    DialogDestroy(dialog);
+    GameSetGlobalTimeScale(4);
+    return true;
+}
+
+
+int create_dialog() {
+    //int[4] race_panels;
+    int list;
+    int i;
+    int race;
+    string s;
+    int width;
+    int height;
+    int seed_label;
+    int seed_editbox;
+    int submit_button;
+
+    for( i=0; i<16; i+=1 ) {
+        CameraLockInput(i, true);
+    }
+
+    GameSetGlobalTimeScale(0);
+    libNtve_gf_HideGameUI( false, PlayerGroupAll() );
+    dialog = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog, StringToText("SC2Rando!") );
+    DialogSetFullscreen(dialog, true);
+    width = DialogGetWidth(dialog);
+    height = DialogGetHeight(dialog);
+
+    seed_label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(seed_label, PlayerGroupAll(), 100, 50);
+    DialogControlSetPosition(seed_label, PlayerGroupAll(), c_anchorCenter, -300, -300);
+    libNtve_gf_SetDialogItemText(seed_label, StringToText("Seed: "), PlayerGroupAll() );
+    libNtve_gf_SetDialogItemTooltip(seed_label, StringToText("The seed used for randomization"), PlayerGroupAll());
+
+    seed_editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
+    DialogControlSetSize(seed_editbox, PlayerGroupAll(), 300, 50);
+    DialogControlSetPosition(seed_editbox, PlayerGroupAll(), c_anchorCenter, 150, -300);
+    libNtve_gf_SetDialogItemTooltip(seed_editbox, StringToText("The seed used for randomization"), PlayerGroupAll());
+
+    //seed = StringToInt( libNtve_gf_DialogItemEditValue(seed_editbox, 1) );
+
+    //list = DialogControlCreate(dialog, c_triggerControlTypeListBox);
+
+    //DialogControlSetFullDialog(list, PlayerGroupAll(), true);
+
+    for( race=0; race<4; race+=1 ) {
+        for( i=0; i<race_changes[race].len; i+=1 ) {
+            s = race_changes[race].changes[i].entry+" "+race_changes[race].changes[i].field
+                + " changed from "
+                + FixedToString(race_changes[race].changes[i].oldval,5)
+                + " to "+FixedToString(race_changes[race].changes[i].newval,5);
+
+            //DialogControlAddItem(list, PlayerGroupAll(), StringToText(s) );
+        }
+    }
+
+    DialogControlSetPositionRelative(seed_label, PlayerGroupAll(), c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
+
+    submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    libNtve_gf_SetDialogItemText(submit_button, StringToText("Continue"), PlayerGroupAll() );
+    DialogControlSetSize(submit_button, PlayerGroupAll(), 300, 100);
+    DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 0);
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Continue"), PlayerGroupAll());
+    TriggerAddEventDialogControl(TriggerCreate("start_rando_button_pressed"), c_playerAny, submit_button, c_triggerControlEventTypeClick);
+
+    DialogSetVisible(dialog, PlayerGroupAll(), true);
+
+    return dialog;
 }
 
 
@@ -1047,7 +1131,13 @@ void main () {
     //randomize_fields(c_gameCatalogAbil, "CAbilEffectTarget", "PsiStorm", "", protoss, 50);
 
     randomize_economy();
-    randomize_units(changes_per_race);
+    //randomize_units(changes_per_race);
+
+    // now shuffle the race_changes arrays, and then divide them up into factions... first 20 items go to faction A, next 20 items go to faction B...
+        // but this prevents different factions from having the same stat randomized differently...
+        // maybe just split up the arrays into 10 different arrays for a maximum of 10 factions per race
+        // maybe in add_change it'll randomly pick which faction to add to
+    // will need to revert the ones that aren't selected
 
     race_changes[no_race].name = "General";
     race_changes[terran].name = "Terran";
@@ -1062,5 +1152,7 @@ void main () {
     notes_log();
     GameSetSeedLocked(seed_was_locked);
 
-    GameSetGlobalTimeScale(5);
+    create_dialog();
+
+    //GameSetGlobalTimeScale(5);
 }
