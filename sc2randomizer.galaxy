@@ -934,13 +934,78 @@ void do_rando() {
 }
 
 
+int create_create_continue_button(int dialog, string button_text, string callback) {
+    int submit_button;
+
+    submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
+    DialogControlSetSize(submit_button, PlayerGroupAll(), 300, 100);
+    DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 50);
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(button_text), PlayerGroupAll());
+    TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
+
+    return submit_button;
+}
+
+
+bool start_game_button_pressed(bool testConds, bool runActions) {
+    int i;
+
+    DialogSetVisible(dialog_changes, PlayerGroupAll(), false);
+    DialogDestroy(dialog_changes);
+
+    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
+    for( i=0; i<16; i+=1 ) {
+        CameraLockInput(i, false);
+    }
+    GameSetGlobalTimeScale(4);
+    return true;
+}
+
+
 int create_dialog_show_changes() {
-    return dialog_start;
+    int width;
+    int height;
+    int list;
+    int i;
+    int race;
+    string s;
+
+    dialog_changes = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog_changes, StringToText("SC2Rando!") );
+    DialogSetFullscreen(dialog_changes, true);
+    
+    // TODO: how to get screen size? these seem to return 500, 500 even though I set the dialog to fullscreen
+    width = DialogGetWidth(dialog_changes);
+    height = DialogGetHeight(dialog_changes);
+
+    create_create_continue_button(dialog_changes, "Continue", "start_game_button_pressed");
+
+    list = DialogControlCreate(dialog_changes, c_triggerControlTypeListBox);
+
+    //DialogControlSetFullDialog(list, PlayerGroupAll(), true);
+    DialogControlSetSize(list, PlayerGroupAll(), 1280, 720);
+    DialogControlSetPosition(list, PlayerGroupAll(), c_anchorTop, 0, 100);
+
+    // zerg buildings count the cost of the drone...
+    for( race=0; race<4; race+=1 ) {
+        for( i=0; i<race_changes[race].len; i+=1 ) {
+            s = race_changes[race].changes[i].entry+" "+race_changes[race].changes[i].field
+                + " changed from "
+                + FixedToString(race_changes[race].changes[i].oldval,5)
+                + " to "+FixedToString(race_changes[race].changes[i].newval,5);
+
+            DialogControlAddItem(list, PlayerGroupAll(), StringToText(s) );
+        }
+    }
+
+    DialogSetVisible(dialog_changes, PlayerGroupAll(), true);
+
+    return dialog_changes;
 }
 
 
 bool start_rando_button_pressed(bool testConds, bool runActions) {
-    int i;
     string sseed;
 
     sseed = libNtve_gf_DialogItemEditValue(seed_editbox, 1);
@@ -949,14 +1014,10 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     }
 
     do_rando();
-
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
-    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
-    for( i=0; i<16; i+=1 ) {
-        CameraLockInput(i, false);
-    }
     DialogDestroy(dialog_start);
-    GameSetGlobalTimeScale(4);
+
+    create_dialog_show_changes();
     return true;
 }
 
@@ -997,29 +1058,9 @@ int create_dialog_start() {
 
     //seed = StringToInt( libNtve_gf_DialogItemEditValue(seed_editbox, 1) );
 
-    //list = DialogControlCreate(dialog_start, c_triggerControlTypeListBox);
-
-    //DialogControlSetFullDialog(list, PlayerGroupAll(), true);
-
-    for( race=0; race<4; race+=1 ) {
-        for( i=0; i<race_changes[race].len; i+=1 ) {
-            s = race_changes[race].changes[i].entry+" "+race_changes[race].changes[i].field
-                + " changed from "
-                + FixedToString(race_changes[race].changes[i].oldval,5)
-                + " to "+FixedToString(race_changes[race].changes[i].newval,5);
-
-            //DialogControlAddItem(list, PlayerGroupAll(), StringToText(s) );
-        }
-    }
-
     DialogControlSetPositionRelative(seed_label, PlayerGroupAll(), c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
 
-    submit_button = DialogControlCreate(dialog_start, c_triggerControlTypeButton);
-    libNtve_gf_SetDialogItemText(submit_button, StringToText("Continue"), PlayerGroupAll() );
-    DialogControlSetSize(submit_button, PlayerGroupAll(), 300, 100);
-    DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 100);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Continue"), PlayerGroupAll());
-    TriggerAddEventDialogControl(TriggerCreate("start_rando_button_pressed"), c_playerAny, submit_button, c_triggerControlEventTypeClick);
+    submit_button = create_create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     DialogSetVisible(dialog_start, PlayerGroupAll(), true);
 
