@@ -1,2 +1,3 @@
 https://sc2mapster.fandom.com/wiki/Tutorials
 https://mapster.talv.space/galaxy/reference#catalog
+https://marketplace.visualstudio.com/items?itemName=talv.sc2galaxy
