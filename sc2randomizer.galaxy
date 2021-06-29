@@ -205,8 +205,7 @@ bool add_change(int self, string entry, string field, fixed oldval, fixed newval
     race_changes[self].changes[len].newval = newval;
     race_changes[self].len += 1;
 
-    //message = "add_change with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5);
-    //TriggerDebugOutput(1, StringToText(message), false );
+    debug("add_change with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
 
     return true;
 }
@@ -238,8 +237,6 @@ void log_changes(int self)
         info( message );
     }
 
-    //UIDisplayMessage( PlayerGroupAll(), c_messageAreaChat, StringToText(message) );
-    //UIShowTextCrawl( PlayerGroupAll(), StringToText(race_changes[self].name + " Changes: "), StringToText(message), 6, SoundLink("Silent", -1), SoundLink("Silent", -1));
     // https://mapster.talv.space/galaxy/reference/dialog-create
     // https://mapster.talv.space/galaxy/reference#dialog-dialog-items
 }
@@ -447,23 +444,22 @@ void modify_behavior_resource(string name, fixed amount_percent, fixed amount, f
     // Catalog field 'HarvestTime' could not be written (Core: access denied to required object or service)
     // Catalog field 'Capacity' could not be written (Core: access denied to required object or service)
     // Catalog field 'Contents' could not be written (Core: access denied to required object or service)
-    return;
 
-    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestAmount", 1);
-    val = val * amount / 100.0;
-    set_field_fixed(c_gameCatalogBehavior, name, "HarvestAmount", val );
+    //val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestAmount", 1);
+    //val = val * amount / 100.0;
+    //set_field_fixed(c_gameCatalogBehavior, name, "HarvestAmount", val );
 
-    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestTime", 1);
-    val = val * time / 100.0;
-    set_field_fixed(c_gameCatalogBehavior, name, "HarvestTime", val );
+    //val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "HarvestTime", 1);
+    //val = val * time / 100.0;
+    //set_field_fixed(c_gameCatalogBehavior, name, "HarvestTime", val );
 
-    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Capacity", 1);
-    val = val * amount_percent / 100.0;
-    set_field_string(c_gameCatalogBehavior, name, "Capacity", FixedToString(val,0) );
+    //val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Capacity", 1);
+    //val = val * amount_percent / 100.0;
+    //set_field_string(c_gameCatalogBehavior, name, "Capacity", FixedToString(val,0) );
 
-    val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Contents", 1);
-    val = val * amount_percent / 100.0;
-    set_field_string(c_gameCatalogBehavior, name, "Contents", FixedToString(val,0) );
+    //val = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogBehavior, name, "Contents", 1);
+    //val = val * amount_percent / 100.0;
+    //set_field_string(c_gameCatalogBehavior, name, "Contents", FixedToString(val,0) );
 }
 
 
@@ -471,7 +467,6 @@ void randomize_economy() {
     fixed amount_percent;
     fixed harvestamount_percent;
     fixed harvesttime_percent;
-    //fixed delay_percent;
 
     // CBehaviorResource minerals
     amount_percent = randomize(100);
@@ -485,6 +480,7 @@ void randomize_economy() {
     modify_behavior_resource("MineralFieldMineralsNoRemove", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("MineralFieldMineralsOpaque", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("MineralFieldMineralsOpaque900", amount_percent, harvestamount_percent, harvesttime_percent);
+    // TODO: fix these
     //add_change(no_race, "Minerals Harvest", "Amount", 5, 5.0*harvestamount_percent/100);
     //add_change(no_race, "Minerals Harvest", "Time", 2.786, 2.786*harvesttime_percent/100);
 
@@ -524,6 +520,7 @@ void randomize_economy() {
     modify_behavior_resource("RawRichVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("RawTerrazineGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("RawVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
+    // TODO: fix these
     //add_change(no_race, "Gas Harvest", "Amount", 4, 4.0*harvestamount_percent/100);
     //add_change(no_race, "Gas Harvest", "Time", 1.981, 1.981*harvesttime_percent/100);
 
@@ -587,12 +584,12 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
 
         field = randomized_fields[slot].name;
         type = randomized_fields[slot].type;
-        // will need this if I want to use randomize_fields for calling randomize_ability and stuff like that
+        
         if( randomized_fields[slot].is_array ) {
             len = CatalogFieldValueCount(cat, entry, prefix+field, 1);
             field_type = CatalogFieldType(scope, prefix+field);
             for( k=0; k<len; k+=1 ) {
-                // need to pick random slot actually
+                // TODO: need to pick random slot actually
                 if( type != type_struct ) {
                     val = CatalogFieldValueGet(cat, entry, prefix+field+"["+IntToString(k)+"]", 1);
                     if( val == "" ) {
@@ -706,10 +703,6 @@ int randomize_upgrade(string entry, int race_id, int num_fields) {
 int randomize_ability(string entry, int race_id, int num_fields) {
     int cat = c_gameCatalogAbil;
     string scope;
-    string type;
-    int len;
-    int i;
-    string val;
 
     if( entry == "" ) {
         return 0;
@@ -780,12 +773,6 @@ int randomize_ability(string entry, int race_id, int num_fields) {
     // AttackRedirect is a CAbilRedirectTarget with InfoArray 
     // Warpable is a CAbilWarpable with InfoArray 
     // Mergeable is a CAbilMergeable with InfoArray 
-
-    //type = CatalogFieldType(scope, "Cost");
-    //if( note_add(scope) ) {
-    //    note_add(entry+" is a "+scope+" with Cost "+type);
-    //}
-    //return 0;
 }
 
 
@@ -913,7 +900,7 @@ void do_rando() {
     randomize_economy();
     randomize_units(changes_per_race);
 
-    // now shuffle the race_changes arrays, and then divide them up into factions... first 20 items go to faction A, next 20 items go to faction B...
+    // TODO: now shuffle the race_changes arrays, and then divide them up into factions... first 20 items go to faction A, next 20 items go to faction B...
         // but this prevents different factions from having the same stat randomized differently...
         // maybe just split up the arrays into 10 different arrays for a maximum of 10 factions per race
         // maybe in add_change it'll randomly pick which faction to add to
@@ -974,7 +961,7 @@ int create_dialog_show_changes() {
     dialog_changes = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(dialog_changes, StringToText("SC2Rando!") );
     DialogSetFullscreen(dialog_changes, true);
-    
+
     // TODO: how to get screen size? these seem to return 500, 500 even though I set the dialog to fullscreen
     width = DialogGetWidth(dialog_changes);
     height = DialogGetHeight(dialog_changes);
@@ -983,11 +970,10 @@ int create_dialog_show_changes() {
 
     list = DialogControlCreate(dialog_changes, c_triggerControlTypeListBox);
 
-    //DialogControlSetFullDialog(list, PlayerGroupAll(), true);
     DialogControlSetSize(list, PlayerGroupAll(), 1280, 720);
     DialogControlSetPosition(list, PlayerGroupAll(), c_anchorTop, 0, 100);
 
-    // zerg buildings count the cost of the drone...
+    // TODO: zerg buildings count the cost of the drone...
     for( race=0; race<4; race+=1 ) {
         for( i=0; i<race_changes[race].len; i+=1 ) {
             s = race_changes[race].changes[i].entry+" "+race_changes[race].changes[i].field
@@ -1055,8 +1041,6 @@ int create_dialog_start() {
     DialogControlSetPosition(seed_editbox, PlayerGroupAll(), c_anchorCenter, 150, -300);
     libNtve_gf_SetDialogItemTooltip(seed_editbox, StringToText("The seed used for randomization"), PlayerGroupAll());
     libNtve_gf_SetDialogItemEditorValue(seed_editbox, IntToString(seed), PlayerGroupAll());
-
-    //seed = StringToInt( libNtve_gf_DialogItemEditValue(seed_editbox, 1) );
 
     DialogControlSetPositionRelative(seed_label, PlayerGroupAll(), c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
 
@@ -1184,24 +1168,24 @@ void main () {
     AddRandomizedField("SCost", type_int, ".Vital[Shields]");
     AddRandomizedField("SCost", type_int, ".Vital[Energy]");
 
-    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    AddRandomizedField("SAbilBuildInfo", type_int, ".Time");// TODO: we need the .Unit for the friendly name
     CopyRandomizedFields("SCost", "SAbilBuildInfo");
 
-    AddRandomizedField("SAbilResearchInfo", type_int, ".Time");// we need the .Upgrade for the friendly name
+    AddRandomizedField("SAbilResearchInfo", type_int, ".Time");// TODO: we need the .Upgrade for the friendly name
     AddRandomizedField("SAbilResearchInfo", type_upgrade, ".Upgrade");
     CopyRandomizedFields("SCost", "SAbilResearchInfo");
 
-    AddRandomizedField("SAbilTrainInfo", type_int, ".Time");// we need the .Unit[0] or .Effect for the friendly name
+    AddRandomizedField("SAbilTrainInfo", type_int, ".Time");// TODO: we need the .Unit[0] or .Effect for the friendly name
     AddRandomizedField("SAbilTrainInfo", type_effect, ".Effect");
-    CopyRandomizedFields("SCost", "SAbilTrainInfo");// idk if this is needed
+    CopyRandomizedFields("SCost", "SAbilTrainInfo");// TODO: idk if this is needed
 
     AddRandomizedField("SUnitAbilData", type_ability, ".Link");
     AddRandomizedField("SUnitWeaponData", type_weapon, ".Link");
 
-    AddRandomizedField("SAbilArmMagazineInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    AddRandomizedField("SAbilArmMagazineInfo", type_int, ".Time");// TODO: we need the .Unit for the friendly name
     CopyRandomizedFields("SCost", "SAbilArmMagazineInfo");
 
-    AddRandomizedField("SAbilWarpTrainInfo", type_int, ".Time");// we need the .Unit for the friendly name
+    AddRandomizedField("SAbilWarpTrainInfo", type_int, ".Time");// TODO: we need the .Unit for the friendly name
     CopyRandomizedFields("SCost", "SAbilWarpTrainInfo");
 
     AddRandomizedField("SEffectEnumArea", type_effect, ".Effect");
