@@ -7,14 +7,21 @@ include "TriggerLibs/NativeLib"
 fixed min_percent;
 fixed max_percent;
 int seed;
+const int max_factions = 10;
 int num_factions;
 int num_bans;
 int changes_per_race;
 int changes_per_unit;
 
+bool[max_factions * 16] players_bans;
+int[16] players_picks;
+
+const int default_player = 1;
 int dialog_start;
 int seed_editbox;
-int dialog_changes;
+int dialog_bans;
+int bans_changes_list;
+int dialog_wait;
 
 struct Change {
     int cat;
@@ -34,7 +41,7 @@ const int no_race=0;
 const int terran=1;
 const int protoss=2;
 const int zerg=3;
-RaceChanges[40] race_changes;
+RaceChanges[max_factions *4] race_changes;
 
 struct RandomizedField {
     //int cat;
@@ -57,8 +64,6 @@ const int type_upgrade = 7;
 const int type_behavior = 8;
 
 const int type_struct = 100;
-
-const int default_player = 1;
 
 void debug(string message)
 {
@@ -1029,19 +1034,24 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
 
     player = EventPlayer();
 
+    // TODO: show waiting in the current dialog, so the player can still read through the changes
+
+    faction = players_picks[player];// TODO: this will probably include the race number already
+
     if( PlayerRace(player) == "Terr" ) {
-        apply_changes(faction*4 + terran, player);
+        faction = faction*4 + terran;
     } else if( PlayerRace(player) == "Prot" ) {
-        apply_changes(faction*4 + protoss, player);
+        faction = faction*4 + protoss;
     } else if( PlayerRace(player) == "Zerg" ) {
-        apply_changes(faction*4 + zerg, player);
+        faction = faction*4 + zerg;
     } else {
         error("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
     }
+    apply_changes(faction, player);
     info("EventPlayer() == " + IntToString(player) );
 
-    DialogSetVisible(dialog_changes, PlayerGroupAll(), false);
-    DialogDestroy(dialog_changes);
+    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
+    DialogDestroy(dialog_bans);
 
     libNtve_gf_HideGameUI( true, PlayerGroupAll() );
     for( i=0; i<16; i+=1 ) {
@@ -1052,56 +1062,118 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
 }
 
 
-int create_dialog_show_changes() {
-    int width;
-    int height;
+int create_changes_list(int dialog) {
     int list;
-    int i;
+    list = DialogControlCreate(dialog, c_triggerControlTypeListBox);
+    DialogControlSetSize(list, PlayerGroupAll(), 1200, 800);
+    DialogControlSetPosition(list, PlayerGroupAll(), c_anchorCenter, 0, 0);
+
+    return list;
+}
+
+
+int create_factions_dropdown(int dialog, int list, string callback) {
+    int faction;
     int race;
-    string s;
+    int dropdown;
 
-    dialog_changes = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(dialog_changes, StringToText("SC2Rando!") );
-    DialogSetFullscreen(dialog_changes, true);
+    dropdown = DialogControlCreate(dialog, c_triggerControlTypePulldown);
+    DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
+    DialogControlSetPositionRelative( dropdown, PlayerGroupAll(), c_anchorBottom, list, c_anchorTop, 0, 0 );
 
-    // TODO: how to get screen size? these seem to return 500, 500 even though I set the dialog to fullscreen
-    width = DialogGetWidth(dialog_changes);
-    height = DialogGetHeight(dialog_changes);
-
-    create_create_continue_button(dialog_changes, "Continue", "start_game_button_pressed");
-
-    list = DialogControlCreate(dialog_changes, c_triggerControlTypeListBox);
-
-    DialogControlSetSize(list, PlayerGroupAll(), 1400, 800);
-    DialogControlSetPosition(list, PlayerGroupAll(), c_anchorTop, 0, 100);
-
-    // TODO: zerg buildings count the cost of the drone...
-    for( race=0; race<4; race+=1 ) {
-        for( i=0; i<race_changes[race].len; i+=1 ) {
-            s = race_changes[race].changes[i].entry;
-            if( race_changes[race].changes[i].friendly_name != "" ) {
-                s += " " + race_changes[race].changes[i].friendly_name;
-            }
-            s += " " + race_changes[race].changes[i].field;
-            s += " changed from ";
-
-            if( IntToFixed(FixedToInt(race_changes[race].changes[i].oldval)) == race_changes[race].changes[i].oldval
-                && IntToFixed(FixedToInt(race_changes[race].changes[i].newval)) == race_changes[race].changes[i].newval ) {
-                s += FixedToString(race_changes[race].changes[i].oldval,0)
-                    + " to "+FixedToString(race_changes[race].changes[i].newval,0);
-            }
-            else {
-                s += FixedToString(race_changes[race].changes[i].oldval,5)
-                    + " to "+FixedToString(race_changes[race].changes[i].newval,5);
-            }
-
-            DialogControlAddItem(list, PlayerGroupAll(), StringToText(s) );
+    for( race=1; race<4; race+=1 ) {
+        for( faction=0; faction<num_factions; faction+=1 ) {
+            DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText(race_changes[faction*4 + race].name+" Faction "+IntToString(faction+1) ) );
         }
     }
 
-    DialogSetVisible(dialog_changes, PlayerGroupAll(), true);
+    TriggerAddEventDialogControl( TriggerCreate(callback), c_playerAny, dropdown, c_triggerControlEventTypeSelectionChanged );
 
-    return dialog_changes;
+    return dropdown;
+}
+
+
+void show_changes(int list, playergroup players, int race) {
+    int i;
+    string s;
+
+    DialogControlRemoveAllItems(list, players);
+
+    // TODO: zerg buildings count the cost of the drone...
+
+    for( i=0; i<race_changes[race].len; i+=1 ) {
+        s = race_changes[race].changes[i].entry;
+        if( race_changes[race].changes[i].friendly_name != "" ) {
+            s += " " + race_changes[race].changes[i].friendly_name;
+        }
+        s += " " + race_changes[race].changes[i].field;
+        s += " changed from ";
+
+        if( IntToFixed(FixedToInt(race_changes[race].changes[i].oldval)) == race_changes[race].changes[i].oldval
+            && IntToFixed(FixedToInt(race_changes[race].changes[i].newval)) == race_changes[race].changes[i].newval ) {
+            s += FixedToString(race_changes[race].changes[i].oldval,0)
+                + " to "+FixedToString(race_changes[race].changes[i].newval,0);
+        }
+        else {
+            s += FixedToString(race_changes[race].changes[i].oldval,5)
+                + " to "+FixedToString(race_changes[race].changes[i].newval,5);
+        }
+
+        DialogControlAddItem(list, players, StringToText(s) );
+    }
+}
+
+
+bool dropdown_factions_bans(bool testConds, bool runActions) {
+    int selected;
+    int faction;
+    int race;
+
+    selected = DialogControlGetSelectedItem( EventDialogControl(), EventPlayer() );
+    selected -= 1;
+    faction = selected % num_factions;
+    race = selected / num_factions + 1;
+    selected = faction*4 + race;
+    info("dropdown_factions_bans, faction: "+IntToString(faction)+", race: "+IntToString(race));
+    show_changes(bans_changes_list, PlayerGroupSingle(EventPlayer()), selected );
+    return true;
+}
+
+
+int create_dialog_bans() {
+    int width;
+    int height;
+    int dropdown;
+    //int race;
+    playergroup players;
+
+    players = PlayerGroupAll();
+
+    // TODO: bans remaining 2 / 3
+    // ban/unban button
+    // timer
+    // picks screen
+    // create wait screens in advance for every player, show them 1 player at a time
+
+    dialog_bans = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog_bans, StringToText("SC2Rando!") );
+    DialogSetFullscreen(dialog_bans, true);
+
+    // TODO: how to get screen size? these seem to return 500, 500 even though I set the dialog to fullscreen
+    width = DialogGetWidth(dialog_bans);
+    height = DialogGetHeight(dialog_bans);
+
+    create_create_continue_button(dialog_bans, "Continue", "start_game_button_pressed");
+
+    bans_changes_list = create_changes_list(dialog_bans);
+
+    dropdown = create_factions_dropdown(dialog_bans, bans_changes_list, "dropdown_factions_bans");
+
+    DialogControlAddItem(bans_changes_list, players, StringToText("Select a race/faction to see the changes") );
+
+    DialogSetVisible(dialog_bans, players, true);
+
+    return dialog_bans;
 }
 
 
@@ -1117,6 +1189,9 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
 
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
     DialogDestroy(dialog_start);
+
+    DialogSetVisible(dialog_wait, PlayerGroupAll(), false);
+    DialogDestroy(dialog_wait);
 
     loading_screen = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(loading_screen, StringToText("Randomizing...") );
@@ -1135,12 +1210,68 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     DialogSetVisible(loading_screen, PlayerGroupAll(), false);
     DialogDestroy(loading_screen);
 
-    create_dialog_show_changes();
+    create_dialog_bans();
     return true;
 }
 
 
-int create_dialog_start() {
+int create_dialog_settings() {
+    int seed_label;
+    playergroup players;
+
+    players = PlayerGroupSingle(default_player);
+
+    // TODO: depending how many players are in the game, might only be able to do 1 ban per player per race, or might not be able to do bans at all
+    
+    dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog_start, StringToText("SC2Rando!") );
+    DialogSetFullscreen(dialog_start, true);
+
+    seed_label = DialogControlCreate(dialog_start, c_triggerControlTypeLabel);
+    DialogControlSetSize(seed_label, players, 100, 50);
+    DialogControlSetPosition(seed_label, players, c_anchorCenter, -300, -300);
+    libNtve_gf_SetDialogItemText(seed_label, StringToText("Seed: "), players );
+    libNtve_gf_SetDialogItemTooltip(seed_label, StringToText("The seed used for randomization"), players);
+
+    seed_editbox = DialogControlCreate(dialog_start, c_triggerControlTypeEditBox);
+    DialogControlSetSize(seed_editbox, players, 300, 50);
+    DialogControlSetPosition(seed_editbox, players, c_anchorCenter, 150, -300);
+    libNtve_gf_SetDialogItemTooltip(seed_editbox, StringToText("The seed used for randomization"), players);
+    libNtve_gf_SetDialogItemEditorValue(seed_editbox, IntToString(seed), players);
+
+    DialogControlSetPositionRelative(seed_label, players, c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
+
+    create_create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
+
+    DialogSetVisible(dialog_start, players, true);
+
+    return dialog_start;
+}
+
+
+int create_dialog_wait_settings() {
+    playergroup players;
+    int label;
+    
+    players = PlayerGroupCopy(PlayerGroupAll());// not sure if it needs to be copied
+    PlayerGroupRemove(players, default_player);
+
+    dialog_wait = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog_wait, StringToText("SC2Rando!") );
+    DialogSetFullscreen(dialog_wait, true);
+
+    label = DialogControlCreate(dialog_wait, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, players, 100, 50);
+    DialogControlSetPosition(label, players, c_anchorCenter, 0, 0);
+    libNtve_gf_SetDialogItemText(label, StringToText("Waiting for host to choose settings..."), players );
+    libNtve_gf_SetDialogItemTooltip(label, StringToText("Waiting for host to choose settings..."), players);
+
+    DialogSetVisible(dialog_wait, players, true);
+    return dialog_wait;
+}
+
+
+void create_dialog_start() {
     int list;
     int i;
     int race;
@@ -1156,31 +1287,9 @@ int create_dialog_start() {
 
     GameSetGlobalTimeScale(0);
     libNtve_gf_HideGameUI( false, PlayerGroupAll() );
-    dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(dialog_start, StringToText("SC2Rando!") );
-    DialogSetFullscreen(dialog_start, true);
-    width = DialogGetWidth(dialog_start);
-    height = DialogGetHeight(dialog_start);
 
-    seed_label = DialogControlCreate(dialog_start, c_triggerControlTypeLabel);
-    DialogControlSetSize(seed_label, PlayerGroupAll(), 100, 50);
-    DialogControlSetPosition(seed_label, PlayerGroupAll(), c_anchorCenter, -300, -300);
-    libNtve_gf_SetDialogItemText(seed_label, StringToText("Seed: "), PlayerGroupAll() );
-    libNtve_gf_SetDialogItemTooltip(seed_label, StringToText("The seed used for randomization"), PlayerGroupAll());
-
-    seed_editbox = DialogControlCreate(dialog_start, c_triggerControlTypeEditBox);
-    DialogControlSetSize(seed_editbox, PlayerGroupAll(), 300, 50);
-    DialogControlSetPosition(seed_editbox, PlayerGroupAll(), c_anchorCenter, 150, -300);
-    libNtve_gf_SetDialogItemTooltip(seed_editbox, StringToText("The seed used for randomization"), PlayerGroupAll());
-    libNtve_gf_SetDialogItemEditorValue(seed_editbox, IntToString(seed), PlayerGroupAll());
-
-    DialogControlSetPositionRelative(seed_label, PlayerGroupAll(), c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
-
-    submit_button = create_create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
-
-    DialogSetVisible(dialog_start, PlayerGroupAll(), true);
-
-    return dialog_start;
+    create_dialog_settings();
+    create_dialog_wait_settings();
 }
 
 
