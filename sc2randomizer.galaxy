@@ -15,13 +15,18 @@ int changes_per_unit;
 
 bool[max_factions * 16] players_bans;
 int[16] players_picks;
+bool[16] players_waiting;
 
+const string dialog_title = "StarCraft 2 Randomizer";
 const int default_player = 1;
 int dialog_start;
 int seed_editbox;
 int dialog_bans;
-int bans_changes_list;
+int changes_list;
 int dialog_wait;
+int dialog_pick_faction;
+int ban_button;
+int pick_button;
 
 struct Change {
     int cat;
@@ -697,7 +702,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
             } else {
                 val = "";
             }
-            if( StringFind(friendly_name, ".", true) == 1 ) {
+            if( friendly_name != "" && StringFind(friendly_name, ".", true) == 1 ) {
                 friendly_name = CatalogFieldValueGet(cat, entry, prefix+friendly_name, default_player);
                 if( friendly_name == "" ) {
                     debug(scope+" "+entry+" failed CatalogFieldValueGet friendly_name "+prefix+friendly_name);
@@ -1018,47 +1023,12 @@ int create_create_continue_button(int dialog, string button_text, string callbac
 
     submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
     libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
-    DialogControlSetSize(submit_button, PlayerGroupAll(), 300, 60);
+    DialogControlSetSize(submit_button, PlayerGroupAll(), 400, 60);
     DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 40);
     libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(button_text), PlayerGroupAll());
     TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
 
     return submit_button;
-}
-
-
-bool start_game_button_pressed(bool testConds, bool runActions) {
-    int i;
-    int faction;
-    int player;
-
-    player = EventPlayer();
-
-    // TODO: show waiting in the current dialog, so the player can still read through the changes
-
-    faction = players_picks[player];// TODO: this will probably include the race number already
-
-    if( PlayerRace(player) == "Terr" ) {
-        faction = faction*4 + terran;
-    } else if( PlayerRace(player) == "Prot" ) {
-        faction = faction*4 + protoss;
-    } else if( PlayerRace(player) == "Zerg" ) {
-        faction = faction*4 + zerg;
-    } else {
-        error("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
-    }
-    apply_changes(faction, player);
-    info("EventPlayer() == " + IntToString(player) );
-
-    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
-    DialogDestroy(dialog_bans);
-
-    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
-    for( i=0; i<16; i+=1 ) {
-        CameraLockInput(i, false);
-    }
-    GameSetGlobalTimeScale(4);
-    return true;
 }
 
 
@@ -1072,6 +1042,20 @@ int create_changes_list(int dialog) {
 }
 
 
+int create_ban_pick_button(int dialog, int list, string button_text, string callback) {
+    int button;
+
+    button = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    libNtve_gf_SetDialogItemText(button, StringToText(button_text), PlayerGroupAll() );
+    DialogControlSetSize(button, PlayerGroupAll(), 200, 100);
+    DialogControlSetPositionRelative( button, PlayerGroupAll(), c_anchorRight, list, c_anchorLeft, -50, 0 );
+    libNtve_gf_SetDialogItemTooltip(button, StringToText(button_text), PlayerGroupAll());
+    TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, button, c_triggerControlEventTypeClick);
+
+    return button;
+}
+
+
 int create_factions_dropdown(int dialog, int list, string callback) {
     int faction;
     int race;
@@ -1081,6 +1065,7 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
     DialogControlSetPositionRelative( dropdown, PlayerGroupAll(), c_anchorBottom, list, c_anchorTop, 0, 0 );
 
+    DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText("General Changes") );
     for( race=1; race<4; race+=1 ) {
         for( faction=0; faction<num_factions; faction+=1 ) {
             DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText(race_changes[faction*4 + race].name+" Faction "+IntToString(faction+1) ) );
@@ -1124,18 +1109,177 @@ void show_changes(int list, playergroup players, int race) {
 }
 
 
-bool dropdown_factions_bans(bool testConds, bool runActions) {
+bool ban_button_click(bool testConds, bool runActions) {
+    return true;
+}
+
+
+bool pick_button_click(bool testConds, bool runActions) {
+    return true;
+}
+
+
+void pick_faction_dropdown(int player, int selected, int race, int faction) {
+}
+
+
+void ban_faction_dropdown(int player, int selected, int race, int faction) {
+}
+
+
+bool dropdown_factions(bool testConds, bool runActions) {
     int selected;
     int faction;
     int race;
+    int dropdown;
+    int dialog;
+    int player;
 
-    selected = DialogControlGetSelectedItem( EventDialogControl(), EventPlayer() );
-    selected -= 1;
-    faction = selected % num_factions;
-    race = selected / num_factions + 1;
-    selected = faction*4 + race;
-    info("dropdown_factions_bans, faction: "+IntToString(faction)+", race: "+IntToString(race));
-    show_changes(bans_changes_list, PlayerGroupSingle(EventPlayer()), selected );
+    dropdown = EventDialogControl();
+    dialog = DialogControlGetDialog(dropdown);
+    player = EventPlayer();
+    selected = DialogControlGetSelectedItem( dropdown, player );
+    if( selected == 1 ) {
+        selected = 0;// general changes
+    }
+    else {
+        selected -= 1;
+        faction = selected % num_factions;
+        race = selected / num_factions + 1;
+        selected = faction*4 + race;
+    }
+    info("dropdown_factions, faction: "+IntToString(faction)+", race: "+IntToString(race));
+    show_changes(changes_list, PlayerGroupSingle(EventPlayer()), selected );
+
+    if( dialog == dialog_pick_faction ) {
+        pick_faction_dropdown(player, selected, race, faction);
+    }
+    else if( dialog == dialog_bans ) {
+        ban_faction_dropdown(player, selected, race, faction);
+    }
+    return true;
+}
+
+
+bool is_waiting(int player, int button) {
+    int i;
+    int num_players_waiting;
+    playergroup players;
+
+    players_waiting[player] = true;
+
+    players = PlayerGroupActive();
+
+    DialogControlSetEnabled(button, PlayerGroupSingle(player), false);
+    libNtve_gf_SetDialogItemText(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
+    libNtve_gf_SetDialogItemTooltip(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
+
+    for( i=0; i<16; i+=1 ) {
+        if( PlayerGroupHasPlayer(players, i) && players_waiting[i] ) {
+            num_players_waiting += 1;
+        }
+    }
+
+    if( num_players_waiting < PlayerGroupCount(players) ) {
+        return true;
+    }
+
+    for( i=0; i<16; i+=1 ) {
+        players_waiting[i] = false;
+    }
+
+    return false;
+}
+
+
+bool start_game_button_pressed(bool testConds, bool runActions) {
+    int i;
+    int faction;
+    int player;
+    int dialog;
+    int button;
+
+    player = EventPlayer();
+    button = EventDialogControl();
+    dialog = DialogControlGetDialog(button);
+    faction = players_picks[player];// TODO: this will probably include the race number already
+
+    if( PlayerRace(player) == "Terr" ) {
+        faction = faction*4 + terran;
+    } else if( PlayerRace(player) == "Prot" ) {
+        faction = faction*4 + protoss;
+    } else if( PlayerRace(player) == "Zerg" ) {
+        faction = faction*4 + zerg;
+    } else {
+        error("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
+    }
+    apply_changes(faction, player);
+    info("EventPlayer() == " + IntToString(player) );
+
+    DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+
+    if( is_waiting(player, button) ) {
+        return true;
+    }
+
+    DialogSetVisible(dialog, PlayerGroupAll(), false);
+    DialogDestroy(dialog);
+
+    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
+    for( i=0; i<16; i+=1 ) {
+        CameraLockInput(i, false);
+    }
+    GameSetGlobalTimeScale(4);
+    return true;
+}
+
+
+int create_dialog_pick_faction() {
+    playergroup players;
+    int dropdown;
+    int button;
+
+    players = PlayerGroupAll();
+
+    dialog_pick_faction = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(dialog_pick_faction, StringToText(dialog_title) );
+    DialogSetFullscreen(dialog_pick_faction, true);
+
+    create_create_continue_button(dialog_pick_faction, "Start Game", "start_game_button_pressed");
+
+    changes_list = create_changes_list(dialog_pick_faction);
+
+    dropdown = create_factions_dropdown(dialog_pick_faction, changes_list, "dropdown_factions");
+
+    pick_button = create_ban_pick_button(dialog_pick_faction, changes_list, "Pick", "pick_button_click");
+
+    DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
+    DialogControlAddItem(changes_list, players, StringToText("Click on the Pick button to select that faction to play as") );
+
+    DialogSetVisible(dialog_pick_faction, players, true);
+
+    return dialog_pick_faction;
+}
+
+
+bool bans_done_button_pressed(bool testConds, bool runActions) {
+    int i;
+    int player;
+    int num_players_waiting;
+    playergroup players;
+    int button;
+
+    DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), false);
+
+    if( is_waiting(EventPlayer(), EventDialogControl()) ) {
+        return true;
+    }
+
+    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
+    DialogDestroy(dialog_bans);
+
+    create_dialog_pick_faction();
+
     return true;
 }
 
@@ -1146,6 +1290,7 @@ int create_dialog_bans() {
     int dropdown;
     //int race;
     playergroup players;
+    int button;
 
     players = PlayerGroupAll();
 
@@ -1156,20 +1301,23 @@ int create_dialog_bans() {
     // create wait screens in advance for every player, show them 1 player at a time
 
     dialog_bans = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(dialog_bans, StringToText("SC2Rando!") );
+    DialogSetTitle(dialog_bans, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_bans, true);
 
     // TODO: how to get screen size? these seem to return 500, 500 even though I set the dialog to fullscreen
     width = DialogGetWidth(dialog_bans);
     height = DialogGetHeight(dialog_bans);
 
-    create_create_continue_button(dialog_bans, "Continue", "start_game_button_pressed");
+    changes_list = create_changes_list(dialog_bans);
 
-    bans_changes_list = create_changes_list(dialog_bans);
+    dropdown = create_factions_dropdown(dialog_bans, changes_list, "dropdown_factions");
 
-    dropdown = create_factions_dropdown(dialog_bans, bans_changes_list, "dropdown_factions_bans");
+    ban_button = create_ban_pick_button(dialog_bans, changes_list, "Ban", "ban_button_click");
 
-    DialogControlAddItem(bans_changes_list, players, StringToText("Select a race/faction to see the changes") );
+    DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
+    DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
+
+    create_create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
     DialogSetVisible(dialog_bans, players, true);
 
@@ -1194,14 +1342,14 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     DialogDestroy(dialog_wait);
 
     loading_screen = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(loading_screen, StringToText("Randomizing...") );
+    DialogSetTitle(loading_screen, StringToText(dialog_title) );
     DialogSetFullscreen(loading_screen, true);
 
     loading_text = DialogControlCreate(loading_screen, c_triggerControlTypeLabel);
     DialogControlSetSize(loading_text, PlayerGroupAll(), 300, 300);
     DialogControlSetPosition(loading_text, PlayerGroupAll(), c_anchorCenter, 0, 0);
-    libNtve_gf_SetDialogItemText(loading_text, StringToText("Please wait while randomizing..."), PlayerGroupAll() );
-    libNtve_gf_SetDialogItemTooltip(loading_text, StringToText("Please wait while randomizing..."), PlayerGroupAll());
+    libNtve_gf_SetDialogItemText( loading_text, StringToText("Please wait while randomizing, this might take a few seconds..."), PlayerGroupAll() );
+    libNtve_gf_SetDialogItemTooltip( loading_text, StringToText("Please wait while randomizing, this might take a few seconds..."), PlayerGroupAll() );
 
     DialogSetVisible(loading_screen, PlayerGroupAll(), true);
 
@@ -1218,13 +1366,29 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
 int create_dialog_settings() {
     int seed_label;
     playergroup players;
+    int num_players;
 
     players = PlayerGroupSingle(default_player);
 
+    num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: depending how many players are in the game, might only be able to do 1 ban per player per race, or might not be able to do bans at all
-    
+    // set max bans and min factions here
+    if( num_players > 4 ) {
+        num_bans = 0;
+        num_factions = 3;
+    }
+    if( num_players > 2 ) {
+        num_bans = 1;
+        num_factions = num_players+1;
+    }
+    else {
+        // defaults here, not min/max
+        num_factions = 2;
+        num_factions = 5;
+    }
+
     dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(dialog_start, StringToText("SC2Rando!") );
+    DialogSetTitle(dialog_start, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_start, true);
 
     seed_label = DialogControlCreate(dialog_start, c_triggerControlTypeLabel);
@@ -1257,7 +1421,7 @@ int create_dialog_wait_settings() {
     PlayerGroupRemove(players, default_player);
 
     dialog_wait = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
-    DialogSetTitle(dialog_wait, StringToText("SC2Rando!") );
+    DialogSetTitle(dialog_wait, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_wait, true);
 
     label = DialogControlCreate(dialog_wait, c_triggerControlTypeLabel);
