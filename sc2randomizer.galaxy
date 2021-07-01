@@ -1,4 +1,5 @@
 include "TriggerLibs/NativeLib"
+//include "TriggerLibs/MeleeAI"
 
 // https://mapster.talv.space/galaxy/reference#catalog
 // https://sc2mapster.fandom.com/wiki/Tutorials
@@ -7,7 +8,7 @@ include "TriggerLibs/NativeLib"
 fixed min_percent;
 fixed max_percent;
 int seed;
-const int max_factions = 10;
+const int max_factions = 8;
 int num_factions;
 int num_bans;
 int changes_per_race;
@@ -39,7 +40,7 @@ struct Change {
 
 struct RaceChanges {
     string name;
-    Change[256] changes;
+    Change[128] changes;
     int len;
 };
 const int no_race=0;
@@ -72,28 +73,70 @@ const int type_struct = 100;
 
 void debug(string message)
 {
-    //TriggerDebugOutput(1, StringToText(message), false );
+    //text t;
+    //t = StringToText(message);
+    //TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    //t = StringToText("debug: ") + t;
+    //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
 void info(string message)
 {
-    TriggerDebugOutput(1, StringToText(message), false );
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("info: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
 void warning(string message)
 {
-    TriggerDebugOutput(1, StringToText(message), false );
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("warning: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
-void error(string message)
+void err(string message)
 {
-    TriggerDebugOutput(1, StringToText(message), false );
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("error: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
 void fatal(string message)
 {
-    TriggerDebugOutput(1, StringToText(message), false );
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("fatal error: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
+
+
+playergroup GetAdmin()
+{
+    // TODO: search for referees, otherwise use default_player
+    return PlayerGroupSingle(default_player);
+}
+
+
+playergroup GetPlayersOfType(int type)
+{
+    // TODO c_playerTypeUser
+    // https://mapster.talv.space/galaxy/reference/player-type
+    // https://mapster.talv.space/galaxy/reference/preset-player-controller
+    return PlayerGroupSingle(default_player);
+}
+
 
 void AddRandomizedField(string scope, int type, string name)
 {
@@ -107,7 +150,7 @@ void AddRandomizedField(string scope, int type, string name)
             return;
         }
     }
-    error("AddRandomizedField full");
+    err("AddRandomizedField full");
 }
 
 void AddRandomizedFieldFriendlyName(string scope, int type, string name, string friendly_name)
@@ -123,7 +166,7 @@ void AddRandomizedFieldFriendlyName(string scope, int type, string name, string 
             return;
         }
     }
-    error("AddRandomizedFieldFriendlyName full");
+    err("AddRandomizedFieldFriendlyName full");
 }
 
 void AddRandomizedFieldArray(string scope, int type, string name)
@@ -138,7 +181,7 @@ void AddRandomizedFieldArray(string scope, int type, string name)
             return;
         }
     }
-    error("AddRandomizedFieldArray full");
+    err("AddRandomizedFieldArray full");
 }
 
 void CopyRandomizedFields(string from, string scope, string friendly_name)
@@ -231,7 +274,7 @@ bool add_change(int self, int cat, string entry, string field, string friendly_n
 
     len = race_changes[self].len;
     if( len >= 256 ) {
-        error("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
+        err("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
         return false;
     }
     race_changes[self].changes[len].cat = cat;
@@ -386,7 +429,7 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
         return false;
     }
     if( ! set_field_fixed(cat, entry, field, value ) ) {
-        error(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
+        err(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
         return false;
     }
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, default_player);
@@ -394,7 +437,7 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
     if( getval == setval ) { return false; }
 
     if( ! set_field_fixed(cat, entry, field, getval ) ) {
-        error(entry+" "+field+" was "+FixedToString(value,5)+", failed to change back to "+FixedToString(getval,5));
+        err(entry+" "+field+" was "+FixedToString(value,5)+", failed to change back to "+FixedToString(getval,5));
         return false;
     }
 
@@ -403,13 +446,13 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
 
     //if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
     //    if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
-    //        error(entry+" LifeStart failed to set to "+FixedToString(value,5));
+    //        err(entry+" LifeStart failed to set to "+FixedToString(value,5));
     //        return false;
     //    }
     //}
     //if( field == "ShieldsMax" ) {
     //    if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
-    //        error(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
+    //        err(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
     //        return false;
     //    }
     //}
@@ -437,7 +480,7 @@ bool rando_field_int(int cat, string entry, string field, string friendly_name, 
         return false;
     }
     if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
-        error(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
+        err(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
         return false;
     }
     setval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
@@ -445,7 +488,7 @@ bool rando_field_int(int cat, string entry, string field, string friendly_name, 
     if( getval == setval ) { return false; }
 
     if( ! set_field_string(cat, entry, field, IntToString(getval) ) ) {
-        error(entry+" "+field+" was "+IntToString(value)+", failed to change back to "+IntToString(getval));
+        err(entry+" "+field+" was "+IntToString(value)+", failed to change back to "+IntToString(getval));
         return false;
     }
 
@@ -454,13 +497,13 @@ bool rando_field_int(int cat, string entry, string field, string friendly_name, 
 
     //if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
     //    if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
-    //        error(entry+" LifeStart failed to set to "+FixedToString(value,5));
+    //        err(entry+" LifeStart failed to set to "+FixedToString(value,5));
     //        return false;
     //    }
     //}
     //if( field == "ShieldsMax" ) {
     //    if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
-    //        error(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
+    //        err(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
     //        return false;
     //    }
     //}
@@ -630,6 +673,8 @@ void randomize_economy() {
     //    info("Zerg "+CatalogFieldValueGet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i ));
     //    CatalogFieldValueSet(c_gameCatalogRace, "Zerg", "StartingUnitArray[1].Count", i, IntToString(i) );
     //}
+
+    // TODO: randomize max supply, starting workers, maybe worker supply
 }
 
 
@@ -1211,7 +1256,7 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
     } else if( PlayerRace(player) == "Zerg" ) {
         faction = faction*4 + zerg;
     } else {
-        error("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
+        err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
     }
     apply_changes(faction, player);
     info("EventPlayer() == " + IntToString(player) );
@@ -1371,6 +1416,7 @@ int create_dialog_settings() {
     players = PlayerGroupSingle(default_player);
 
     num_players = PlayerGroupCount(PlayerGroupActive());
+    // TODO: timeouts for dialogs
     // TODO: depending how many players are in the game, might only be able to do 1 ban per player per race, or might not be able to do bans at all
     // set max bans and min factions here
     if( num_players > 4 ) {
@@ -1597,7 +1643,6 @@ void main () {
 
     AddRandomizedField("SEffectEnumArea", type_effect, ".Effect");
     AddRandomizedField("SEffectEnumArea", type_fixed, ".Radius");
-
 
     create_dialog_start();
 }
