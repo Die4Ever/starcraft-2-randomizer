@@ -87,7 +87,16 @@ void info(string message)
     t = StringToText(message);
     TriggerDebugOutput(1, t, false );
     //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
-    t = StringToText("info: ") + t;
+    //t = StringToText("info: ") + t;
+    //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void notice(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
     UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
@@ -122,19 +131,20 @@ void fatal(string message)
 }
 
 
-playergroup GetAdmin()
-{
-    // TODO: search for referees, otherwise use default_player
-    return PlayerGroupSingle(default_player);
-}
-
-
 playergroup GetPlayersOfType(int type)
 {
-    // TODO c_playerTypeUser
-    // https://mapster.talv.space/galaxy/reference/player-type
-    // https://mapster.talv.space/galaxy/reference/preset-player-controller
-    return PlayerGroupSingle(default_player);
+    playergroup players;
+    int len;
+    int i;
+    players = PlayerGroupCopy(PlayerGroupActive());
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        if( PlayerType( PlayerGroupPlayer(players, i) ) != type ) {
+            PlayerGroupRemove(players, PlayerGroupPlayer(players, i) );
+        }
+    }
+
+    return players;
 }
 
 
@@ -1063,7 +1073,7 @@ void do_rando() {
 }
 
 
-int create_create_continue_button(int dialog, string button_text, string callback) {
+int create_continue_button(int dialog, string button_text, string callback) {
     int submit_button;
 
     submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
@@ -1206,6 +1216,14 @@ bool dropdown_factions(bool testConds, bool runActions) {
 }
 
 
+void clear_waiting() {
+    int i;
+    for( i=0; i<16; i+=1 ) {
+        players_waiting[i] = false;
+    }
+}
+
+
 bool is_waiting(int player, int button) {
     int i;
     int num_players_waiting;
@@ -1213,7 +1231,7 @@ bool is_waiting(int player, int button) {
 
     players_waiting[player] = true;
 
-    players = PlayerGroupActive();
+    players = GetPlayersOfType(c_playerTypeUser);
 
     DialogControlSetEnabled(button, PlayerGroupSingle(player), false);
     libNtve_gf_SetDialogItemText(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
@@ -1229,11 +1247,58 @@ bool is_waiting(int player, int button) {
         return true;
     }
 
-    for( i=0; i<16; i+=1 ) {
-        players_waiting[i] = false;
-    }
+    clear_waiting();
 
     return false;
+}
+
+
+void apply_changes_player(int player) {
+    int faction;
+
+    faction = players_picks[player];// TODO: this will probably include the race number already
+    // TODO: ensure null picks don't pick a banned faction
+
+    if( PlayerRace(player) == "Terr" ) {
+        faction = faction*4 + terran;
+    } else if( PlayerRace(player) == "Prot" ) {
+        faction = faction*4 + protoss;
+    } else if( PlayerRace(player) == "Zerg" ) {
+        faction = faction*4 + zerg;
+    } else {
+        err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
+    }
+    apply_changes(faction, player);
+    info("EventPlayer() == " + IntToString(player) );
+}
+
+
+void start_game() {
+    int i;
+    int len;
+    playergroup players;
+
+    players = PlayerGroupActive();
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        apply_changes_player( PlayerGroupPlayer(players, i) );
+    }
+
+    DialogSetVisible(dialog_pick_faction, PlayerGroupAll(), false);
+    DialogDestroy(dialog_pick_faction);
+
+    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
+    for( i=0; i<16; i+=1 ) {
+        CameraLockInput(i, false);
+    }
+    GameSetGlobalTimeScale(4);
+}
+
+
+bool start_game_timeout(bool testConds, bool runActions) {
+    clear_waiting();
+    start_game();
+    return true;
 }
 
 
@@ -1247,19 +1312,7 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
     player = EventPlayer();
     button = EventDialogControl();
     dialog = DialogControlGetDialog(button);
-    faction = players_picks[player];// TODO: this will probably include the race number already
-
-    if( PlayerRace(player) == "Terr" ) {
-        faction = faction*4 + terran;
-    } else if( PlayerRace(player) == "Prot" ) {
-        faction = faction*4 + protoss;
-    } else if( PlayerRace(player) == "Zerg" ) {
-        faction = faction*4 + zerg;
-    } else {
-        err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
-    }
-    apply_changes(faction, player);
-    info("EventPlayer() == " + IntToString(player) );
+    apply_changes_player(player);
 
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
 
@@ -1267,14 +1320,7 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
         return true;
     }
 
-    DialogSetVisible(dialog, PlayerGroupAll(), false);
-    DialogDestroy(dialog);
-
-    libNtve_gf_HideGameUI( true, PlayerGroupAll() );
-    for( i=0; i<16; i+=1 ) {
-        CameraLockInput(i, false);
-    }
-    GameSetGlobalTimeScale(4);
+    start_game();
     return true;
 }
 
@@ -1290,7 +1336,9 @@ int create_dialog_pick_faction() {
     DialogSetTitle(dialog_pick_faction, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_pick_faction, true);
 
-    create_create_continue_button(dialog_pick_faction, "Start Game", "start_game_button_pressed");
+    create_continue_button(dialog_pick_faction, "Start Game", "start_game_button_pressed");
+
+    TriggerAddEventTimeElapsed( TriggerCreate("start_game_timeout"), 30, c_timeReal );
 
     changes_list = create_changes_list(dialog_pick_faction);
 
@@ -1307,6 +1355,17 @@ int create_dialog_pick_faction() {
 }
 
 
+bool start_pick_factions(bool testConds, bool runActions) {
+    clear_waiting();
+    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
+    DialogDestroy(dialog_bans);
+
+    create_dialog_pick_faction();
+
+    return true;
+}
+
+
 bool bans_done_button_pressed(bool testConds, bool runActions) {
     int i;
     int player;
@@ -1320,10 +1379,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
         return true;
     }
 
-    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
-    DialogDestroy(dialog_bans);
-
-    create_dialog_pick_faction();
+    start_pick_factions(false, false);
 
     return true;
 }
@@ -1362,7 +1418,9 @@ int create_dialog_bans() {
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
 
-    create_create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
+    create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
+
+    TriggerAddEventTimeElapsed( TriggerCreate("start_pick_factions"), 30, c_timeReal );
 
     DialogSetVisible(dialog_bans, players, true);
 
@@ -1451,7 +1509,9 @@ int create_dialog_settings() {
 
     DialogControlSetPositionRelative(seed_label, players, c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
 
-    create_create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
+    create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
+
+    TriggerAddEventTimeElapsed( TriggerCreate("start_rando_button_pressed"), 30, c_timeReal );
 
     DialogSetVisible(dialog_start, players, true);
 
