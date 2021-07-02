@@ -28,6 +28,7 @@ int dialog_wait;
 int dialog_pick_faction;
 int ban_button;
 int pick_button;
+int factions_dropdown;
 
 struct Change {
     int cat;
@@ -1056,9 +1057,9 @@ void do_rando() {
     for( i=0; i < num_factions; i+=1 ) {
         Wait(0.1, c_timeReal);
         race_changes[i*4 + no_race].name = "General";
-        race_changes[i*4 + terran].name = "Terran";
-        race_changes[i*4 + protoss].name = "Protoss";
-        race_changes[i*4 + zerg].name = "Zerg";
+        race_changes[i*4 + terran].name = "Terran Faction "+IntToString(i+1);
+        race_changes[i*4 + protoss].name = "Protoss Faction "+IntToString(i+1);
+        race_changes[i*4 + zerg].name = "Zerg Faction "+IntToString(i+1);
         randomize_units(i, changes_per_race);
     }
 
@@ -1115,6 +1116,7 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     int faction;
     int race;
     int dropdown;
+    string name;
 
     dropdown = DialogControlCreate(dialog, c_triggerControlTypePulldown);
     DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
@@ -1123,7 +1125,8 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText("General Changes") );
     for( race=1; race<4; race+=1 ) {
         for( faction=0; faction<num_factions; faction+=1 ) {
-            DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText(race_changes[faction*4 + race].name+" Faction "+IntToString(faction+1) ) );
+            name = race_changes[faction*4 + race].name;
+            DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText(name) );
         }
     }
 
@@ -1164,21 +1167,78 @@ void show_changes(int list, playergroup players, int race) {
 }
 
 
+int get_player_faction_ban_slot(int player, int faction) {
+    return faction + player*max_factions;
+}
+
+
+bool faction_banned_for_player(int player, int faction) {
+    // TODO: loop through opponents' bans
+    return false;
+}
+
+
+int get_selected_faction(int player, int dropdown) {
+    int selected;
+    int faction;
+    int race;
+
+    selected = DialogControlGetSelectedItem( dropdown, player );
+    if( selected == 1 ) {
+        selected = 0;// general changes
+    }
+    else {
+        selected -= 2;
+        faction = selected % num_factions;
+        race = selected / num_factions + 1;
+        selected = faction*4 + race;
+    }
+    info("dropdown_factions, faction: "+IntToString(faction)+", race: "+IntToString(race));
+    return selected;
+}
+
+
 bool ban_button_click(bool testConds, bool runActions) {
+    // TODO: limit number of bans, and show counter for remaining bans
+    // TODO: notice message?
+    // TODO: handle unbanning
+    int selected;
+    int player;
+
+    player = EventPlayer();
+    selected = get_selected_faction(player, factions_dropdown);
+
+    players_bans[get_player_faction_ban_slot(player, selected)] = true;
+    notice( TextToString(PlayerName(player)) + " banned " + race_changes[selected].name );
+
     return true;
 }
 
 
 bool pick_button_click(bool testConds, bool runActions) {
+    // TODO: notice message?
+    // TODO: only allow current race
+    int selected;
+    int player;
+
+    player = EventPlayer();
+    selected = get_selected_faction(player, factions_dropdown);
+
+    players_picks[player] = selected;
+    notice( TextToString(PlayerName(player)) + " chose " + race_changes[selected].name );
+
     return true;
 }
 
 
 void pick_faction_dropdown(int player, int selected, int race, int faction) {
+    // TODO: tell player if it's banned
+    // TODO: tell player if it's the wrong race
 }
 
 
 void ban_faction_dropdown(int player, int selected, int race, int faction) {
+    // TODO: tell player if they already banned this, change button text to Unban
 }
 
 
@@ -1193,17 +1253,7 @@ bool dropdown_factions(bool testConds, bool runActions) {
     dropdown = EventDialogControl();
     dialog = DialogControlGetDialog(dropdown);
     player = EventPlayer();
-    selected = DialogControlGetSelectedItem( dropdown, player );
-    if( selected == 1 ) {
-        selected = 0;// general changes
-    }
-    else {
-        selected -= 2;
-        faction = selected % num_factions;
-        race = selected / num_factions + 1;
-        selected = faction*4 + race;
-    }
-    info("dropdown_factions, faction: "+IntToString(faction)+", race: "+IntToString(race));
+    selected = get_selected_faction(player, dropdown);
     show_changes(changes_list, PlayerGroupSingle(EventPlayer()), selected );
 
     if( dialog == dialog_pick_faction ) {
@@ -1256,17 +1306,20 @@ bool is_waiting(int player, int button) {
 void apply_changes_player(int player) {
     int faction;
 
-    faction = players_picks[player];// TODO: this will probably include the race number already
+    faction = players_picks[player];
     // TODO: ensure null picks don't pick a banned faction
+    // TODO: ensure picked correct race
 
-    if( PlayerRace(player) == "Terr" ) {
-        faction = faction*4 + terran;
-    } else if( PlayerRace(player) == "Prot" ) {
-        faction = faction*4 + protoss;
-    } else if( PlayerRace(player) == "Zerg" ) {
-        faction = faction*4 + zerg;
-    } else {
-        err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
+    if( faction == 0 ) {
+        if( PlayerRace(player) == "Terr" ) {
+            faction = faction*4 + terran;
+        } else if( PlayerRace(player) == "Prot" ) {
+            faction = faction*4 + protoss;
+        } else if( PlayerRace(player) == "Zerg" ) {
+            faction = faction*4 + zerg;
+        } else {
+            err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
+        }
     }
     apply_changes(faction, player);
     info("EventPlayer() == " + IntToString(player) );
@@ -1327,7 +1380,6 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
 
 int create_dialog_pick_faction() {
     playergroup players;
-    int dropdown;
     int button;
 
     players = PlayerGroupAll();
@@ -1342,7 +1394,7 @@ int create_dialog_pick_faction() {
 
     changes_list = create_changes_list(dialog_pick_faction);
 
-    dropdown = create_factions_dropdown(dialog_pick_faction, changes_list, "dropdown_factions");
+    factions_dropdown = create_factions_dropdown(dialog_pick_faction, changes_list, "dropdown_factions");
 
     pick_button = create_ban_pick_button(dialog_pick_faction, changes_list, "Pick", "pick_button_click");
 
@@ -1388,7 +1440,6 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
 int create_dialog_bans() {
     int width;
     int height;
-    int dropdown;
     //int race;
     playergroup players;
     int button;
@@ -1411,7 +1462,7 @@ int create_dialog_bans() {
 
     changes_list = create_changes_list(dialog_bans);
 
-    dropdown = create_factions_dropdown(dialog_bans, changes_list, "dropdown_factions");
+    factions_dropdown = create_factions_dropdown(dialog_bans, changes_list, "dropdown_factions");
 
     ban_button = create_ban_pick_button(dialog_bans, changes_list, "Ban", "ban_button_click");
 
