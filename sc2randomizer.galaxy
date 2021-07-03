@@ -29,6 +29,7 @@ int dialog_pick_faction;
 int ban_button;
 int pick_button;
 int factions_dropdown;
+trigger dialog_timeout;
 
 struct Change {
     int cat;
@@ -1337,6 +1338,8 @@ void start_game() {
     int len;
     playergroup players;
 
+    TriggerDestroy(dialog_timeout);
+
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
     for( i=1; i<=len; i+=1 ) {
@@ -1371,7 +1374,6 @@ bool start_game_button_pressed(bool testConds, bool runActions) {
     player = EventPlayer();
     button = EventDialogControl();
     dialog = DialogControlGetDialog(button);
-    apply_changes_player(player);
 
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
 
@@ -1395,8 +1397,10 @@ int create_dialog_pick_faction() {
     DialogSetFullscreen(dialog_pick_faction, true);
 
     create_continue_button(dialog_pick_faction, "Start Game", "start_game_button_pressed");
-    // TODO: disable triggers when advancing dialogs
-    TriggerAddEventTimeElapsed( TriggerCreate("start_game_timeout"), 30, c_timeReal );
+    
+    TriggerDestroy(dialog_timeout);
+    dialog_timeout = TriggerCreate("start_game_timeout");
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 
     changes_list = create_changes_list(dialog_pick_faction);
 
@@ -1413,13 +1417,17 @@ int create_dialog_pick_faction() {
 }
 
 
-bool start_pick_factions(bool testConds, bool runActions) {
+void start_pick_factions() {
     clear_waiting();
     DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
     DialogDestroy(dialog_bans);
 
     create_dialog_pick_faction();
+}
 
+
+bool ban_factions_timeout(bool testConds, bool runActions) {
+    start_pick_factions();
     return true;
 }
 
@@ -1437,7 +1445,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
         return true;
     }
 
-    start_pick_factions(false, false);
+    start_pick_factions();
 
     return true;
 }
@@ -1477,7 +1485,9 @@ int create_dialog_bans() {
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
-    TriggerAddEventTimeElapsed( TriggerCreate("start_pick_factions"), 30, c_timeReal );
+    TriggerDestroy(dialog_timeout);
+    dialog_timeout = TriggerCreate("ban_factions_timeout");
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 
     DialogSetVisible(dialog_bans, players, true);
 
@@ -1489,6 +1499,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     string sseed;
     int loading_screen;
     int loading_text;
+
+    TriggerDestroy(dialog_timeout);
 
     sseed = libNtve_gf_DialogItemEditValue(seed_editbox, 1);
     if( sseed != "" ) {
@@ -1531,7 +1543,7 @@ int create_dialog_settings() {
     players = PlayerGroupSingle(default_player);
 
     num_players = PlayerGroupCount(PlayerGroupActive());
-    // TODO: timeouts for dialogs
+    // TODO: timeouts for dialogs with countdown
     // TODO: depending how many players are in the game, might only be able to do 1 ban per player, or might not be able to do bans at all
     // set max bans and min factions here
     if( num_players > 4 ) {
@@ -1568,7 +1580,8 @@ int create_dialog_settings() {
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
-    TriggerAddEventTimeElapsed( TriggerCreate("start_rando_button_pressed"), 30, c_timeReal );
+    dialog_timeout = TriggerCreate("start_rando_button_pressed");
+    TriggerAddEventTimeElapsed( dialog_timeout, 30, c_timeReal );
 
     DialogSetVisible(dialog_start, players, true);
 
