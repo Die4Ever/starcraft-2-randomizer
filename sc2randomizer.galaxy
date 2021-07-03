@@ -14,7 +14,7 @@ int num_bans;
 int changes_per_race;
 int changes_per_unit;
 
-bool[max_factions * 16] players_bans;
+bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;
 bool[16] players_waiting;
 
@@ -1168,6 +1168,18 @@ int get_player_faction_ban_slot(int player, int faction) {
 }
 
 
+int get_player_num_bans(int player) {
+    int faction;
+    int num;
+    for( faction=0; faction<max_factions*4; faction+=1 ) {
+        if( players_bans[ get_player_faction_ban_slot(player, faction) ] ) {
+            num+=1;
+        }
+    }
+    return num;
+}
+
+
 bool faction_banned_for_player(int player, int faction) {
     int len;
     int i;
@@ -1184,6 +1196,11 @@ bool faction_banned_for_player(int player, int faction) {
         }
     }
     return false;
+}
+
+
+int get_race_from_selected(int selected) {
+    return selected % 4;
 }
 
 
@@ -1208,23 +1225,30 @@ int get_selected_faction(int player, int dropdown) {
 
 
 bool ban_button_click(bool testConds, bool runActions) {
-    // TODO: limit number of bans, and show counter for remaining bans
-    // TODO: handle unbanning
+    // TODO: show counter for remaining bans
     int selected;
     int player;
 
     player = EventPlayer();
     selected = get_selected_faction(player, factions_dropdown);
 
-    players_bans[get_player_faction_ban_slot(player, selected)] = true;
-    notice( TextToString(PlayerName(player)) + " banned " + race_changes[selected].name );
+    if( players_bans[get_player_faction_ban_slot(player, selected)] ) {
+        players_bans[get_player_faction_ban_slot(player, selected)] = false;
+        notice( TextToString(PlayerName(player)) + " unbanned " + race_changes[selected].name );
+        libNtve_gf_SetDialogItemText(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
+        libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
+    } else {
+        players_bans[get_player_faction_ban_slot(player, selected)] = true;
+        notice( TextToString(PlayerName(player)) + " banned " + race_changes[selected].name );
+        libNtve_gf_SetDialogItemText(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
+        libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
+    }
 
     return true;
 }
 
 
 bool pick_button_click(bool testConds, bool runActions) {
-    // TODO: only allow current race
     int selected;
     int player;
 
@@ -1233,25 +1257,63 @@ bool pick_button_click(bool testConds, bool runActions) {
 
     players_picks[player] = selected;
     notice( TextToString(PlayerName(player)) + " chose " + race_changes[selected].name );
+    DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
 
     return true;
 }
 
 
-void pick_faction_dropdown(int player, int selected, int race, int faction) {
-    // TODO: tell player if it's banned
-    // TODO: tell player if it's the wrong race
+void pick_faction_dropdown(int player, int selected, int race) {
+    if( faction_banned_for_player(player, selected) ) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+        return;
+    }
+
+    if( players_picks[player] == selected ) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+        return;
+    }
+
+    if( race == terran && PlayerRace(player) == "Terr" ) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), true);
+    } else if( race == protoss && PlayerRace(player) == "Prot" ) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), true);
+    } else if( race == zerg && PlayerRace(player) == "Zerg" ) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), true);
+    }
+    else {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+    }
 }
 
 
-void ban_faction_dropdown(int player, int selected, int race, int faction) {
-    // TODO: tell player if they already banned this, change button text to Unban
+void ban_faction_dropdown(int player, int selected, int race) {
+    if( race == no_race ) {
+        DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), false);
+        return;
+    }
+
+    if( players_bans[get_player_faction_ban_slot(player, selected)] ) {
+        libNtve_gf_SetDialogItemText(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
+        libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
+        DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), true);
+        return;
+    }
+    else {
+        libNtve_gf_SetDialogItemText(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
+        libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
+    }
+
+    if( get_player_num_bans(player) > num_bans ) {
+        DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), false);
+    } else {
+        DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), true);
+    }
 }
 
 
 bool dropdown_factions(bool testConds, bool runActions) {
     int selected;
-    int faction;
     int race;
     int dropdown;
     int dialog;
@@ -1261,13 +1323,14 @@ bool dropdown_factions(bool testConds, bool runActions) {
     dialog = DialogControlGetDialog(dropdown);
     player = EventPlayer();
     selected = get_selected_faction(player, dropdown);
+    race = get_race_from_selected(selected);
     show_changes(changes_list, PlayerGroupSingle(EventPlayer()), selected );
 
     if( dialog == dialog_pick_faction ) {
-        pick_faction_dropdown(player, selected, race, faction);
+        pick_faction_dropdown(player, selected, race);
     }
     else if( dialog == dialog_bans ) {
-        ban_faction_dropdown(player, selected, race, faction);
+        ban_faction_dropdown(player, selected, race);
     }
     return true;
 }
@@ -1407,6 +1470,7 @@ int create_dialog_pick_faction() {
     factions_dropdown = create_factions_dropdown(dialog_pick_faction, changes_list, "dropdown_factions");
 
     pick_button = create_ban_pick_button(dialog_pick_faction, changes_list, "Pick", "pick_button_click");
+    DialogControlSetEnabled(pick_button, players, false);
 
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Pick button to select that faction to play as") );
@@ -1479,6 +1543,7 @@ int create_dialog_bans() {
     factions_dropdown = create_factions_dropdown(dialog_bans, changes_list, "dropdown_factions");
 
     ban_button = create_ban_pick_button(dialog_bans, changes_list, "Ban", "ban_button_click");
+    DialogControlSetEnabled(ban_button, players, false);
 
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
@@ -1545,6 +1610,7 @@ int create_dialog_settings() {
     num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: timeouts for dialogs with countdown
     // TODO: depending how many players are in the game, might only be able to do 1 ban per player, or might not be able to do bans at all
+    // TODO: more settings
     // set max bans and min factions here
     if( num_players > 4 ) {
         num_bans = 0;
