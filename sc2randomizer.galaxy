@@ -1377,7 +1377,7 @@ void apply_changes_player(int player) {
     int faction;
 
     faction = players_picks[player];
-    // TODO: ensure null picks don't pick a banned faction
+    // TODO: ensure null picks don't pick a banned faction, give them a random faction for more fun AI FFAs
     // TODO: ensure picked correct race
 
     if( faction == 0 ) {
@@ -1413,10 +1413,10 @@ void start_game() {
     DialogDestroy(dialog_pick_faction);
 
     libNtve_gf_HideGameUI( true, PlayerGroupAll() );
-    for( i=0; i<16; i+=1 ) {
+    for( i=0; i<16; i+=1 ) {// TODO: active players only?
         CameraLockInput(i, false);
     }
-    GameSetGlobalTimeScale(4);
+    GameSetGlobalTimeScale(1);
 }
 
 
@@ -1687,7 +1687,7 @@ void create_dialog_start() {
     int seed_label;
     int submit_button;
 
-    for( i=0; i<16; i+=1 ) {
+    for( i=0; i<16; i+=1 ) {// TODO: active players only?
         CameraLockInput(i, true);
     }
 
