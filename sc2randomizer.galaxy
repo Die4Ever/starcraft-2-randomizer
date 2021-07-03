@@ -383,6 +383,11 @@ bool set_field_fixed_all(int cat, string entry, string field, fixed value)
 void apply_changes(int r, int player)
 {
     int i;
+    int cat;
+    string entry;
+    string field;
+    fixed f;
+    fixed oldf;
     string val;
     string oldval;
     string message;
@@ -395,17 +400,35 @@ void apply_changes(int r, int player)
         if( StringLength(message) > 0 ) {
             message += ", ";
         }
-        if( IntToFixed(FixedToInt(race_changes[r].changes[i].newval)) == race_changes[r].changes[i].newval ) {
-            val = IntToString(FixedToInt(race_changes[r].changes[i].newval));
-            oldval = IntToString(FixedToInt(race_changes[r].changes[i].oldval));
+
+        cat = race_changes[r].changes[i].cat;
+        entry = race_changes[r].changes[i].entry;
+        field = race_changes[r].changes[i].field;
+        f = race_changes[r].changes[i].newval;
+        oldf = race_changes[r].changes[i].oldval;
+
+        if( IntToFixed(FixedToInt(f)) == f ) {
+            val = IntToString(FixedToInt(f));
+            oldval = IntToString(FixedToInt(oldf));
         }
         else {
-            val = FixedToString(race_changes[r].changes[i].newval,5);
-            oldval = FixedToString(race_changes[r].changes[i].oldval, 5);
+            val = FixedToString(f,5);
+            oldval = FixedToString(oldf, 5);
         }
-        set_field_string_player(player, race_changes[r].changes[i].cat, race_changes[r].changes[i].entry, race_changes[r].changes[i].field, val );
+        set_field_string_player(player, cat, entry, field, val );
 
-        message += race_changes[r].changes[i].entry+" "+race_changes[r].changes[i].field+" changed from "+oldval+" to "+val;
+        message += entry+" "+field+" changed from "+oldval+" to "+val;
+
+        if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
+            if( ! set_field_string_player(player, cat, entry, "LifeStart", val ) ) {
+                err(entry+" LifeStart failed to set to "+val);
+            }
+        }
+        if( field == "ShieldsMax" ) {
+            if( ! set_field_string_player(player, cat, entry, "ShieldsStart", val ) ) {
+                err(entry+" ShieldsStart failed to set to "+val);
+            }
+        }
 
         if( StringLength(message) > 200 ) {
             info( message );
@@ -453,20 +476,8 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
     }
 
     add_change(changes_id, cat, entry, field, friendly_name, getval, setval);// TODO: maybe need to save the type or precision
-    //set_field_fixed(cat, entry, field, getval );// TODO: rollback here so we can apply after the bans and picks
+    set_field_fixed(cat, entry, field, getval );
 
-    //if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
-    //    if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
-    //        err(entry+" LifeStart failed to set to "+FixedToString(value,5));
-    //        return false;
-    //    }
-    //}
-    //if( field == "ShieldsMax" ) {
-    //    if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
-    //        err(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
-    //        return false;
-    //    }
-    //}
     return true;
 }
 
@@ -504,20 +515,8 @@ bool rando_field_int(int cat, string entry, string field, string friendly_name, 
     }
 
     add_change(changes_id, cat, entry, field, friendly_name, getval, setval);
-    //set_field_string(cat, entry, field, IntToString(getval) );// TODO: rollback here so we can apply after the bans and picks
+    set_field_string(cat, entry, field, IntToString(getval) );
 
-    //if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
-    //    if( ! set_field_fixed(cat, entry, "LifeStart", value) ) {
-    //        err(entry+" LifeStart failed to set to "+FixedToString(value,5));
-    //        return false;
-    //    }
-    //}
-    //if( field == "ShieldsMax" ) {
-    //    if( ! set_field_fixed(cat, entry, "ShieldsStart", value) ) {
-    //        err(entry+" ShieldsStart failed to set to "+FixedToString(value,5));
-    //        return false;
-    //    }
-    //}
     return true;
 }
 
@@ -971,7 +970,7 @@ void randomize_units(int faction, int changes_per_race) {
         ) {
             break;
         }
-        GameSetSeed( 5 + seed*3 + i*7 + faction*13);
+        GameSetSeed( 5 + seed*3 + i*2713 + faction*3331);
         slot = RandomInt(1, num_data);
 
         entry = CatalogEntryGet(cat, slot);
@@ -1063,12 +1062,6 @@ void do_rando() {
         randomize_units(i, changes_per_race);
     }
 
-    // TODO: now shuffle the race_changes arrays, and then divide them up into factions... first 20 items go to faction A, next 20 items go to faction B...
-        // but this prevents different factions from having the same stat randomized differently...
-        // maybe just split up the arrays into 10 different arrays for a maximum of 10 factions per race
-        // maybe in add_change it'll randomly pick which faction to add to
-    // will need to revert the ones that aren't selected
-
     notes_log();
     GameSetSeedLocked(seed_was_locked);
 }
@@ -1117,6 +1110,8 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     int race;
     int dropdown;
     string name;
+
+    // hide races that aren't in the game
 
     dropdown = DialogControlCreate(dialog, c_triggerControlTypePulldown);
     DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
@@ -1173,7 +1168,20 @@ int get_player_faction_ban_slot(int player, int faction) {
 
 
 bool faction_banned_for_player(int player, int faction) {
-    // TODO: loop through opponents' bans
+    int len;
+    int i;
+    int p;
+    playergroup players;
+
+    players = PlayerGroupAlliance(c_playerGroupEnemy, player);
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        p = PlayerGroupPlayer(players, i);
+
+        if( players_bans[get_player_faction_ban_slot(p, faction)] ) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -1200,7 +1208,6 @@ int get_selected_faction(int player, int dropdown) {
 
 bool ban_button_click(bool testConds, bool runActions) {
     // TODO: limit number of bans, and show counter for remaining bans
-    // TODO: notice message?
     // TODO: handle unbanning
     int selected;
     int player;
@@ -1216,7 +1223,6 @@ bool ban_button_click(bool testConds, bool runActions) {
 
 
 bool pick_button_click(bool testConds, bool runActions) {
-    // TODO: notice message?
     // TODO: only allow current race
     int selected;
     int player;
@@ -1389,7 +1395,7 @@ int create_dialog_pick_faction() {
     DialogSetFullscreen(dialog_pick_faction, true);
 
     create_continue_button(dialog_pick_faction, "Start Game", "start_game_button_pressed");
-
+    // TODO: disable triggers when advancing dialogs
     TriggerAddEventTimeElapsed( TriggerCreate("start_game_timeout"), 30, c_timeReal );
 
     changes_list = create_changes_list(dialog_pick_faction);
@@ -1526,7 +1532,7 @@ int create_dialog_settings() {
 
     num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: timeouts for dialogs
-    // TODO: depending how many players are in the game, might only be able to do 1 ban per player per race, or might not be able to do bans at all
+    // TODO: depending how many players are in the game, might only be able to do 1 ban per player, or might not be able to do bans at all
     // set max bans and min factions here
     if( num_players > 4 ) {
         num_bans = 0;
