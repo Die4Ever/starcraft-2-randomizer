@@ -22,6 +22,8 @@ const string dialog_title = "StarCraft 2 Randomizer";
 const int default_player = 1;
 int dialog_start;
 int seed_editbox;
+int num_factions_editbox;
+int num_bans_editbox;
 int dialog_bans;
 int changes_list;
 int dialog_wait;
@@ -1048,6 +1050,7 @@ void do_rando() {
     int i;
     bool seed_was_locked;
 
+    notice("Randomizing with seed "+IntToString(seed)+" with "+IntToString(num_factions)+" factions and "+IntToString(num_bans)+" bans.");
     Wait(0.1, c_timeReal);
 
     seed_was_locked = GameIsSeedLocked();
@@ -1562,14 +1565,39 @@ int create_dialog_bans() {
 
 bool start_rando_button_pressed(bool testConds, bool runActions) {
     string sseed;
+    string snum_factions;
+    string snum_bans;
     int loading_screen;
     int loading_text;
 
     TriggerDestroy(dialog_timeout);
 
-    sseed = libNtve_gf_DialogItemEditValue(seed_editbox, 1);
+    sseed = libNtve_gf_DialogItemEditValue(seed_editbox, default_player);
     if( sseed != "" ) {
         seed = StringToInt(sseed);
+    }
+
+    // TODO: min/max values for num_factions and num_bans depending on number of players
+    snum_factions = libNtve_gf_DialogItemEditValue(num_factions_editbox, default_player);
+    if( snum_factions != "" ) {
+        num_factions = StringToInt(snum_factions);
+        if( num_factions > max_factions ) {
+            num_factions = max_factions;
+        }
+        if( num_factions < 1 ) {
+            num_factions = 1;
+        }
+    }
+
+    snum_bans = libNtve_gf_DialogItemEditValue(num_bans_editbox, default_player);
+    if( snum_bans != "" ) {
+        num_bans = StringToInt(snum_bans);
+        if( num_bans >= num_factions ) {
+            num_bans = num_factions - 1;
+        }
+        if( num_bans < 0 ) {
+            num_bans = 0;
+        }
     }
 
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
@@ -1600,8 +1628,28 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
 }
 
 
+int create_edit_box_with_label(int dialog, playergroup players, string defaulttext, string labeltext, string tooltip, int y) {
+    int label;
+    int editbox;
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, players, 100, 50);
+    //DialogControlSetPosition(label, players, c_anchorCenter, -300, y);
+    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
+    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
+
+    editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
+    DialogControlSetSize(editbox, players, 300, 50);
+    DialogControlSetPosition(editbox, players, c_anchorCenter, 150, y);
+    libNtve_gf_SetDialogItemTooltip(editbox, StringToText(tooltip), players);
+    libNtve_gf_SetDialogItemEditorValue(editbox, defaulttext, players);
+
+    DialogControlSetPositionRelative(label, players, c_anchorRight, editbox, c_anchorLeft, 0, 15);
+    return editbox;
+}
+
+
 int create_dialog_settings() {
-    int seed_label;
     playergroup players;
     int num_players;
 
@@ -1630,19 +1678,9 @@ int create_dialog_settings() {
     DialogSetTitle(dialog_start, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_start, true);
 
-    seed_label = DialogControlCreate(dialog_start, c_triggerControlTypeLabel);
-    DialogControlSetSize(seed_label, players, 100, 50);
-    DialogControlSetPosition(seed_label, players, c_anchorCenter, -300, -300);
-    libNtve_gf_SetDialogItemText(seed_label, StringToText("Seed: "), players );
-    libNtve_gf_SetDialogItemTooltip(seed_label, StringToText("The seed used for randomization"), players);
-
-    seed_editbox = DialogControlCreate(dialog_start, c_triggerControlTypeEditBox);
-    DialogControlSetSize(seed_editbox, players, 300, 50);
-    DialogControlSetPosition(seed_editbox, players, c_anchorCenter, 150, -300);
-    libNtve_gf_SetDialogItemTooltip(seed_editbox, StringToText("The seed used for randomization"), players);
-    libNtve_gf_SetDialogItemEditorValue(seed_editbox, IntToString(seed), players);
-
-    DialogControlSetPositionRelative(seed_label, players, c_anchorRight, seed_editbox, c_anchorLeft, 0, 15);
+    seed_editbox = create_edit_box_with_label(dialog_start, players, IntToString(seed), "Seed: ", "The seed used for randomization", -300);
+    num_factions_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_factions), "Factions: ", "How many factions to generate for each race", -200);
+    num_bans_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_bans), "Bans: ", "How many bans each player can use", -100);
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
