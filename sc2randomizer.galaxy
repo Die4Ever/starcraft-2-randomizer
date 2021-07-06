@@ -11,7 +11,7 @@ int seed;
 const int max_factions = 8;
 int num_factions;
 int num_bans;
-int changes_per_race;
+int changes_per_faction;
 int changes_per_unit;
 
 bool[max_factions * 4 * 16] players_bans;
@@ -24,6 +24,10 @@ int dialog_start;
 int seed_editbox;
 int num_factions_editbox;
 int num_bans_editbox;
+int changes_per_faction_editbox;
+int changes_per_unit_editbox;
+int min_percent_editbox;
+int max_percent_editbox;
 int dialog_bans;
 int changes_list;
 int dialog_wait;
@@ -951,7 +955,7 @@ int randomize_unit(string entry, int race_id, int num_fields) {
 }
 
 
-void randomize_units(int faction, int changes_per_race) {
+void randomize_units(int faction, int changes_per_faction) {
     int cat = c_gameCatalogUnit;
     string scope = "CUnit";
     string entry;
@@ -967,9 +971,9 @@ void randomize_units(int faction, int changes_per_race) {
 
     for( i=1; i<=num_data; i+=1 ) {
 
-        if( race_changes[faction*4 + terran].len >= changes_per_race
-            && race_changes[faction*4 + protoss].len >= changes_per_race
-            && race_changes[faction*4 + zerg].len >= changes_per_race
+        if( race_changes[faction*4 + terran].len >= changes_per_faction
+            && race_changes[faction*4 + protoss].len >= changes_per_faction
+            && race_changes[faction*4 + zerg].len >= changes_per_faction
         ) {
             break;
         }
@@ -982,7 +986,7 @@ void randomize_units(int faction, int changes_per_race) {
             continue;
         }
         race_id += faction*4;
-        if( race_changes[race_id].len >= changes_per_race ) {
+        if( race_changes[race_id].len >= changes_per_faction ) {
             continue;
         }
 
@@ -1050,7 +1054,7 @@ void do_rando() {
     int i;
     bool seed_was_locked;
 
-    notice("Randomizing with seed "+IntToString(seed)+" with "+IntToString(num_factions)+" factions and "+IntToString(num_bans)+" bans.");
+    notice("Randomizing with seed "+IntToString(seed)+", "+IntToString(num_factions)+" factions, "+IntToString(num_bans)+" bans, "+IntToString(changes_per_faction)+" changes per faction, "+FixedToString(min_percent,1)+"% minimum, "+FixedToString(max_percent,1)+"% maximum.");
     Wait(0.1, c_timeReal);
 
     seed_was_locked = GameIsSeedLocked();
@@ -1063,7 +1067,7 @@ void do_rando() {
         race_changes[i*4 + terran].name = "Terran Faction "+IntToString(i+1);
         race_changes[i*4 + protoss].name = "Protoss Faction "+IntToString(i+1);
         race_changes[i*4 + zerg].name = "Zerg Faction "+IntToString(i+1);
-        randomize_units(i, changes_per_race);
+        randomize_units(i, changes_per_faction);
     }
 
     notes_log();
@@ -1567,6 +1571,10 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     string sseed;
     string snum_factions;
     string snum_bans;
+    string schanges_per_faction;
+    //string schanges_per_unit;
+    string smin_percent;
+    string smax_percent;
     int loading_screen;
     int loading_text;
 
@@ -1600,6 +1608,27 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
         }
     }
 
+    schanges_per_faction = libNtve_gf_DialogItemEditValue(changes_per_faction_editbox, default_player);
+    if( schanges_per_faction != "" ) {
+        changes_per_faction = StringToInt(schanges_per_faction);
+        if( changes_per_faction > 200 ) {
+            changes_per_faction = 200;
+        }
+        if( changes_per_faction < 1 ) {
+            changes_per_faction = 1;
+        }
+    }
+
+    smin_percent = libNtve_gf_DialogItemEditValue(min_percent_editbox, default_player);
+    if( smin_percent != "" ) {
+        min_percent = StringToFixed(smin_percent);
+    }
+
+    smax_percent = libNtve_gf_DialogItemEditValue(max_percent_editbox, default_player);
+    if( smax_percent != "" ) {
+        max_percent = StringToFixed(smax_percent);
+    }
+
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
     DialogDestroy(dialog_start);
 
@@ -1628,21 +1657,25 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
 }
 
 
-int create_edit_box_with_label(int dialog, playergroup players, string defaulttext, string labeltext, string tooltip, int y) {
+int create_edit_box_with_label(int dialog, playergroup players, string defaulttext, string labeltext, string tooltip, int row) {
     int label;
     int editbox;
+    int y;
+    int row_height;
 
-    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
-    DialogControlSetSize(label, players, 100, 50);
-    //DialogControlSetPosition(label, players, c_anchorCenter, -300, y);
-    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
-    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
+    row_height = 80;
+    y = row*row_height - 3*row_height;
 
     editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
     DialogControlSetSize(editbox, players, 300, 50);
     DialogControlSetPosition(editbox, players, c_anchorCenter, 150, y);
     libNtve_gf_SetDialogItemTooltip(editbox, StringToText(tooltip), players);
     libNtve_gf_SetDialogItemEditorValue(editbox, defaulttext, players);
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, players, 300, 50);
+    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
+    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
 
     DialogControlSetPositionRelative(label, players, c_anchorRight, editbox, c_anchorLeft, 0, 15);
     return editbox;
@@ -1678,9 +1711,15 @@ int create_dialog_settings() {
     DialogSetTitle(dialog_start, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_start, true);
 
-    seed_editbox = create_edit_box_with_label(dialog_start, players, IntToString(seed), "Seed: ", "The seed used for randomization", -300);
-    num_factions_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_factions), "Factions: ", "How many factions to generate for each race", -200);
-    num_bans_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_bans), "Bans: ", "How many bans each player can use", -100);
+    seed_editbox = create_edit_box_with_label(dialog_start, players, IntToString(seed), "Seed: ", "The seed used for randomization", 0);
+    num_factions_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_factions), "Factions: ", "How many factions to generate for each race", 1);
+    num_bans_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_bans), "Bans: ", "How many bans each player can use", 2);
+
+    changes_per_faction_editbox = create_edit_box_with_label(dialog_start, players, IntToString(changes_per_faction), "Changes per faction: ", "How many things to change for each faction", 3);
+    //changes_per_unit_editbox = create_edit_box_with_label(dialog_start, players, IntToString(changes_per_unit), "Changes per unit: ", "Maximum number of things to change for each unit", 4);
+
+    min_percent_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(min_percent,0), "Minimum Value %: ", "The lowest each stat can be changed to", 4);
+    max_percent_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(max_percent,0), "Maximum Value %: ", "The highest each stat can be changed to", 5);
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
@@ -1747,7 +1786,7 @@ void main () {
     max_percent = 150;
     num_factions = 3;
     num_bans = 1;
-    changes_per_race = 30;
+    changes_per_faction = 30;
     changes_per_unit = 2;
     
     // CUnit
