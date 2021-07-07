@@ -18,7 +18,7 @@ bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;
 bool[16] players_waiting;
 
-const string dialog_title = "StarCraft 2 Randomizer";
+const string dialog_title = "StarCraft 2 Randomizer Alpha";
 const int default_player = 1;
 int dialog_start;
 int seed_editbox;
@@ -1470,7 +1470,7 @@ int create_dialog_pick_faction() {
     
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("start_game_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
 
     changes_list = create_changes_list(dialog_pick_faction);
 
@@ -1559,7 +1559,7 @@ int create_dialog_bans() {
 
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("ban_factions_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
 
     DialogSetVisible(dialog_bans, players, true);
 
@@ -1577,6 +1577,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     string smax_percent;
     int loading_screen;
     int loading_text;
+    int num_players;
+    int max_bans;
 
     TriggerDestroy(dialog_timeout);
 
@@ -1585,7 +1587,7 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
         seed = StringToInt(sseed);
     }
 
-    // TODO: min/max values for num_factions and num_bans depending on number of players
+    num_players = PlayerGroupCount(PlayerGroupActive());
     snum_factions = libNtve_gf_DialogItemEditValue(num_factions_editbox, default_player);
     if( snum_factions != "" ) {
         num_factions = StringToInt(snum_factions);
@@ -1598,10 +1600,15 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     }
 
     snum_bans = libNtve_gf_DialogItemEditValue(num_bans_editbox, default_player);
+    if(num_players > 1 && num_factions > 1 ) {
+        max_bans = num_factions / (num_players-1);
+    } else {
+        max_bans = num_factions - 1;
+    }
     if( snum_bans != "" ) {
         num_bans = StringToInt(snum_bans);
-        if( num_bans >= num_factions ) {
-            num_bans = num_factions - 1;
+        if( num_bans > max_bans ) {
+            num_bans = max_bans;
         }
         if( num_bans < 0 ) {
             num_bans = 0;
@@ -1690,21 +1697,13 @@ int create_dialog_settings() {
 
     num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: timeouts for dialogs with countdown
-    // TODO: depending how many players are in the game, might only be able to do 1 ban per player, or might not be able to do bans at all
-    // TODO: more settings
-    // set max bans and min factions here
     if( num_players > 4 ) {
         num_bans = 0;
         num_factions = 3;
     }
-    if( num_players > 2 ) {
-        num_bans = 1;
-        num_factions = num_players+1;
-    }
     else {
-        // defaults here, not min/max
-        num_factions = 2;
-        num_factions = 5;
+        num_bans = 1;
+        num_factions = MaxI(3, num_players+1);
     }
 
     dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
@@ -1724,7 +1723,7 @@ int create_dialog_settings() {
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     dialog_timeout = TriggerCreate("start_rando_button_pressed");
-    TriggerAddEventTimeElapsed( dialog_timeout, 30, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 
     DialogSetVisible(dialog_start, players, true);
 
@@ -1786,7 +1785,7 @@ void main () {
     max_percent = 150;
     num_factions = 3;
     num_bans = 1;
-    changes_per_faction = 30;
+    changes_per_faction = 20;
     changes_per_unit = 2;
     
     // CUnit
