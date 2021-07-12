@@ -1240,12 +1240,10 @@ bool ban_button_click(bool testConds, bool runActions) {
 
     if( players_bans[get_player_faction_ban_slot(player, selected)] ) {
         players_bans[get_player_faction_ban_slot(player, selected)] = false;
-        notice( TextToString(PlayerName(player)) + " unbanned " + race_changes[selected].name );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
     } else {
         players_bans[get_player_faction_ban_slot(player, selected)] = true;
-        notice( TextToString(PlayerName(player)) + " banned " + race_changes[selected].name );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
     }
@@ -1262,7 +1260,6 @@ bool pick_button_click(bool testConds, bool runActions) {
     selected = get_selected_faction(player, factions_dropdown);
 
     players_picks[player] = selected;
-    notice( TextToString(PlayerName(player)) + " chose " + race_changes[selected].name );
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
 
     return true;
@@ -1397,6 +1394,7 @@ void apply_changes_player(int player) {
             err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
         }
     }
+    notice( TextToString(PlayerName(player)) + " chose " + race_changes[faction].name );
     apply_changes(faction, player);
     info("EventPlayer() == " + IntToString(player) );
 }
@@ -1506,6 +1504,23 @@ int create_dialog_pick_faction() {
 
 
 void start_pick_factions() {
+    int player;
+    int faction;
+    int i;
+    int len;
+    playergroup players;
+
+    players = PlayerGroupActive();
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        player = PlayerGroupPlayer(players, i);
+        for( faction=0; faction < 4*num_factions; faction+=1 ) {
+            if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
+                notice( TextToString(PlayerName(player)) + " banned " + race_changes[faction].name );
+            }
+        }
+    }
+
     clear_waiting();
     DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
     DialogDestroy(dialog_bans);
