@@ -3,3 +3,91 @@ maybe there's something in the UI section that can show the changes to spectator
 https://sc2mapster.fandom.com/wiki/Tutorials
 https://mapster.talv.space/galaxy/reference#catalog
 https://marketplace.visualstudio.com/items?itemName=talv.sc2galaxy
+
+
+Abilities
+    // scopes
+    // CAbilBuild
+    // CAbilMorphPlacement
+    // CAbilMove
+    // CAbilStop
+    // CAbilBuildable
+    // CAbilQueue
+    // CAbilArmMagazine
+    // CAbilResearch
+    // CAbilMorph
+    // CAbilAttack
+    // CAbilWarpable
+    // CAbilEffectTarget
+    // CAbilTrain
+    // CAbilRally
+    // CAbilEffectInstant
+    // CAbilAugment
+    // CAbilMerge
+    // CAbilTransport
+    // CAbilMergeable
+    // CAbilBehavior
+    // CAbilRedirectInstant
+    // CAbilRedirectTarget
+
+    // BarracksTechLabMorph is a CAbilMorph with InfoArray SAbilMorphInfo, and with Cost SCost
+    // FactoryLand is a CAbilMorphPlacement with InfoArray SAbilMorphInfo, and with Cost SCost
+    // FactoryTechLabResearch is a CAbilResearch with InfoArray SAbilResearchInfo
+        // with InfoArray[3].Upgrade == TerranInfantryWeaponsLevel1, .Time=160, .Resource[Minerals/Vespene]
+    // Rally is a CAbilRally with InfoArray SAbilRallyInfo
+    // BuildNydusCanal is a CAbilBuild with InfoArray SAbilBuildInfo has [i].Unit for unit name and [i].Time for build time
+    // TrainQueen is a CAbilTrain with InfoArray SAbilTrainInfo
+    // ArmSiloWithNuke is a CAbilArmMagazine with InfoArray SAbilArmMagazineInfo, and with Cost SCost
+    // WarpGateTrain is a CAbilWarpTrain with InfoArray SAbilWarpTrainInfo
+
+    // GhostCloak is a CAbilBehavior with Cost SCost
+        // has an array of structs named Cost, Cost[i].Charge, .Cooldown.TimeStart, .Cooldown.TimeUse, .Vital.Life, .Vital.Shields, .Vital.Energy, .VitalFraction
+    
+    // ArchonWarp is a CAbilMerge with InfoArray 
+        // Info is a SAbilMergeInfo with Info.Resource.Minerals/Vespene, Info.Time, Info.Unit==Archon, Info.Cooldown, Info.Vital, Info.VitalFraction (seems to be same type as a CAbilBehavior.Cost)
+    
+    // Charge is a CAbilAugment with Cost SCost
+        // has struct Cooldown (probably same type as Cooldown in CAbilBehavior)
+
+    // TacNukeStrike is a CAbilEffectTarget with Cost SCost
+        // has arrays for Effect, FinishTime (fixed), Range (fixed or maybe int?)
+    
+    // NydusCanalTransport is a CAbilTransport with InfoArray 
+        // has MaxCargoCount, MaxCargoSize, Range, TotalCargoSpace, UnloadPeriod
+
+    // BuildInProgress is a CAbilBuildable with InfoArray 
+    // que5Addon is a CAbilQueue with InfoArray 
+    // stop is a CAbilStop with InfoArray 
+    // attack is a CAbilAttack with InfoArray 
+    // move is a CAbilMove with InfoArray 
+    // GhostHoldFire is a CAbilEffectInstant with InfoArray 
+    // StimpackRedirect is a CAbilRedirectInstant with InfoArray 
+    // AttackRedirect is a CAbilRedirectTarget with InfoArray 
+    // Warpable is a CAbilWarpable with InfoArray 
+    // Mergeable is a CAbilMergeable with InfoArray 
+
+
+Upgrades
+// CUpgrade BattlecruiserBehemothReactor has <EffectArray Reference="Unit,Battlecruiser,EnergyStart" Value="25"/>
+
+Weapons
+// CWeapon_DisplayEffect is where the damage is defined?
+
+    // scopes
+    // CWeaponLegacy has Period, Range, MinimumRange, MinScanRange, SCost Cost, 
+    // InterceptorBeam is the only CWeaponStrafe with a Period, Range, Arc
+
+
+
+Effects
+// PsiStormPersistent is a CEffectCreatePersistent with a PeriodCount, PeriodEffectArray, PeriodicPeriodArray
+    // PsiStormSearch is a CEffectEnumArea with a AreaArray[i].Radius, AreaArray[i].Effect
+    // PsiStormApplyBehavior is a CEffectApplyBehavior with a Behavior == PsiStorm (a CBehaviorBuff)
+    // PsiStormDamageInitial is a CEffectDamage with an Amount == 10, PsiStormDamage is the same
+
+    // ArbiterMPRecallSet is a CEffectSet with an array EffectArray
+    // ArbiterMPRecallTeleport is a CEffectTeleport with a PlacementRange of 15, Range of 1000
+
+
+Behaviors
+// Behavior PsiStorm is a CBehaviorBuff
