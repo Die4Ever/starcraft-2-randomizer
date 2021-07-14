@@ -1,6 +1,6 @@
 # StarCraft 2 Randomizer
 
-This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game.
+This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game. Works for 1v1, 2v2, FFA, etc.
 
 ![settings](https://i.imgur.com/SgVMnYX.png)
 
@@ -15,3 +15,5 @@ Then you will pick which faction you think is the strongest from whatever wasn't
 ![picks screen](https://i.imgur.com/KSpcaZ0.png)
 
 StarCraft 2 Randomizer Discord https://discord.gg/P38gdMSNZt
+
+TL.net Discussion Thread https://tl.net/forum/starcraft-2/575425-sc2-randomizer-mod

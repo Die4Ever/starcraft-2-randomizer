@@ -1334,6 +1334,7 @@ bool start_game(bool testConds, bool runActions) {
     libNtve_gf_HideGameUI( true, PlayerGroupAll() );
     for( i=0; i<16; i+=1 ) {// TODO: active players only?
         CameraLockInput(i, false);
+        MeleeSetOption(i, c_meleeOptionStalemate, true);
     }
     GameSetGlobalTimeScale(1);
     return true;
@@ -1720,6 +1721,8 @@ void create_dialog_start() {
 
     for( i=0; i<16; i+=1 ) {// TODO: active players only?
         CameraLockInput(i, true);
+        // TODO: fix disabling stalemate
+        MeleeSetOption(i, c_meleeOptionStalemate, false);
     }
 
     GameSetGlobalTimeScale(0);
