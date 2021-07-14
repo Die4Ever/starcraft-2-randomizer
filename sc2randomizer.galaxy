@@ -82,9 +82,9 @@ const int type_struct = 100;
 
 void debug(string message)
 {
-    //text t;
-    //t = StringToText(message);
-    //TriggerDebugOutput(1, t, false );
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
     //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
     //t = StringToText("debug: ") + t;
     //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
@@ -140,16 +140,21 @@ void fatal(string message)
 }
 
 
+string SPlayerName(int player)
+{
+    return TextToString(PlayerName(player));
+}
+
+
 playergroup GetPlayersOfType(int type)
 {
     playergroup players;
-    int len;
     int i;
+
     players = PlayerGroupCopy(PlayerGroupActive());
-    len = PlayerGroupCount(players);
-    for( i=1; i<=len; i+=1 ) {
-        if( PlayerType( PlayerGroupPlayer(players, i) ) != type ) {
-            PlayerGroupRemove(players, PlayerGroupPlayer(players, i) );
+    for( i=0; i<16; i+=1 ) {
+        if( PlayerGroupHasPlayer(players, i) && PlayerType(i) != type ) {
+            PlayerGroupRemove(players, i);
         }
     }
 
@@ -400,12 +405,12 @@ void apply_changes(int r, int player)
     string oldval;
     string message;
 
-    message = race_changes[r].name + " ("+IntToString(r)+") " + IntToString(race_changes[r].len) + " Changes for Player "+IntToString(player) + ":";
+    message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
     info(message);
-    message = "--- ";
+    message = "- ";
 
     for( i=0; i < race_changes[r].len; i+=1 ) {
-        if( StringLength(message) > 0 ) {
+        if( StringLength(message) > 2 ) {
             message += ", ";
         }
 
@@ -423,7 +428,9 @@ void apply_changes(int r, int player)
             val = FixedToString(f,5);
             oldval = FixedToString(oldf, 5);
         }
-        set_field_string_player(player, cat, entry, field, val );
+        if( ! set_field_string_player(player, cat, entry, field, val ) ) {
+            err(entry+" "+field+" failed to set to "+val);
+        }
 
         message += entry+" "+field+" changed from "+oldval+" to "+val;
 
@@ -440,7 +447,7 @@ void apply_changes(int r, int player)
 
         if( StringLength(message) > 200 ) {
             info( message );
-            message = "--- ";
+            message = "- ";
         }
     }
 
@@ -471,7 +478,7 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
         return false;
     }
     if( ! set_field_fixed(cat, entry, field, value ) ) {
-        warning(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
+        debug(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
         return false;
     }
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, default_player);
@@ -510,7 +517,7 @@ bool rando_field_int(int cat, string entry, string field, string friendly_name, 
         return false;
     }
     if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
-        warning(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
+        debug(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
         return false;
     }
     setval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
@@ -1122,6 +1129,7 @@ bool faction_banned_for_player(int player, int faction) {
         p = PlayerGroupPlayer(players, i);
 
         if( players_bans[get_player_faction_ban_slot(p, faction)] ) {
+            debug(race_changes[faction].name+" is banned for "+SPlayerName(player));
             return true;
         }
     }
@@ -1164,10 +1172,12 @@ bool ban_button_click(bool testConds, bool runActions) {
 
     if( players_bans[get_player_faction_ban_slot(player, selected)] ) {
         players_bans[get_player_faction_ban_slot(player, selected)] = false;
+        info( SPlayerName(player) + " clicked unban for " + race_changes[selected].name );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
     } else {
         players_bans[get_player_faction_ban_slot(player, selected)] = true;
+        info( SPlayerName(player) + " clicked ban for " + race_changes[selected].name );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
     }
@@ -1184,6 +1194,7 @@ bool pick_button_click(bool testConds, bool runActions) {
     selected = get_selected_faction(player, factions_dropdown);
 
     players_picks[player] = selected;
+    info( SPlayerName(player) + " clicked pick for " + race_changes[selected].name );
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
 
     return true;
@@ -1291,8 +1302,11 @@ bool is_waiting(int player, int button) {
     }
 
     if( num_players_waiting < PlayerGroupCount(players) ) {
+        debug("is_waiting("+SPlayerName(player)+") "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
         return true;
     }
+
+    debug("is_waiting("+SPlayerName(player)+") done waiting, "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
 
     clear_waiting();
 
@@ -1303,6 +1317,7 @@ bool is_waiting(int player, int button) {
 void apply_changes_player(int player) {
     int faction;
 
+    info("apply_changes_player " + SPlayerName(player) );
     faction = players_picks[player];
     // TODO: ensure null picks don't pick a banned faction, give them a random faction for more fun AI FFAs
     // TODO: ensure picked correct race
@@ -1317,16 +1332,21 @@ void apply_changes_player(int player) {
         } else {
             err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
         }
+
+        notice( SPlayerName(player) + " was assigned " + race_changes[faction].name );
     }
-    notice( TextToString(PlayerName(player)) + " chose " + race_changes[faction].name );
+    else {
+        notice( SPlayerName(player) + " chose " + race_changes[faction].name );
+    }
     apply_changes(faction, player);
-    info("EventPlayer() == " + IntToString(player) );
+    info("apply_changes_player done for " + SPlayerName(player) );
 }
 
 
 bool start_game(bool testConds, bool runActions) {
     int i;
 
+    info("start_game");
     TriggerDestroy(dialog_timeout);
     DialogSetVisible(dialog_pick_faction, PlayerGroupAll(), false);
     DialogDestroy(dialog_pick_faction);
@@ -1348,6 +1368,7 @@ void start_review() {
 
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
+    info("start_review, with "+IntToString(len)+" active players");
     for( i=1; i<=len; i+=1 ) {
         apply_changes_player( PlayerGroupPlayer(players, i) );
     }
@@ -1358,11 +1379,12 @@ void start_review() {
     
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("start_game");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 30, c_timeReal );
 }
 
 
 bool review_timeout(bool testConds, bool runActions) {
+    info("review_timeout");
     clear_waiting();
     start_review();
     return true;
@@ -1377,6 +1399,7 @@ bool review_button_pressed(bool testConds, bool runActions) {
     int button;
 
     player = EventPlayer();
+    info("review_button_pressed "+SPlayerName(player));
     button = EventDialogControl();
     dialog = DialogControlGetDialog(button);
 
@@ -1395,6 +1418,7 @@ int create_dialog_pick_faction() {
     playergroup players;
     int button;
 
+    info("create_dialog_pick_faction");
     players = PlayerGroupAll();
 
     dialog_pick_faction = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
@@ -1405,7 +1429,7 @@ int create_dialog_pick_faction() {
     
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("review_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 
     changes_list = create_changes_list(dialog_pick_faction);
 
@@ -1435,13 +1459,14 @@ void start_pick_factions() {
     int len;
     playergroup players;
 
+    info("start_pick_factions");
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
     for( i=1; i<=len; i+=1 ) {
         player = PlayerGroupPlayer(players, i);
         for( faction=0; faction < 4*max_factions; faction+=1 ) {
             if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
-                notice( TextToString(PlayerName(player)) + " banned " + race_changes[faction].name );
+                notice( SPlayerName(player) + " banned " + race_changes[faction].name );
             }
         }
     }
@@ -1455,6 +1480,7 @@ void start_pick_factions() {
 
 
 bool ban_factions_timeout(bool testConds, bool runActions) {
+    info("ban_factions_timeout");
     start_pick_factions();
     return true;
 }
@@ -1468,6 +1494,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
     int button;
 
     player = EventPlayer();
+    info("bans_done_button_pressed "+SPlayerName(player));
 
     DialogControlSetVisible(ban_button, PlayerGroupSingle(player), false);
 
@@ -1488,6 +1515,7 @@ int create_dialog_bans() {
     playergroup players;
     int button;
 
+    info("create_dialog_bans");
     players = PlayerGroupAll();
 
     // TODO: bans remaining 2 / 3
@@ -1539,6 +1567,7 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     int num_players;
     int max_bans;
 
+    info("start_rando_button_pressed");
     TriggerDestroy(dialog_timeout);
 
     sseed = libNtve_gf_DialogItemEditValue(seed_editbox, default_player);
@@ -1656,6 +1685,7 @@ int create_dialog_settings() {
     playergroup players;
     int num_players;
 
+    info("create_dialog_settings");
     players = PlayerGroupSingle(default_player);
 
     num_players = PlayerGroupCount(PlayerGroupActive());
@@ -1686,7 +1716,7 @@ int create_dialog_settings() {
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     dialog_timeout = TriggerCreate("start_rando_button_pressed");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 45, c_timeReal );
 
     DialogSetVisible(dialog_start, players, true);
 
@@ -1698,6 +1728,7 @@ int create_dialog_wait_settings() {
     playergroup players;
     int label;
     
+    info("create_dialog_wait_settings");
     players = PlayerGroupCopy(PlayerGroupAll());// not sure if it needs to be copied
     PlayerGroupRemove(players, default_player);
 
@@ -1719,6 +1750,7 @@ int create_dialog_wait_settings() {
 void create_dialog_start() {
     int i;
 
+    info("create_dialog_start");
     for( i=0; i<16; i+=1 ) {// TODO: active players only?
         CameraLockInput(i, true);
         // TODO: fix disabling stalemate
@@ -1736,7 +1768,9 @@ void create_dialog_start() {
 void run_tests() {
     int player;
     int faction;
+    int i;
 
+    info("run_tests");
     players_bans[get_player_faction_ban_slot(1, 5)] = true;
     for( player=0; player<16; player+=1 ) {
         for( faction=0; faction < 4*max_factions; faction+=1 ) {
@@ -1746,6 +1780,15 @@ void run_tests() {
         }
     }
     players_bans[get_player_faction_ban_slot(1, 5)] = false;
+
+    info("PlayerGroupActive() found "+IntToString(PlayerGroupCount(PlayerGroupActive()))+" players");
+    info("PlayerGroupAll() found "+IntToString(PlayerGroupCount(PlayerGroupAll()))+" players");
+
+    for( i=0; i<16; i+=1 ) {
+        if( PlayerGroupHasPlayer(PlayerGroupAll(), i) ) {
+            info("PlayerGroupAll() has player "+IntToString(i)+" with type "+IntToString(PlayerType(i)) );
+        }
+    }
 }
 
 
@@ -1762,6 +1805,8 @@ void main () {
     changes_per_faction = 10;
     changes_per_unit = 2;
 
+    TriggerDebugOutputEnable(true);
+    TriggerDebugSetTypeFile(1, "SC2Rando.txt");
     run_tests();
     
     // CUnit
