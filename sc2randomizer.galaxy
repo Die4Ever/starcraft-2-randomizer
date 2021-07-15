@@ -576,14 +576,21 @@ void modify_resources(string name, fixed percent) {
     int val;
     unitgroup units;
     unit u;
+    int max;
+    string behavior;
+
+    behavior = CatalogFieldValueGet(c_gameCatalogUnit, name, "BehaviorArray[0].Link", default_player);
+    max = CatalogFieldValueGetAsInt(c_gameCatalogBehavior, behavior, "Capacity", default_player);
 
     units = UnitGroup(name, 0, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
     num = UnitGroupCount(units, c_unitCountAll);
     debug("found "+IntToString(num)+" of "+name);
-    for( i=0; i<num; i+=1 ) {
+    for( i=1; i<=num; i+=1 ) {
         u = UnitGroupUnit(units, i);
         val = UnitGetPropertyInt(u, c_unitPropResources, true);
-        val = FixedToInt(IntToFixed(val) * percent / 100.0);
+        val = FixedToInt(IntToFixed(val) / 100 * percent);
+        val = MinI(val, max);
+        info(name+" behavior "+behavior+" set from "+IntToString(UnitGetPropertyInt(u, c_unitPropResources, true))+" to "+IntToString(val)+", max of "+IntToString(max));
         UnitSetPropertyInt(u, c_unitPropResources, val);
     }
 }
