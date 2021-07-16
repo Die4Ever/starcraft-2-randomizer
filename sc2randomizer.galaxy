@@ -82,6 +82,11 @@ const int type_behavior = 8;
 
 const int type_struct = 100;
 
+string[256] randomized_units;// defensive structures go here? so the weapon and HP gets randomized too?
+int num_randomized_units;
+string[128] randomized_buildings;
+int num_randomized_buildings;
+
 void debug(string message)
 {
     text t;
@@ -422,6 +427,7 @@ void apply_changes(int r, int player)
 
         cat = race_changes[r].changes[i].cat;
         entry = race_changes[r].changes[i].entry;
+        // TODO: need list of linked entries (Roach to RoachBurrowed), probably move this stuff into a separate function apply_change_entry
         field = race_changes[r].changes[i].field;
         f = race_changes[r].changes[i].newval;
         oldf = race_changes[r].changes[i].oldval;
@@ -900,21 +906,52 @@ int randomize_unit(string entry, int race_id, int num_fields) {
 }
 
 
+void add_randomized_building(string entry) {
+    randomized_buildings[num_randomized_buildings] = entry;
+    num_randomized_buildings += 1;
+}
+
+
+void add_randomized_unit(string entry) {
+    randomized_units[num_randomized_units] = entry;
+    num_randomized_units += 1;
+}
+
+
+void add_randomized_unit_linked(string entry, string other) {
+    add_randomized_unit(entry);
+}
+
+
+void add_randomized_unit_burrow(string entry) {
+    add_randomized_unit_linked(entry, entry+"Burrowed");
+}
+
+
+void link_unit(string a, string b) {
+}
+
+
+string get_random_unit() {
+    int slot;
+    slot = RandomInt(0, num_randomized_units-1);
+    return randomized_units[slot];
+}
+
+
 void randomize_units(int faction, int changes_per_faction) {
     int cat = c_gameCatalogUnit;
     string scope = "CUnit";
     string entry;
     string cost_category;
-    int num_data;
     int race_id;
     int i;
     int slot;
 
     // TODO: can we do 1 per frame or per tick?
+    // TODO: how to handle buildings with separate randomized fields?
 
-    num_data = CatalogEntryCount(cat);
-
-    for( i=1; i<=num_data; i+=1 ) {
+    for( i=1; i<=changes_per_faction*20; i+=1 ) {
 
         if( race_changes[faction*4 + terran].len >= changes_per_faction
             && race_changes[faction*4 + protoss].len >= changes_per_faction
@@ -923,9 +960,7 @@ void randomize_units(int faction, int changes_per_faction) {
             break;
         }
         GameSetSeed( 5 + seed*3 + i*2713 + faction*3331);
-        slot = RandomInt(1, num_data);
-
-        entry = CatalogEntryGet(cat, slot);
+        entry = get_random_unit();
         race_id = get_race_id(cat, scope, entry);
         if( race_id == no_race ) {
             continue;
@@ -1755,6 +1790,8 @@ int create_dialog_wait_settings() {
     libNtve_gf_SetDialogItemText(label, StringToText("Waiting for host to choose settings..."), players );
     libNtve_gf_SetDialogItemTooltip(label, StringToText("Waiting for host to choose settings..."), players);
 
+    // TODO: some explanations
+
     DialogSetVisible(dialog_wait, players, true);
     return dialog_wait;
 }
@@ -1823,7 +1860,80 @@ void main () {
     TriggerDebugOutputEnable(true);
     TriggerDebugSetTypeFile(1, "SC2Rando.txt");
     run_tests();
-    
+
+    // Protoss
+    add_randomized_unit_linked("Adept", "AdeptPhaseShift");
+    add_randomized_unit("Archon");
+    add_randomized_unit("Carrier");
+    add_randomized_unit("Colossus");
+    add_randomized_unit("DarkTemplar");
+    add_randomized_unit_linked("Disruptor", "DisruptorPhased");
+    add_randomized_unit("HighTemplar");
+    add_randomized_unit("Immortal");
+    add_randomized_unit("Interceptor");
+    add_randomized_unit("Mothership");
+    add_randomized_unit_linked("Observer", "ObserverSiegeMode");
+    add_randomized_unit("Oracle");
+    add_randomized_unit("Phoenix");
+    add_randomized_unit("PhotonCannon");
+    add_randomized_unit("Sentry");
+    add_randomized_unit("ShieldBattery");
+    add_randomized_unit("Stalker");
+    add_randomized_unit("Tempest");
+    add_randomized_unit("VoidRay");
+    add_randomized_unit_linked("WarpPrism", "WarpPrismPhasing");
+    add_randomized_unit("Zealot");
+
+    // Terran
+    add_randomized_unit("AutoTurret");
+    add_randomized_unit("Banshee");
+    add_randomized_unit("Battlecruiser");
+    add_randomized_unit("Bunker");
+    add_randomized_unit("Cyclone");
+    add_randomized_unit_linked("Ghost", "GhostAlternate");
+    link_unit("Ghost", "GhostNova");
+    add_randomized_unit_linked("Hellion", "HellionTank");// HellionTank is the Hellbat
+    add_randomized_unit_linked("LiberatorAG", "Liberator");
+    add_randomized_unit("Marauder");
+    add_randomized_unit("Marine");
+    add_randomized_unit("Medivac");
+    add_randomized_unit("MissileTurret");
+    add_randomized_unit("Nuke");
+    add_randomized_unit("PlanetaryFortress");
+    add_randomized_unit("Raven");
+    add_randomized_unit("Reaper");
+    add_randomized_unit_linked("SiegeTank", "SiegeTankSieged");
+    add_randomized_unit_linked("Thor", "ThorAP");
+    add_randomized_unit_linked("VikingFighter", "VikingAssault");
+    add_randomized_unit_burrow("WidowMine");
+
+    // Zerg, add_randomized_unit_burrow means there's a Burrowed version of the unit too
+    add_randomized_unit_burrow("Baneling");
+    link_unit("Baneling", "BanelingCucoon");
+    add_randomized_unit("Broodling");
+    add_randomized_unit("BroodLord");
+    add_randomized_unit("Corruptor");
+    add_randomized_unit_burrow("Hydralisk");
+    add_randomized_unit_burrow("Infestor");
+    add_randomized_unit_linked("LocustMP", "LocustMPFlying");
+    add_randomized_unit_burrow("LurkerMP");
+    link_unit("LurkerMP", "LurkerMPEgg");
+    add_randomized_unit("Mutalisk");
+    add_randomized_unit("NydusCanal");
+    add_randomized_unit("OverlordTransport");
+    add_randomized_unit_linked("Overseer", "OverlordCocoon");
+    link_unit("Overseer", "OverseerSiegeMode");
+    add_randomized_unit_burrow("Queen");
+    add_randomized_unit_burrow("Ravager");
+    link_unit("Ravager", "RavagerCocoon");
+    add_randomized_unit_burrow("Roach");
+    add_randomized_unit_linked("SpineCrawler", "SpineCrawlerUprooted");
+    add_randomized_unit_linked("SporeCrawler", "SporeCrawlerUprooted");
+    add_randomized_unit_linked("SwarmHostMP", "SwarmHostBurrowedMP");
+    add_randomized_unit_burrow("Ultralisk");
+    add_randomized_unit("Viper");
+    add_randomized_unit_burrow("Zergling");
+
     // CUnit
     AddRandomizedField("CUnit", type_int, "CostResource[Minerals]");
     AddRandomizedField("CUnit", type_int, "CostResource[Vespene]");
