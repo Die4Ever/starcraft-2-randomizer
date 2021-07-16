@@ -7,6 +7,8 @@ include "TriggerLibs/NativeLib"
 //string number_types;
 fixed min_percent;
 fixed max_percent;
+fixed min_resources;
+fixed max_resources;
 int seed;
 const int max_factions = 8;
 int num_factions;
@@ -319,16 +321,20 @@ fixed rng(fixed min, fixed max) {
     return RandomFixed(min, max);
 }
 
-fixed randomize(fixed val) {
+fixed randomize_min_max(fixed val, fixed min, fixed max) {
     fixed percent;
     // probably should make all changes far away from 100%, since there will be few things changed
-    percent = rng(min_percent, max_percent);
-    if( (percent - min_percent) < (max_percent - percent) ) {
-        percent = (percent+min_percent) / 2.0;
+    percent = rng(min, max);
+    if( (percent - min) < (max - percent) ) {
+        percent = (percent+min) / 2.0;
     } else {
-        percent = (percent+max_percent) / 2.0;
+        percent = (percent+max) / 2.0;
     }
-    return val * percent / 100.0;
+    return val * (percent / 100.0);
+}
+
+fixed randomize(fixed val) {
+    return randomize_min_max(val, min_percent, max_percent);
 }
 
 
@@ -631,9 +637,9 @@ void randomize_economy() {
     GameSetSeed( 0451 + seed );
 
     // CBehaviorResource minerals
-    amount_percent = randomize(100);
-    harvestamount_percent = randomize(100);
-    harvesttime_percent = randomize(100);
+    amount_percent = randomize_min_max(100, min_resources, max_resources);
+    harvestamount_percent = randomize_min_max(100, min_resources, max_resources);
+    harvesttime_percent = randomize_min_max(100, min_resources, max_resources);
     modify_behavior_resource("HighYieldMineralFieldMinerals", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("HighYieldMineralFieldMinerals750", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("MineralFieldMinerals", amount_percent, harvestamount_percent, harvesttime_percent);
@@ -667,9 +673,9 @@ void randomize_economy() {
     add_change(no_race, 0, "Minerals", "%", "", 100, amount_percent);
 
     // CBehaviorResource gas
-    amount_percent = randomize(100);
-    harvestamount_percent = randomize(100);
-    harvesttime_percent = randomize(100);
+    amount_percent = randomize_min_max(100, min_resources, max_resources);
+    harvestamount_percent = randomize_min_max(100, min_resources, max_resources);
+    harvesttime_percent = randomize_min_max(100, min_resources, max_resources);
     modify_behavior_resource("HarvestableRichVespeneGeyserGas", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("HarvestableRichVespeneGeyserGasProtoss", amount_percent, harvestamount_percent, harvesttime_percent);
     modify_behavior_resource("HarvestableRichVespeneGeyserGasZerg", amount_percent, harvestamount_percent, harvesttime_percent);
@@ -1805,10 +1811,12 @@ void main () {
     
     seed=1337;
     seed = RandomInt(1, 999999);
-    min_percent = 50;
-    max_percent = 150;
+    min_percent = 25;
+    max_percent = 300;
+    min_resources = 50;
+    max_resources = 150;
     num_factions = 3;
-    num_bans = 1;
+    num_bans = 0;
     changes_per_faction = 10;
     changes_per_unit = 2;
 
