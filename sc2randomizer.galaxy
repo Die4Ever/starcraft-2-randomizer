@@ -86,6 +86,10 @@ string[256] randomized_units;// defensive structures go here? so the weapon and 
 int num_randomized_units;
 string[128] randomized_buildings;
 int num_randomized_buildings;
+string[128] linked_units;
+int num_linked_units;
+
+const int precision = 4;
 
 void debug(string message)
 {
@@ -230,10 +234,19 @@ void CopyRandomizedFields(string from, string scope, string friendly_name)
     }
 }
 
-int GetRandomField(string scope)
+int GetRandomField(int cat, string scope, string entry)
 {
     int num;
     int i;
+
+    if( scope == "CUnit" ) {
+        for( i=0; i<num_randomized_buildings; i+=1 ) {
+            if( entry == randomized_buildings[i] ) {
+                scope = "CUnitBuilding";
+                break;
+            }
+        }
+    }
 
     num = 0;
     for( i=0; i<256; i+=1 ) {
@@ -305,7 +318,7 @@ bool add_change(int self, int cat, string entry, string field, string friendly_n
 
     len = race_changes[self].len;
     if( len >= 256 ) {
-        err("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
+        err("add_change failed with "+entry+" "+field+" changing from "+FixedToString(oldval,precision)+" to "+FixedToString(newval,precision));
         return false;
     }
     race_changes[self].changes[len].cat = cat;
@@ -316,7 +329,7 @@ bool add_change(int self, int cat, string entry, string field, string friendly_n
     race_changes[self].changes[len].newval = newval;
     race_changes[self].len += 1;
 
-    debug("add_change with "+entry+" "+field+" "+friendly_name+" changing from "+FixedToString(oldval,5)+" to "+FixedToString(newval,5));
+    debug("add_change with "+entry+" "+field+" "+friendly_name+" changing from "+FixedToString(oldval,precision)+" to "+FixedToString(newval,precision));
 
     return true;
 }
@@ -404,16 +417,65 @@ bool set_field_fixed_all(int cat, string entry, string field, fixed value)
 }
 
 
+string apply_change_entry(int player, int cat, string entry, string field, fixed oldf, fixed f)
+{
+    string val;
+    string oldval;
+
+    if( IntToFixed(FixedToInt(f)) == f ) {
+        val = IntToString(FixedToInt(f));
+        oldval = IntToString(FixedToInt(oldf));
+    }
+    else {
+        val = FixedToString(f,precision);
+        oldval = FixedToString(oldf, precision);
+    }
+    if( ! set_field_string_player(player, cat, entry, field, val ) ) {
+        err(entry+" "+field+" failed to set to "+val);
+    }
+
+    if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
+        if( ! set_field_string_player(player, cat, entry, "LifeStart", val ) ) {
+            err(entry+" LifeStart failed to set to "+val);
+        }
+    }
+    if( field == "ShieldsMax" ) {
+        if( ! set_field_string_player(player, cat, entry, "ShieldsStart", val ) ) {
+            err(entry+" ShieldsStart failed to set to "+val);
+        }
+    }
+
+    return entry+" "+field+" changed from "+oldval+" to "+val;
+}
+
+
+void apply_linkage(int player, int cat, string parent, string entry, string field, fixed oldf, fixed f)
+{
+    fixed percent;
+    fixed oldval;
+    fixed newval;
+
+    percent = f / oldf;
+
+    oldval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, player);
+    newval = oldval * percent;
+
+    if( oldval == oldf ) {
+        newval = f;
+    }
+    else if( IntToFixed(FixedToInt(f)) == f ) {
+        newval = IntToFixed(FixedToInt(newval));
+    }
+
+    info( "apply_linkage("+parent+") "+FixedToString(percent*100.0, precision)+"% - " + apply_change_entry(player, cat, entry, field, oldval, newval) );
+}
+
+
 void apply_changes(int r, int player)
 {
     int i;
-    int cat;
+    int k;
     string entry;
-    string field;
-    fixed f;
-    fixed oldf;
-    string val;
-    string oldval;
     string message;
 
     message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
@@ -425,35 +487,12 @@ void apply_changes(int r, int player)
             message += ", ";
         }
 
-        cat = race_changes[r].changes[i].cat;
         entry = race_changes[r].changes[i].entry;
-        // TODO: need list of linked entries (Roach to RoachBurrowed), probably move this stuff into a separate function apply_change_entry
-        field = race_changes[r].changes[i].field;
-        f = race_changes[r].changes[i].newval;
-        oldf = race_changes[r].changes[i].oldval;
+        message += apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
 
-        if( IntToFixed(FixedToInt(f)) == f ) {
-            val = IntToString(FixedToInt(f));
-            oldval = IntToString(FixedToInt(oldf));
-        }
-        else {
-            val = FixedToString(f,5);
-            oldval = FixedToString(oldf, 5);
-        }
-        if( ! set_field_string_player(player, cat, entry, field, val ) ) {
-            err(entry+" "+field+" failed to set to "+val);
-        }
-
-        message += entry+" "+field+" changed from "+oldval+" to "+val;
-
-        if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
-            if( ! set_field_string_player(player, cat, entry, "LifeStart", val ) ) {
-                err(entry+" LifeStart failed to set to "+val);
-            }
-        }
-        if( field == "ShieldsMax" ) {
-            if( ! set_field_string_player(player, cat, entry, "ShieldsStart", val ) ) {
-                err(entry+" ShieldsStart failed to set to "+val);
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( entry == linked_units[k] ) {
+                apply_linkage(player, race_changes[r].changes[i].cat, entry, linked_units[k+1], race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
             }
         }
 
@@ -490,7 +529,7 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
         return false;
     }
     if( ! set_field_fixed(cat, entry, field, value ) ) {
-        debug(entry+" "+field+" was "+FixedToString(getval,5)+", failed to change to "+FixedToString(value,5));
+        debug(entry+" "+field+" was "+FixedToString(getval,precision)+", failed to change to "+FixedToString(value,precision));
         return false;
     }
     setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, default_player);
@@ -498,7 +537,7 @@ bool rando_field_fixed(int cat, string entry, string field, string friendly_name
     if( getval == setval ) { return false; }
 
     if( ! set_field_fixed(cat, entry, field, getval ) ) {
-        err(entry+" "+field+" was "+FixedToString(value,5)+", failed to change back to "+FixedToString(getval,5));
+        err(entry+" "+field+" was "+FixedToString(value,precision)+", failed to change back to "+FixedToString(getval,precision));
         return false;
     }
 
@@ -749,7 +788,7 @@ int randomize_fields(int cat, string scope, string entry, string prefix, int rac
 
     num = 0;
     for( i=0; num<num_fields && i<32; i+=1 ) {
-        slot = GetRandomField(scope);
+        slot = GetRandomField(cat, scope, entry);
         if( slot == -1 ) {
             if( num==0 ) {
                 debug(scope+" "+entry+" GetRandomField failed");
@@ -906,29 +945,40 @@ int randomize_unit(string entry, int race_id, int num_fields) {
 }
 
 
-void add_randomized_building(string entry) {
-    randomized_buildings[num_randomized_buildings] = entry;
-    num_randomized_buildings += 1;
-}
-
-
 void add_randomized_unit(string entry) {
     randomized_units[num_randomized_units] = entry;
     num_randomized_units += 1;
 }
 
 
+void add_randomized_building(string entry) {
+    add_randomized_unit(entry);
+    randomized_buildings[num_randomized_buildings] = entry;
+    num_randomized_buildings += 1;
+}
+
+
+void link_unit(string a, string b) {
+    linked_units[num_linked_units] = a;
+    linked_units[num_linked_units+1] = b;
+    num_linked_units += 2;
+}
+
+
 void add_randomized_unit_linked(string entry, string other) {
     add_randomized_unit(entry);
+    link_unit(entry, other);
+}
+
+
+void add_randomized_building_linked(string entry, string other) {
+    add_randomized_building(entry);
+    link_unit(entry, other);
 }
 
 
 void add_randomized_unit_burrow(string entry) {
     add_randomized_unit_linked(entry, entry+"Burrowed");
-}
-
-
-void link_unit(string a, string b) {
 }
 
 
@@ -967,11 +1017,6 @@ void randomize_units(int faction, int changes_per_faction) {
         }
         race_id += faction*4;
         if( race_changes[race_id].len >= changes_per_faction ) {
-            continue;
-        }
-
-        cost_category = CatalogFieldValueGet(cat, entry, "CostCategory", default_player);
-        if( cost_category != "Army" && cost_category != "Technology" ) {
             continue;
         }
 
@@ -1139,8 +1184,8 @@ void show_changes(int list, playergroup players, int race) {
                 + " to "+FixedToString(race_changes[race].changes[i].newval,0);
         }
         else {
-            s += FixedToString(race_changes[race].changes[i].oldval,5)
-                + " to "+FixedToString(race_changes[race].changes[i].newval,5);
+            s += FixedToString(race_changes[race].changes[i].oldval,precision)
+                + " to "+FixedToString(race_changes[race].changes[i].newval,precision);
         }
 
         DialogControlAddItem(list, players, StringToText(s) );
@@ -1848,9 +1893,9 @@ void main () {
     
     seed=1337;
     seed = RandomInt(1, 999999);
-    min_percent = 25;
-    max_percent = 300;
-    min_resources = 50;
+    min_percent = 35;
+    max_percent = 200;
+    min_resources = 60;
     max_resources = 150;
     num_factions = 3;
     num_bans = 0;
@@ -1861,7 +1906,8 @@ void main () {
     TriggerDebugSetTypeFile(1, "SC2Rando.txt");
     run_tests();
 
-    // Protoss
+    // Units
+    // Protoss Units
     add_randomized_unit_linked("Adept", "AdeptPhaseShift");
     add_randomized_unit("Archon");
     add_randomized_unit("Carrier");
@@ -1884,7 +1930,7 @@ void main () {
     add_randomized_unit_linked("WarpPrism", "WarpPrismPhasing");
     add_randomized_unit("Zealot");
 
-    // Terran
+    // Terran Units
     add_randomized_unit("AutoTurret");
     add_randomized_unit("Banshee");
     add_randomized_unit("Battlecruiser");
@@ -1907,9 +1953,9 @@ void main () {
     add_randomized_unit_linked("VikingFighter", "VikingAssault");
     add_randomized_unit_burrow("WidowMine");
 
-    // Zerg, add_randomized_unit_burrow means there's a Burrowed version of the unit too
+    // Zerg Units, add_randomized_unit_burrow means there's a Burrowed version of the unit too
     add_randomized_unit_burrow("Baneling");
-    link_unit("Baneling", "BanelingCucoon");
+    link_unit("Baneling", "BanelingCocoon");
     add_randomized_unit("Broodling");
     add_randomized_unit("BroodLord");
     add_randomized_unit("Corruptor");
@@ -1934,6 +1980,51 @@ void main () {
     add_randomized_unit("Viper");
     add_randomized_unit_burrow("Zergling");
 
+
+    // Buildings
+    // Protoss Buildings
+    add_randomized_building("CyberneticsCore");
+    add_randomized_building("DarkShrine");
+    add_randomized_building("FleetBeacon");
+    add_randomized_building("Forge");
+    add_randomized_building_linked("Gateway", "WarpGate");
+    add_randomized_building("RoboticsBay");
+    add_randomized_building("RoboticsFacility");
+    add_randomized_building("Stargate");
+    add_randomized_building("TemplarArchive");
+    add_randomized_building("TwilightCouncil");
+
+    // Terran Buildings
+    add_randomized_building("Armory");
+    add_randomized_building_linked("Barracks", "BarracksFlying");
+    add_randomized_building("BarracksReactor");
+    add_randomized_building("BarracksTechLab");
+    add_randomized_building("EngineeringBay");
+    add_randomized_building_linked("Factory", "FactoryFlying");
+    add_randomized_building("FactoryReactor");
+    add_randomized_building("FactoryTechLab");
+    add_randomized_building("FusionCore");
+    add_randomized_building("GhostAcademy");
+    add_randomized_building("SensorTower");
+    add_randomized_building_linked("Starport", "StarportFlying");
+    add_randomized_building("StarportReactor");
+    add_randomized_building("StarportTechLab");
+
+    // Zerg Buildings
+    add_randomized_building("BanelingNest");
+    add_randomized_building("EvolutionChamber");
+    add_randomized_building("GreaterSpire");
+    add_randomized_building("Hive");
+    add_randomized_building("HydraliskDen");
+    add_randomized_building("InfestationPit");
+    add_randomized_building("Lair");
+    add_randomized_building("LurkerDenMP");
+    add_randomized_building("RoachWarren");
+    add_randomized_building("SpawningPool");
+    add_randomized_building("Spire");
+    add_randomized_building("UltraliskCavern");
+
+
     // CUnit
     AddRandomizedField("CUnit", type_int, "CostResource[Minerals]");
     AddRandomizedField("CUnit", type_int, "CostResource[Vespene]");
@@ -1945,6 +2036,10 @@ void main () {
     AddRandomizedField("CUnit", type_fixed, "Speed");
     AddRandomizedFieldArray("CUnit", type_struct, "AbilArray");
     AddRandomizedFieldArray("CUnit", type_struct, "WeaponArray");
+    
+    AddRandomizedField("CUnitBuilding", type_int, "CostResource[Minerals]");
+    AddRandomizedField("CUnitBuilding", type_int, "CostResource[Vespene]");
+    AddRandomizedFieldArray("CUnitBuilding", type_struct, "AbilArray");
 
     // Weapons
     AddRandomizedField("CWeaponLegacy", type_fixed, "Range");
