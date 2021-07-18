@@ -899,9 +899,6 @@ void randomize_units(int faction, int changes_per_faction) {
     int i;
     int slot;
 
-    // TODO: can we do 1 per frame or per tick?
-    // TODO: how to handle buildings with separate randomized fields?
-
     for( i=1; i<=changes_per_faction*20; i+=1 ) {
 
         if( race_changes[faction*4 + terran].len >= changes_per_faction
@@ -1440,6 +1437,7 @@ int create_dialog_pick_faction() {
     } else {
         start_review();
     }
+    DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
 
     DialogSetVisible(dialog_pick_faction, players, true);
 
@@ -1514,10 +1512,7 @@ int create_dialog_bans() {
     players = PlayerGroupAll();
 
     // TODO: bans remaining 2 / 3
-    // ban/unban button
     // timer
-    // picks screen
-    // create wait screens in advance for every player, show them 1 player at a time
 
     dialog_bans = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(dialog_bans, StringToText(dialog_title) );
@@ -1536,6 +1531,7 @@ int create_dialog_bans() {
 
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
+    DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
@@ -1676,6 +1672,25 @@ int create_edit_box_with_label(int dialog, playergroup players, string defaultte
 }
 
 
+int create_label(int dialog, playergroup players, string labeltext, string tooltip, int row) {
+    int label;
+    int y;
+    int row_height;
+
+    row_height = 80;
+    y = row*row_height - 3*row_height;
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, players, 600, 50);
+    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
+    if( tooltip != "" ) {
+        libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
+    }
+    DialogControlSetPosition(label, players, c_anchorCenter, 0, y);
+    return label;
+}
+
+
 int create_dialog_settings() {
     playergroup players;
     int num_players;
@@ -1721,7 +1736,6 @@ int create_dialog_settings() {
 
 int create_dialog_wait_settings() {
     playergroup players;
-    int label;
     
     info("create_dialog_wait_settings");
     players = PlayerGroupCopy(PlayerGroupAll());// not sure if it needs to be copied
@@ -1731,13 +1745,11 @@ int create_dialog_wait_settings() {
     DialogSetTitle(dialog_wait, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_wait, true);
 
-    label = DialogControlCreate(dialog_wait, c_triggerControlTypeLabel);
-    DialogControlSetSize(label, players, 100, 50);
-    DialogControlSetPosition(label, players, c_anchorCenter, 0, 0);
-    libNtve_gf_SetDialogItemText(label, StringToText("Waiting for host to choose settings..."), players );
-    libNtve_gf_SetDialogItemTooltip(label, StringToText("Waiting for host to choose settings..."), players);
-
-    // TODO: some explanations
+    create_label(dialog_wait, players, "Waiting for host to choose settings...", "", 0);
+    create_label(dialog_wait, players, "StarCraft 2 Randomizer is still early in development, some bugs are expected.", "", 1);
+    create_label(dialog_wait, players, "After the host chooses the settings, each race will get some randomized factions generated for them.", "", 2);
+    create_label(dialog_wait, players, "If the host chooses to allow bans, make sure to ban the factions that you think look too strong!", "", 3);
+    create_label(dialog_wait, players, "Then you will pick which faction you get to play as, so pick the one you think looks the strongest.", "", 4);
 
     DialogSetVisible(dialog_wait, players, true);
     return dialog_wait;
@@ -1990,7 +2002,7 @@ void main () {
     add_randomized_building("DarkShrine");
     add_randomized_building("FleetBeacon");
     add_randomized_building("Forge");
-    add_randomized_building_linked("Gateway", "WarpGate");
+    add_randomized_building_linked("WarpGate", "Gateway");
     add_randomized_building("RoboticsBay");
     add_randomized_building("RoboticsFacility");
     add_randomized_building("Stargate");
