@@ -1188,6 +1188,7 @@ bool pick_button_click(bool testConds, bool runActions) {
     players_picks[player] = selected;
     info( SPlayerName(player) + " clicked pick for " + race_changes[selected].name );
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+    DialogControlSetEnabled(submit_button, PlayerGroupSingle(player), true);
 
     return true;
 }
@@ -1418,10 +1419,16 @@ int create_dialog_pick_faction() {
     DialogSetFullscreen(dialog_pick_faction, true);
 
     create_continue_button(dialog_pick_faction, "Continue To Review", "review_button_pressed");
+    DialogControlSetEnabled(submit_button, players, false);
     
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("review_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    if( num_bans == 0 ) {
+        TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
+    }
+    else {
+        TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+    }
 
     changes_list = create_changes_list(dialog_pick_faction);
 
