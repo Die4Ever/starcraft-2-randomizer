@@ -4,6 +4,7 @@ https://sc2mapster.fandom.com/wiki/Tutorials
 https://mapster.talv.space/galaxy/reference#catalog
 https://marketplace.visualstudio.com/items?itemName=talv.sc2galaxy
 
+structref and arrayref https://www.sc2mapster.com/forums/development/galaxy-scripting/148197-passing-arrays-as-parameters
 
 Abilities
     // scopes

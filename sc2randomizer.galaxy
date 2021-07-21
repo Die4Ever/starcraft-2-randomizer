@@ -285,6 +285,28 @@ int get_race_id(int cat, string scope, string entry) {
     
     return no_race;
 }
+
+
+string change_to_string(structref<Change> change) {
+    string s;
+    s = change.entry;
+    if( change.friendly_name != "" ) {
+        s += " " + change.friendly_name;
+    }
+    s += " " + change.field;
+    s += " changed from ";
+
+    if( IntToFixed(FixedToInt(change.oldval)) == change.oldval
+        && IntToFixed(FixedToInt(change.newval)) == change.newval ) {
+        s += FixedToString(change.oldval,0)
+            + " to "+FixedToString(change.newval,0);
+    }
+    else {
+        s += FixedToString(change.oldval,precision)
+            + " to "+FixedToString(change.newval,precision);
+    }
+    return s;
+}
 // #endregion
 
 // #region Catalog Data Functions
@@ -409,6 +431,8 @@ void apply_changes(int r, int player)
     int k;
     string entry;
     string message;
+    string s;
+    text description;
 
     message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
     info(message);
@@ -420,7 +444,10 @@ void apply_changes(int r, int player)
         }
 
         entry = race_changes[r].changes[i].entry;
-        message += apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
+        apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
+        s = change_to_string(race_changes[r].changes[i]);
+        message += s;
+        description += StringToText(s+"\n");
 
         for( k=0; k<num_linked_units; k+=2 ) {
             if( entry == linked_units[k] ) {
@@ -438,6 +465,14 @@ void apply_changes(int r, int player)
         info(message);
     }
     info(" ");
+
+    HelpPanelAddTip(
+        PlayerGroupAll(),
+        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        description,
+        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        "Assets\\Textures\\ui_icon_attention.dds"
+    );
 }
 
 
@@ -1070,23 +1105,7 @@ void show_changes(int list, playergroup players, int race) {
     // TODO: zerg buildings count the cost of the drone...
 
     for( i=0; i<race_changes[race].len; i+=1 ) {
-        s = race_changes[race].changes[i].entry;
-        if( race_changes[race].changes[i].friendly_name != "" ) {
-            s += " " + race_changes[race].changes[i].friendly_name;
-        }
-        s += " " + race_changes[race].changes[i].field;
-        s += " changed from ";
-
-        if( IntToFixed(FixedToInt(race_changes[race].changes[i].oldval)) == race_changes[race].changes[i].oldval
-            && IntToFixed(FixedToInt(race_changes[race].changes[i].newval)) == race_changes[race].changes[i].newval ) {
-            s += FixedToString(race_changes[race].changes[i].oldval,0)
-                + " to "+FixedToString(race_changes[race].changes[i].newval,0);
-        }
-        else {
-            s += FixedToString(race_changes[race].changes[i].oldval,precision)
-                + " to "+FixedToString(race_changes[race].changes[i].newval,precision);
-        }
-
+        s = change_to_string(race_changes[race].changes[i]);
         DialogControlAddItem(list, players, StringToText(s) );
     }
 }
@@ -1358,6 +1377,7 @@ void start_review() {
     int i;
     int len;
     playergroup players;
+    text general_changes;
 
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
@@ -1365,6 +1385,18 @@ void start_review() {
     for( i=1; i<=len; i+=1 ) {
         apply_changes_player( PlayerGroupPlayer(players, i) );
     }
+
+    for( i=0; i<race_changes[0].len; i+=1 ) {
+        general_changes += StringToText( change_to_string(race_changes[0].changes[i]) +"\n");
+    }
+    TipAlertPanelClear(PlayerGroupAll());
+    HelpPanelAddTip(
+        PlayerGroupAll(),
+        StringToText("General Changes"),
+        general_changes,
+        StringToText("Review Changes"),
+        "Assets\\Textures\\ui_icon_attention.dds"
+    );
 
     DialogControlSetVisible(pick_button, players, false);
     DialogControlDestroy(submit_button);
