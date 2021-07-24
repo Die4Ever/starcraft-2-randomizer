@@ -1452,15 +1452,6 @@ int create_dialog_pick_faction() {
 
     create_continue_button(dialog_pick_faction, "Continue To Review", "review_button_pressed");
     DialogControlSetEnabled(submit_button, players, false);
-    
-    TriggerDestroy(dialog_timeout);
-    dialog_timeout = TriggerCreate("review_timeout");
-    if( num_bans == 0 ) {
-        TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
-    }
-    else {
-        TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
-    }
 
     changes_list = create_changes_list(dialog_pick_faction);
 
@@ -1477,6 +1468,17 @@ int create_dialog_pick_faction() {
         start_review();
     }
     DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
+
+    TriggerDestroy(dialog_timeout);
+    dialog_timeout = TriggerCreate("review_timeout");
+    if( num_bans == 0 ) {
+        TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
+        DialogControlAddItem(changes_list, players, StringToText("You have 2 minutes to choose") );
+    }
+    else {
+        TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+        DialogControlAddItem(changes_list, players, StringToText("You have 1 minute to choose") );
+    }
 
     DialogSetVisible(dialog_pick_faction, players, true);
 
@@ -1571,6 +1573,7 @@ int create_dialog_bans() {
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
     DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
+    DialogControlAddItem(changes_list, players, StringToText("You have 2 minutes to choose bans") );
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
@@ -1789,6 +1792,7 @@ int create_dialog_wait_settings() {
     create_label(dialog_wait, players, "After the host chooses the settings, each race will get some randomized factions generated for them.", "", 2);
     create_label(dialog_wait, players, "If the host chooses to allow bans, make sure to ban the factions that you think look too strong!", "", 3);
     create_label(dialog_wait, players, "Then you will pick which faction you get to play as, so pick the one you think looks the strongest.", "", 4);
+    create_label(dialog_wait, players, "During the game, you can press F12 to review the changes again.", "", 5);
 
     DialogSetVisible(dialog_wait, players, true);
     return dialog_wait;
