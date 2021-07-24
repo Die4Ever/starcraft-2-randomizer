@@ -295,8 +295,10 @@ int get_race_id(int cat, string scope, string entry) {
 string get_name(int cat, string entry) {
     string name;
 
-    name = entry;
-    name = CatalogFieldValueGet(cat, name, "Name", default_player);
+    if( cat == -1 ) {
+        return entry;
+    }
+    name = CatalogFieldValueGet(cat, entry, "Name", default_player);
     if( name == "" ) {
         return entry;
     } else {
@@ -456,6 +458,40 @@ void apply_linkage(int player, int cat, string parent, string entry, string fiel
 }
 
 
+typedef string[128] string_array_128;
+typedef fixed[128] fixed_array_128;
+void add_unit_buff(arrayref<string_array_128> unit_entries, arrayref<fixed_array_128> buffs, string entry, fixed buff)
+{
+    int i;
+    string attr;
+
+    if( entry == "" ) {
+        warning("add_unit_buff no entry?");
+        return;
+    }
+
+    attr = CatalogFieldValueGet(c_gameCatalogUnit, entry, "Attributes[Structure]", default_player);
+    if( attr != "0" ) {
+        return;
+    }
+
+    if( buff < 0 ) {
+        buff = 1.0 / (buff*-1.0);
+    }
+
+    for( i=0 ; i < 128; i += 1 ) {
+        if( unit_entries[i] == "" ) {
+            unit_entries[i] = entry;
+            buffs[i] = 1;
+        }
+        if( unit_entries[i] == entry ) {
+            buffs[i] *= buff;
+            return;
+        }
+    }
+}
+
+
 void apply_changes(int r, int player)
 {
     int i;
@@ -464,6 +500,9 @@ void apply_changes(int r, int player)
     string message;
     string s;
     text description;
+
+    string[128] unit_entries;
+    fixed[128] unit_buffs;
 
     message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
     info(message);
@@ -481,6 +520,10 @@ void apply_changes(int r, int player)
         s = change_to_string(race_changes[r].changes[i]);
         message += s;
         description += StringToText(s+"\n");
+
+        if( race_changes[r].changes[i].buff != 0 ) {
+            add_unit_buff(unit_entries, unit_buffs, race_changes[r].changes[i].unit_entry, race_changes[r].changes[i].buff);
+        }
 
         for( k=0; k<num_linked_units; k+=2 ) {
             if( entry == linked_units[k] ) {
@@ -507,7 +550,16 @@ void apply_changes(int r, int player)
         "Assets\\Textures\\ui_icon_attention.dds"
     );
 
-    // apply unit sizes
+    for( i=0; i<128; i+=1 ) {
+        if( unit_entries[i] == "" ) {
+            break;
+        }
+        
+        unit_buffs[i] = libNtve_gf_ArithmeticRealClamp(unit_buffs[i], 0.5, 1.5);
+        unit_buffs[i] *= libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player);
+        info("changing "+unit_entries[i]+" scale from " + FixedToString(libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player), precision) + " to " + FixedToString(unit_buffs[i], precision) );
+        libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player, unit_buffs[i]);
+    }
 }
 
 
@@ -750,7 +802,7 @@ void randomize_economy() {
     modify_resources("RichMineralField750", amount_percent);
     modify_resources("RichMineralFieldDefault", amount_percent);
 
-    change.cat = 0;
+    change.cat = -1;
     change.entry = "Minerals";
     change.field = "%";
     change.oldval = 100;
@@ -785,7 +837,7 @@ void randomize_economy() {
     modify_resources("SpacePlatformGeyser", amount_percent);
     modify_resources("VespeneGeyser", amount_percent);
 
-    change.cat = 0;
+    change.cat = -1;
     change.entry = "Gas";
     change.field = "%";
     change.oldval = 100;
@@ -2265,7 +2317,7 @@ void main () {
     AddRandomizedField("CWeaponStrafe", type_effect, "DisplayEffect");
 
     // Effects
-    AddRandomizedFieldBuff("CEffectDamage", type_int, "Amount", 1);
+    AddRandomizedFieldFriendlyNameBuff("CEffectDamage", type_int, "Amount", "Damage", 1);
     AddRandomizedField("CEffectCreatePersistent", type_effect, "InitialEffect");
     AddRandomizedField("CEffectCreatePersistent", type_effect, "AINotifyEffect");
     AddRandomizedField("CEffectCreatePersistent", type_int, "PeriodCount");
