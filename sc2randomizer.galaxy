@@ -196,7 +196,7 @@ bool add_change(int self, structref<Change> change)
 
     len = race_changes[self].len;
     if( len >= 256 ) {
-        err("add_change failed with "+change.entry+" "+change.field+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision));
+        err("add_change failed with "+change.entry+" "+change.field+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision)+", buff "+FixedToString(change.buff, precision));
         return false;
     }
     race_changes[self].changes[len].cat = change.cat;
@@ -209,7 +209,7 @@ bool add_change(int self, structref<Change> change)
     race_changes[self].changes[len].buff = change.buff;
     race_changes[self].len += 1;
 
-    debug("add_change with "+change.entry+" "+change.field+" "+change.friendly_name+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision));
+    debug("add_change with "+change.entry+" "+change.field+" "+change.friendly_name+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision)+", buff "+FixedToString(change.buff, precision));
 
     return true;
 }
@@ -297,6 +297,9 @@ string get_name(int cat, string entry) {
 
     if( cat == -1 ) {
         return entry;
+    }
+    if( entry == "OverlordTransport" ) {
+        return "Overlord Transport";
     }
     name = CatalogFieldValueGet(cat, entry, "Name", default_player);
     if( name == "" ) {
@@ -460,24 +463,24 @@ void apply_linkage(int player, int cat, string parent, string entry, string fiel
 
 typedef string[128] string_array_128;
 typedef fixed[128] fixed_array_128;
-void add_unit_buff(arrayref<string_array_128> unit_entries, arrayref<fixed_array_128> buffs, string entry, fixed buff)
+fixed add_unit_buff(arrayref<string_array_128> unit_entries, arrayref<fixed_array_128> buffs, string entry, fixed buff, fixed ratio)
 {
     int i;
     string attr;
 
     if( entry == "" ) {
         warning("add_unit_buff no entry?");
-        return;
+        return 0;
     }
 
     attr = CatalogFieldValueGet(c_gameCatalogUnit, entry, "Attributes[Structure]", default_player);
     if( attr != "0" ) {
-        return;
+        return 0;
     }
 
-    if( buff < 0 ) {
-        buff = 1.0 / (buff*-1.0);
-    }
+    ratio -= 1.0;
+    buff = buff * ratio;
+    buff *= 0.5;
 
     for( i=0 ; i < 128; i += 1 ) {
         if( unit_entries[i] == "" ) {
@@ -485,10 +488,22 @@ void add_unit_buff(arrayref<string_array_128> unit_entries, arrayref<fixed_array
             buffs[i] = 1;
         }
         if( unit_entries[i] == entry ) {
-            buffs[i] *= buff;
-            return;
+            buffs[i] += buff;
+            break;
         }
     }
+
+    return buff;
+}
+
+
+void apply_scale(string entry, fixed scale, int player)
+{
+    fixed f;
+    f = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, entry, "Scale", player);
+    scale *= f;
+    info("changing "+entry+" scale from " + FixedToString(f, precision) + " to " + FixedToString(scale, precision) );
+    libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, entry, "Scale", player, scale);
 }
 
 
@@ -503,12 +518,11 @@ void apply_changes(int r, int player)
 
     string[128] unit_entries;
     fixed[128] unit_buffs;
+    fixed f;
 
     message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
     info(message);
     message = "- ";
-
-    // build up an array of unit sizes
 
     for( i=0; i < race_changes[r].len; i+=1 ) {
         if( StringLength(message) > 2 ) {
@@ -522,7 +536,9 @@ void apply_changes(int r, int player)
         description += StringToText(s+"\n");
 
         if( race_changes[r].changes[i].buff != 0 ) {
-            add_unit_buff(unit_entries, unit_buffs, race_changes[r].changes[i].unit_entry, race_changes[r].changes[i].buff);
+            f = race_changes[r].changes[i].newval / race_changes[r].changes[i].oldval;
+            info("add_unit_buff "+race_changes[r].changes[i].unit_entry+" "+race_changes[r].changes[i].field+" buff "+FixedToString(race_changes[r].changes[i].buff, precision)+", ratio "+FixedToString(f, precision));
+            add_unit_buff(unit_entries, unit_buffs, race_changes[r].changes[i].unit_entry, race_changes[r].changes[i].buff, f);
         }
 
         for( k=0; k<num_linked_units; k+=2 ) {
@@ -555,10 +571,13 @@ void apply_changes(int r, int player)
             break;
         }
         
-        unit_buffs[i] = libNtve_gf_ArithmeticRealClamp(unit_buffs[i], 0.5, 1.5);
-        unit_buffs[i] *= libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player);
-        info("changing "+unit_entries[i]+" scale from " + FixedToString(libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player), precision) + " to " + FixedToString(unit_buffs[i], precision) );
-        libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, unit_entries[i], "Scale", player, unit_buffs[i]);
+        f = libNtve_gf_ArithmeticRealClamp(unit_buffs[i], 0.7, 1.4);
+        apply_scale(unit_entries[i], f, player);
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( unit_entries[i] == linked_units[k] ) {
+                apply_scale(linked_units[k+1], f, player);
+            }
+        }
     }
 }
 
@@ -603,7 +622,7 @@ bool rando_field_fixed(int cat, string unit_entry, string entry, string field, s
     change.friendly_name = friendly_name;
     change.oldval = getval;
     change.newval = setval;
-    change.buff = buff * ( change.newval / change.oldval );
+    change.buff = buff;
     add_change(changes_id, change);// TODO: maybe need to save the type or precision
     set_field_fixed(cat, entry, field, getval );
 
@@ -651,7 +670,7 @@ bool rando_field_int(int cat, string unit_entry, string entry, string field, str
     change.friendly_name = friendly_name;
     change.oldval = getval;
     change.newval = setval;
-    change.buff = buff * ( change.newval / change.oldval );
+    change.buff = buff;
     add_change(changes_id, change);
     set_field_string(cat, entry, field, IntToString(getval) );
 
@@ -968,6 +987,9 @@ int randomize_behavior(string unit_entry, string entry, int race_id, int num_fie
         note_add("randomize_behavior empty entry");
         return 0;
     }
+    if( entry == "WarpInEffect" || entry == "WarpInEffect15" ) {
+        return 0;
+    }
     if( ! CatalogEntryIsValid(cat, entry) ) {
         return 0;
     }
@@ -1065,6 +1087,11 @@ int randomize_unit(string entry, int race_id, int num_fields) {
 string get_random_unit() {
     int slot;
     slot = RandomInt(0, num_randomized_units-1);
+
+    // reduce chances for buildings, or maybe TODO: I should keep them as separate arrays
+    if( RandomInt(0, 1) == 0 && IsBuilding(randomized_units[slot]) ) {
+        return get_random_unit();
+    }
     return randomized_units[slot];
 }
 
@@ -1966,6 +1993,9 @@ void run_tests() {
     int player;
     int faction;
     int i;
+    string_array_128 unit_entries;
+    fixed_array_128 buffs;
+    fixed buff;
 
     info("run_tests");
     players_bans[get_player_faction_ban_slot(1, 5)] = true;
@@ -1988,6 +2018,24 @@ void run_tests() {
     }
 
     info( parse_friendly_name(c_gameCatalogUnit, "Factory", "", ".Name test", "prev") );
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 1.0);
+    info("add_unit_buff 0.5, 1.0 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.0);
+    info("add_unit_buff 1.5, 1.0 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 0.5);
+    info("add_unit_buff 1.0, 0.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 1.5);
+    info("add_unit_buff 1.0, 1.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.5);
+    info("add_unit_buff 1.5, 1.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 0.5);
+    info("add_unit_buff 0.5, 0.5 == "+FixedToString(buff, precision));
 }
 // #endregion
 
@@ -2296,9 +2344,9 @@ void main () {
     AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Minerals]", "Minerals Cost");
     AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Vespene]", "Gas Cost");
     AddRandomizedField("CUnit", type_int, "Food");
-    AddRandomizedFieldBuff("CUnit", type_int, "LifeMax", 1);
-    AddRandomizedFieldBuff("CUnit", type_int, "ShieldsMax", 1);
-    AddRandomizedFieldBuff("CUnit", type_int, "EnergyMax", 1);
+    AddRandomizedFieldBuff("CUnit", type_int, "LifeMax", 1.25);
+    AddRandomizedFieldBuff("CUnit", type_int, "ShieldsMax", 1.25);
+    AddRandomizedFieldBuff("CUnit", type_int, "EnergyMax", 1.25);
     //AddRandomizedField("CUnit", type_fixed, "Acceleration");
     AddRandomizedField("CUnit", type_fixed, "Speed");
     AddRandomizedFieldArray("CUnit", type_struct, "AbilArray");
@@ -2309,11 +2357,11 @@ void main () {
     AddRandomizedFieldArray("CUnitBuilding", type_struct, "AbilArray");
 
     // Weapons
-    AddRandomizedFieldBuff("CWeaponLegacy", type_fixed, "Range", 1);
-    AddRandomizedFieldBuff("CWeaponLegacy", type_fixed, "Period", -1);
+    AddRandomizedFieldBuff("CWeaponLegacy", type_fixed, "Range", 0.5);
+    AddRandomizedFieldBuff("CWeaponLegacy", type_fixed, "Period", -0.35);
     AddRandomizedField("CWeaponLegacy", type_effect, "DisplayEffect");
-    AddRandomizedFieldBuff("CWeaponStrafe", type_fixed, "Range", 1);
-    AddRandomizedFieldBuff("CWeaponStrafe", type_fixed, "Period", -1);
+    AddRandomizedFieldBuff("CWeaponStrafe", type_fixed, "Range", 0.5);
+    AddRandomizedFieldBuff("CWeaponStrafe", type_fixed, "Period", -0.35);
     AddRandomizedField("CWeaponStrafe", type_effect, "DisplayEffect");
 
     // Effects
@@ -2331,7 +2379,7 @@ void main () {
 
     // Abilities
     AddRandomizedFieldArray("CAbilBuild", type_struct, "InfoArray");
-    AddRandomizedFieldBuff("CAbilBuild", type_int, "Range", 1);
+    AddRandomizedFieldBuff("CAbilBuild", type_int, "Range", 0.5);
     AddRandomizedFieldArray("CAbilBuild", type_effect, "EffectArray");
 
     AddRandomizedFieldArray("CAbilResearch", type_struct, "InfoArray");
@@ -2341,8 +2389,8 @@ void main () {
     AddRandomizedFieldArray("CAbilEffectInstant", type_struct, "Cost");
     AddRandomizedFieldArray("CAbilEffectInstant", type_int, "CastIntroTime");
     AddRandomizedFieldArray("CAbilEffectInstant", type_int, "PrepTime");
-    AddRandomizedFieldBuff("CAbilEffectInstant", type_fixed, "AutoCastRange", 1);
-    AddRandomizedFieldArrayBuff("CAbilEffectInstant", type_int, "Range", 1);
+    AddRandomizedFieldBuff("CAbilEffectInstant", type_fixed, "AutoCastRange", 0.5);
+    AddRandomizedFieldArrayBuff("CAbilEffectInstant", type_int, "Range", 0.5);
     AddRandomizedFieldArray("CAbilEffectInstant", type_int, "FinishTime");
     AddRandomizedFieldBuff("CAbilEffectInstant", type_int, "Arc", 1);
 
@@ -2370,7 +2418,7 @@ void main () {
     AddRandomizedFieldArray("CAbilEffectTarget", type_struct, "Cost");
     AddRandomizedFieldArray("CAbilEffectTarget", type_effect, "Effect");
     AddRandomizedFieldArray("CAbilEffectTarget", type_int, "FinishTime");
-    AddRandomizedFieldArrayBuff("CAbilEffectTarget", type_int, "Range", 1);
+    AddRandomizedFieldArrayBuff("CAbilEffectTarget", type_int, "Range", 0.5);
 
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoCount");
     //AddRandomizedField("CAbilTransport", type_int, "MaxCargoSize");
@@ -2385,8 +2433,8 @@ void main () {
     AddRandomizedField("CBehaviorBuff", type_effect, "PeriodicEffect");
     AddRandomizedField("CBehaviorBuff", type_effect, "AINotifyEffect");
     AddRandomizedFieldArray("CBehaviorBuff", type_effect, "PeriodicDisplayEffect");
-    AddRandomizedFieldBuff("CBehaviorBuff", type_fixed, "Duration", 1);
-    AddRandomizedFieldBuff("CBehaviorBuff", type_fixed, "Period", -1);
+    AddRandomizedFieldBuff("CBehaviorBuff", type_fixed, "Duration", 0.5);
+    AddRandomizedFieldBuff("CBehaviorBuff", type_fixed, "Period", -0.35);
     AddRandomizedField("CBehaviorBuff", type_struct, "Cost");
 
     // Upgrades
@@ -2394,12 +2442,12 @@ void main () {
 
     // structs
     //AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Cooldown.TimeStart", "Cooldown", 1);
-    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Cooldown.TimeUse", "Cooldown", 1);
+    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Cooldown.TimeUse", "Cooldown", -0.5);
     AddRandomizedFieldFriendlyName("SCost", type_int, ".Resource[Minerals]", "Minerals Cost");
     AddRandomizedFieldFriendlyName("SCost", type_int, ".Resource[Vespene]", "Gas Cost");
-    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Life]", "Life Cost", -1);
-    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Shields]", "Shields Cost", -1);
-    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Energy]", "Energy Cost", -1);
+    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Life]", "Life Cost", -0.5);
+    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Shields]", "Shields Cost", -0.5);
+    AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Vital[Energy]", "Energy Cost", -0.5);
 
     AddRandomizedFieldFriendlyName("SAbilBuildInfo", type_int, ".Time", ".Unit Time");
     CopyRandomizedFields("SCost", "SAbilBuildInfo", ".Unit");
