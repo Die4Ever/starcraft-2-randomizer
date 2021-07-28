@@ -17,7 +17,7 @@ bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;
 bool[16] players_waiting;
 
-const string dialog_title = "StarCraft 2 Randomizer Alpha https://discord.gg/P38gdMSNZt";
+const string dialog_title = "StarCraft 2 Randomizer Alpha https://discord.gg/sUzjZ3RPhw";
 const int default_player = 1;
 int dialog_start;
 int seed_editbox;
