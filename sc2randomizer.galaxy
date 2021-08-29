@@ -875,6 +875,8 @@ void randomize_economy() {
     //}
 
     // TODO: randomize max supply, starting workers, maybe worker supply
+    // https://mapster.talv.space/galaxy/reference/unit-group
+    // UnitGroup("Probe", c_playerAny, RegionEntireMap(), null, 0)
 }
 
 
@@ -1810,8 +1812,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     schanges_per_faction = libNtve_gf_DialogItemEditValue(changes_per_faction_editbox, default_player);
     if( schanges_per_faction != "" ) {
         changes_per_faction = StringToInt(schanges_per_faction);
-        if( changes_per_faction > 200 ) {
-            changes_per_faction = 200;
+        if( changes_per_faction > 100 ) {
+            changes_per_faction = 100;
         }
         if( changes_per_faction < 1 ) {
             changes_per_faction = 1;
@@ -1913,20 +1915,20 @@ int create_dialog_settings() {
 
     num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: timeouts for dialogs with countdown
-    if( num_players > 4 ) {
-        num_bans = 0;
-        num_factions = 3;
-    }
-    else {
-        num_bans = 1;
-        num_factions = MaxI(3, num_players+1);
-    }
+    //if( num_players > 4 ) {
+    //    num_bans = 0;
+    //    num_factions = 3;
+    //}
+    //else {
+    //    num_bans = 0;
+    //    num_factions = MaxI(2, num_players);
+    //}
 
     dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(dialog_start, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_start, true);
 
-    seed_editbox = create_edit_box_with_label(dialog_start, players, IntToString(seed), "Seed: ", "The seed used for randomization", 0);
+    seed_editbox = create_edit_box_with_label(dialog_start, players, IntToString(seed), "Seed: ", "The seed used for randomization. Reuse a seed to practice it!", 0);
     num_factions_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_factions), "Factions: ", "How many factions to generate for each race", 1);
     num_bans_editbox = create_edit_box_with_label(dialog_start, players, IntToString(num_bans), "Bans: ", "How many bans each player can use", 2);
 
@@ -2208,13 +2210,13 @@ void main () {
     
     seed=1337;
     seed = RandomInt(1, 999999);
-    min_percent = 35;
-    max_percent = 200;
+    min_percent = 25;
+    max_percent = 250;
     min_resources = 60;
     max_resources = 150;
-    num_factions = 3;
+    num_factions = 2;
     num_bans = 0;
-    changes_per_faction = 10;
+    changes_per_faction = 15;
     changes_per_unit = 2;
 
     TriggerDebugOutputEnable(true);
