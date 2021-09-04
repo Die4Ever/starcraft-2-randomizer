@@ -764,7 +764,11 @@ void modify_resources(string name, fixed percent) {
     for( i=1; i<=num; i+=1 ) {
         u = UnitGroupUnit(units, i);
         val = UnitGetPropertyInt(u, c_unitPropResources, true);
-        val = FixedToInt(IntToFixed(val) / 100 * percent);
+        if( val < 10000 ) {
+            val = FixedToInt(IntToFixed(val) / 100 * percent);
+        } else {
+            val = (val / 100) * FixedToInt(percent);
+        }
         val = MinI(val, max);
         if( val < 0 ) {
             // detect overflow
