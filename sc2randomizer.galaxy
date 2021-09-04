@@ -12,12 +12,14 @@ int num_factions;
 int num_bans;
 int changes_per_faction;
 int changes_per_unit;
+int min_starting_workers;
+int max_starting_workers;
 
 bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;
 bool[16] players_waiting;
 
-const string dialog_title = "StarCraft 2 Randomizer Alpha https://discord.gg/sUzjZ3RPhw";
+const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
 const int default_player = 1;
 int dialog_start;
 int seed_editbox;
@@ -27,6 +29,8 @@ int changes_per_faction_editbox;
 int changes_per_unit_editbox;
 int min_percent_editbox;
 int max_percent_editbox;
+int min_workers_editbox;
+int max_workers_editbox;
 int dialog_bans;
 int changes_list;
 int dialog_wait;
@@ -343,6 +347,23 @@ string change_to_string(structref<Change> change) {
     }
     return s;
 }
+
+void DeleteUnits(string name, int player, int num)
+{
+    unitgroup units;
+    int i;
+    unit u;
+
+    units = UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
+    //num = UnitGroupCount(units, c_unitCountAll);
+    num = MinI(num, UnitGroupCount(units, c_unitCountAll));
+    debug("found "+IntToString(num)+" of "+name);
+    for( i=1; i<=num; i+=1 ) {
+        u = UnitGroupUnit(units, i);
+        UnitRemove(u);
+    }
+}
+
 // #endregion
 
 // #region Catalog Data Functions
@@ -783,6 +804,12 @@ void randomize_economy() {
     fixed harvestamount_percent;
     fixed harvesttime_percent;
     Change change;
+    playergroup players;
+    int i;
+    int len;
+    int player;
+    int starting_workers;
+    int started_workers;
 
     GameSetSeed( 0451 + seed );
 
@@ -877,6 +904,24 @@ void randomize_economy() {
     // TODO: randomize max supply, starting workers, maybe worker supply
     // https://mapster.talv.space/galaxy/reference/unit-group
     // UnitGroup("Probe", c_playerAny, RegionEntireMap(), null, 0)
+    started_workers = CatalogFieldValueGetAsInt(c_gameCatalogRace, "Terr", "StartingUnitArray[1].Count", default_player );
+    starting_workers = FixedToInt(rng(min_starting_workers, max_starting_workers));
+    
+    players = PlayerGroupActive();
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        player = PlayerGroupPlayer(players, i);
+        DeleteUnits("Probe", player, started_workers-starting_workers);
+        DeleteUnits("SCV", player, started_workers-starting_workers);
+        DeleteUnits("Drone", player, started_workers-starting_workers);
+    }
+
+    change.cat = -1;
+    change.entry = "Starting Workers";
+    change.field = "";
+    change.oldval = 12;
+    change.newval = starting_workers;
+    add_change(no_race, change);
 }
 
 
@@ -1768,6 +1813,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     //string schanges_per_unit;
     string smin_percent;
     string smax_percent;
+    string smin_starting_workers;
+    string smax_starting_workers;
     int loading_screen;
     int loading_text;
     int num_players;
@@ -1830,6 +1877,18 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
         max_percent = StringToFixed(smax_percent);
     }
 
+    smin_starting_workers = libNtve_gf_DialogItemEditValue(min_workers_editbox, default_player);
+    if( smin_starting_workers != "" ) {
+        min_starting_workers = StringToInt(smin_starting_workers);
+    }
+    min_starting_workers = libNtve_gf_ArithmeticIntClamp(min_starting_workers, 1, 16);
+    smax_starting_workers = libNtve_gf_DialogItemEditValue(max_workers_editbox, default_player);
+    if( smax_starting_workers != "" ) {
+        max_starting_workers = StringToInt(smax_starting_workers);
+    }
+    max_starting_workers = libNtve_gf_ArithmeticIntClamp(max_starting_workers, 1, 16);
+    min_starting_workers = MinI(min_starting_workers, max_starting_workers);
+
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
     DialogDestroy(dialog_start);
 
@@ -1869,7 +1928,7 @@ int create_edit_box_with_label(int dialog, playergroup players, string defaultte
     int row_height;
 
     row_height = 80;
-    y = row*row_height - 3*row_height;
+    y = row*row_height - 4*row_height;
 
     editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
     DialogControlSetSize(editbox, players, 300, 50);
@@ -1937,6 +1996,9 @@ int create_dialog_settings() {
 
     min_percent_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(min_percent,0), "Minimum Value %: ", "The lowest each stat can be changed to", 4);
     max_percent_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(max_percent,0), "Maximum Value %: ", "The highest each stat can be changed to", 5);
+
+    min_workers_editbox = create_edit_box_with_label(dialog_start, players, IntToString(min_starting_workers), "Minimum Starting Workers: ", "The lowest for starting workers", 6);
+    max_workers_editbox = create_edit_box_with_label(dialog_start, players, IntToString(max_starting_workers), "Maximum Starting Workers: ", "The highest for starting workers", 7);
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
@@ -2218,6 +2280,8 @@ void main () {
     num_bans = 0;
     changes_per_faction = 15;
     changes_per_unit = 2;
+    min_starting_workers = 7;
+    max_starting_workers = 14;
 
     TriggerDebugOutputEnable(true);
     TriggerDebugSetTypeFile(1, "SC2Rando.txt");
