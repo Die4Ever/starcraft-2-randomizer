@@ -766,6 +766,11 @@ void modify_resources(string name, fixed percent) {
         val = UnitGetPropertyInt(u, c_unitPropResources, true);
         val = FixedToInt(IntToFixed(val) / 100 * percent);
         val = MinI(val, max);
+        if( val < 0 ) {
+            // detect overflow
+            val = max;
+        }
+        val = MaxI(val, 200);
         info(name+" behavior "+behavior+" set from "+IntToString(UnitGetPropertyInt(u, c_unitPropResources, true))+" to "+IntToString(val)+", max of "+IntToString(max));
         UnitSetPropertyInt(u, c_unitPropResources, val);
     }

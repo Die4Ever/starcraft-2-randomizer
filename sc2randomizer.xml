@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Catalog>
     <CBehaviorResource id="HighYieldMineralFieldMinerals">
-        <Capacity value="18000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="HighYieldMineralFieldMinerals750">
-        <Capacity value="9000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMinerals">
-        <Capacity value="18000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMinerals450">
-        <Capacity value="4500"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMinerals750">
-        <Capacity value="9000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMineralsNoRemove">
-        <Capacity value="15000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMineralsOpaque">
-        <Capacity value="18000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="MineralFieldMineralsOpaque900">
-        <Capacity value="9000"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="RawRichVespeneGeyserGas">
-        <Capacity value="22500"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
     <CBehaviorResource id="RawVespeneGeyserGas">
-        <Capacity value="22500"/>
+        <Capacity value="100000"/>
     </CBehaviorResource>
 </Catalog>
 
