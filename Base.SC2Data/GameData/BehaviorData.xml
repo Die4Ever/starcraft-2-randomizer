@@ -31,19 +31,3 @@
         <Capacity value="10000000"/>
     </CBehaviorResource>
 </Catalog>
-
-<?xml version="1.0" encoding="us-ascii"?>
-<Catalog>
-    <CRace id="Prot">
-        <StartingUnitArray index="1" Count="16" Unit="Probe">
-        </StartingUnitArray>
-    </CRace>
-    <CRace id="Terr">
-        <StartingUnitArray index="1" Count="16" Unit="SCV">
-        </StartingUnitArray>
-    </CRace>
-    <CRace id="Zerg">
-        <StartingUnitArray index="1" Count="16" Unit="Drone">
-        </StartingUnitArray>
-    </CRace>
-</Catalog>

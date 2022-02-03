@@ -1,0 +1,112 @@
+
+int AddRandomizedField(string scope, int type, string name, fixed buff)
+{
+    int i;
+    for( i=0; i<256; i+=1 ) {
+        if( randomized_fields[i].name == "" ) {
+            randomized_fields[i].scope = scope;
+            randomized_fields[i].type = type;
+            randomized_fields[i].name = name;
+            randomized_fields[i].is_array = false;
+            randomized_fields[i].buff = buff;
+            return i;
+        }
+    }
+    err("AddRandomizedField full");
+    return -1;
+}
+
+int AddRandomizedFieldFriendlyName(string scope, int type, string name, string friendly_name, fixed buff)
+{
+    int i;
+    for( i=0; i<256; i+=1 ) {
+        if( randomized_fields[i].name == "" ) {
+            randomized_fields[i].scope = scope;
+            randomized_fields[i].type = type;
+            randomized_fields[i].name = name;
+            randomized_fields[i].friendly_name = friendly_name;
+            randomized_fields[i].is_array = false;
+            randomized_fields[i].buff = buff;
+            return i;
+        }
+    }
+    err("AddRandomizedFieldFriendlyName full");
+    return -1;
+}
+
+int AddRandomizedFieldArray(string scope, int type, string name, fixed buff)
+{
+    int i;
+    for( i=0; i<256; i+=1 ) {
+        if( randomized_fields[i].name == "" ) {
+            randomized_fields[i].scope = scope;
+            randomized_fields[i].type = type;
+            randomized_fields[i].name = name;
+            randomized_fields[i].is_array = true;
+            randomized_fields[i].buff = buff;
+            return i;
+        }
+    }
+    err("AddRandomizedFieldArray full");
+    return -1;
+}
+
+void CopyRandomizedFields(string from, string scope, string friendly_name)
+{
+    int i;
+    int slot;
+    for( i=0; i<256; i+=1 ) {
+        if( randomized_fields[i].scope == from ) {
+            if( randomized_fields[i].is_array ) {
+                slot = AddRandomizedFieldArray(scope, randomized_fields[i].type, randomized_fields[i].name, randomized_fields[i].buff);
+            }
+            else {
+                slot = AddRandomizedField(scope, randomized_fields[i].type, randomized_fields[i].name, randomized_fields[i].buff);
+            }
+
+            if( randomized_fields[i].friendly_name != "" && friendly_name != "" ) {
+                randomized_fields[slot].friendly_name = friendly_name +" "+ randomized_fields[i].friendly_name;
+            }
+            else {
+                randomized_fields[slot].friendly_name = friendly_name + randomized_fields[i].friendly_name;
+            }
+        }
+    }
+}
+
+
+void add_randomized_unit(string entry) {
+    randomized_units[num_randomized_units] = entry;
+    num_randomized_units += 1;
+}
+
+
+void add_randomized_building(string entry) {
+    add_randomized_unit(entry);
+    randomized_buildings[num_randomized_buildings] = entry;
+    num_randomized_buildings += 1;
+}
+
+
+void link_unit(string a, string b) {
+    linked_units[num_linked_units] = a;
+    linked_units[num_linked_units+1] = b;
+    num_linked_units += 2;
+}
+
+
+void add_randomized_unit_linked(string entry, string other) {
+    add_randomized_unit(entry);
+    link_unit(entry, other);
+}
+
+
+void add_randomized_building_linked(string entry, string other) {
+    add_randomized_building(entry);
+    link_unit(entry, other);
+}
+
+
+void add_randomized_unit_burrow(string entry) {
+    add_randomized_unit_linked(entry, entry+"Burrowed");
+}

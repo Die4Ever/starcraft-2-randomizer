@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TriggerData>
+    <Library Id="8411D554">
+        <Root>
+            <Item Type="CustomScript" Library="8411D554" Id="6E769BA0"/>
+        </Root>
+        <Element Type="CustomScript" Id="6E769BA0">
+            <Identifier>SC2RandoMain</Identifier>
+            <ScriptCode>
+                include &quot;TriggerLibs/NativeLib&quot;
+                include &quot;scripts/sc2randoincludes&quot;
+                void main() {
+                    sc2randoinit();
+                }
+                 
+            </ScriptCode>
+            <InitFunc>main</InitFunc>
+        </Element>
+    </Library>
+</TriggerData>

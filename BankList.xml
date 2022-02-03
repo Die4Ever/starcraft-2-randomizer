@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BankList>
+<!-- DO NOT DELETE THIS! the editor deletes this when it compiles, make sure to put it back! -->
+    <Bank Name="CrowdControl" Player="1"/>
+</BankList>

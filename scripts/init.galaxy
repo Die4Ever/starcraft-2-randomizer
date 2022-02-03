@@ -1,0 +1,279 @@
+
+void sc2randoinit() {
+    int oldseed;
+    int i;
+    // minnerf and minbuff are used to mark things for the buff vs nerf randomization, but without affecting the display size of the unit
+    fixed minnerf = -0.01;
+    fixed minbuff = 0.01;
+
+    seed=1337;
+    seed = RandomInt(1, 999999);
+    min_percent = 25;
+    max_percent = 250;
+    min_resources = 60;
+    max_resources = 150;
+    num_factions = 2;
+    num_bans = 0;
+    changes_per_faction = 15;
+    changes_per_unit = 2;
+    min_starting_workers = 7;
+    max_starting_workers = 14;
+    buffs_nerfs = 75.0;
+
+    TriggerDebugOutputEnable(true);
+    TriggerDebugSetTypeFile(1, "SC2Rando.txt");
+    run_tests();
+
+    // Units
+    // Protoss Units
+    add_randomized_unit_linked("Adept", "AdeptPhaseShift");
+    add_randomized_unit("Archon");
+    add_randomized_unit("Carrier");
+    add_randomized_unit("Colossus");
+    add_randomized_unit("DarkTemplar");
+    add_randomized_unit_linked("Disruptor", "DisruptorPhased");
+    add_randomized_unit("HighTemplar");
+    add_randomized_unit("Immortal");
+    add_randomized_unit("Interceptor");
+    add_randomized_unit("Mothership");
+    add_randomized_unit_linked("Observer", "ObserverSiegeMode");
+    add_randomized_unit("Oracle");
+    add_randomized_unit("Phoenix");
+    add_randomized_unit("PhotonCannon");
+    add_randomized_unit("Sentry");
+    add_randomized_unit("ShieldBattery");
+    add_randomized_unit("Stalker");
+    add_randomized_unit("Tempest");
+    add_randomized_unit("VoidRay");
+    add_randomized_unit_linked("WarpPrism", "WarpPrismPhasing");
+    add_randomized_unit("Zealot");
+
+    // Terran Units
+    add_randomized_unit("AutoTurret");
+    add_randomized_unit("Banshee");
+    add_randomized_unit("Battlecruiser");
+    add_randomized_unit("Bunker");
+    add_randomized_unit("Cyclone");
+    add_randomized_unit_linked("Ghost", "GhostAlternate");
+    link_unit("Ghost", "GhostNova");
+    add_randomized_unit_linked("Hellion", "HellionTank");// HellionTank is the Hellbat
+    add_randomized_unit_linked("LiberatorAG", "Liberator");
+    add_randomized_unit("Marauder");
+    add_randomized_unit("Marine");
+    add_randomized_unit("Medivac");
+    add_randomized_unit("MissileTurret");
+    add_randomized_unit("Nuke");
+    add_randomized_unit("PlanetaryFortress");
+    add_randomized_unit("Raven");
+    add_randomized_unit("Reaper");
+    add_randomized_unit_linked("SiegeTank", "SiegeTankSieged");
+    add_randomized_unit_linked("Thor", "ThorAP");
+    add_randomized_unit_linked("VikingFighter", "VikingAssault");
+    add_randomized_unit_burrow("WidowMine");
+
+    // Zerg Units, add_randomized_unit_burrow means there's a Burrowed version of the unit too
+    add_randomized_unit_burrow("Baneling");
+    link_unit("Baneling", "BanelingCocoon");
+    add_randomized_unit("Broodling");
+    add_randomized_unit("BroodLord");
+    add_randomized_unit("Corruptor");
+    add_randomized_unit_burrow("Hydralisk");
+    add_randomized_unit_burrow("Infestor");
+    add_randomized_unit_linked("LocustMP", "LocustMPFlying");
+    add_randomized_unit_burrow("LurkerMP");
+    link_unit("LurkerMP", "LurkerMPEgg");
+    add_randomized_unit("Mutalisk");
+    add_randomized_unit("NydusCanal");
+    add_randomized_unit("OverlordTransport");
+    add_randomized_unit_linked("Overseer", "OverlordCocoon");
+    link_unit("Overseer", "OverseerSiegeMode");
+    add_randomized_unit_burrow("Queen");
+    add_randomized_unit_burrow("Ravager");
+    link_unit("Ravager", "RavagerCocoon");
+    add_randomized_unit_burrow("Roach");
+    add_randomized_unit_linked("SpineCrawler", "SpineCrawlerUprooted");
+    add_randomized_unit_linked("SporeCrawler", "SporeCrawlerUprooted");
+    add_randomized_unit_linked("SwarmHostMP", "SwarmHostBurrowedMP");
+    add_randomized_unit_burrow("Ultralisk");
+    add_randomized_unit("Viper");
+    add_randomized_unit_burrow("Zergling");
+
+
+    // Buildings
+    // Protoss Buildings
+    add_randomized_building("CyberneticsCore");
+    add_randomized_building("DarkShrine");
+    add_randomized_building("FleetBeacon");
+    add_randomized_building("Forge");
+    add_randomized_building_linked("WarpGate", "Gateway");
+    add_randomized_building("RoboticsBay");
+    add_randomized_building("RoboticsFacility");
+    add_randomized_building("Stargate");
+    add_randomized_building("TemplarArchive");
+    add_randomized_building("TwilightCouncil");
+
+    // Terran Buildings
+    add_randomized_building("Armory");
+    add_randomized_building_linked("Barracks", "BarracksFlying");
+    add_randomized_building("BarracksReactor");
+    add_randomized_building("BarracksTechLab");
+    add_randomized_building("EngineeringBay");
+    add_randomized_building_linked("Factory", "FactoryFlying");
+    add_randomized_building("FactoryReactor");
+    add_randomized_building("FactoryTechLab");
+    add_randomized_building("FusionCore");
+    add_randomized_building("GhostAcademy");
+    add_randomized_building("SensorTower");
+    add_randomized_building_linked("Starport", "StarportFlying");
+    add_randomized_building("StarportReactor");
+    add_randomized_building("StarportTechLab");
+
+    // Zerg Buildings
+    add_randomized_building("BanelingNest");
+    add_randomized_building("EvolutionChamber");
+    add_randomized_building("GreaterSpire");
+    add_randomized_building("Hive");
+    add_randomized_building("HydraliskDen");
+    add_randomized_building("InfestationPit");
+    add_randomized_building("Lair");
+    add_randomized_building("LurkerDenMP");
+    add_randomized_building("RoachWarren");
+    add_randomized_building("SpawningPool");
+    add_randomized_building("Spire");
+    add_randomized_building("UltraliskCavern");
+
+
+    // CUnit
+    AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
+    AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
+    AddRandomizedField("CUnit", type_int, "Food", minnerf);
+    AddRandomizedField("CUnit", type_int, "LifeMax", 1.25);
+    AddRandomizedField("CUnit", type_int, "ShieldsMax", 1.25);
+    AddRandomizedField("CUnit", type_int, "EnergyMax", 1.25);
+    //AddRandomizedField("CUnit", type_fixed, "Acceleration", minbuf);
+    AddRandomizedField("CUnit", type_fixed, "Speed", minbuff);
+    AddRandomizedFieldArray("CUnit", type_struct, "AbilArray", 0);
+    AddRandomizedFieldArray("CUnit", type_struct, "WeaponArray", 0);
+    
+    AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
+    AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
+    AddRandomizedFieldArray("CUnitBuilding", type_struct, "AbilArray", 0);
+
+    // Weapons
+    AddRandomizedField("CWeaponLegacy", type_fixed, "Range", 0.5);
+    AddRandomizedField("CWeaponLegacy", type_fixed, "Period", -0.35);
+    AddRandomizedField("CWeaponLegacy", type_effect, "DisplayEffect", 0);
+    AddRandomizedField("CWeaponStrafe", type_fixed, "Range", 0.5);
+    AddRandomizedField("CWeaponStrafe", type_fixed, "Period", -0.35);
+    AddRandomizedField("CWeaponStrafe", type_effect, "DisplayEffect", 0);
+
+    // Effects
+    AddRandomizedFieldFriendlyName("CEffectDamage", type_int, "Amount", "Damage", 1);
+    AddRandomizedField("CEffectCreatePersistent", type_effect, "InitialEffect", 0);
+    AddRandomizedField("CEffectCreatePersistent", type_effect, "AINotifyEffect", 0);
+    AddRandomizedField("CEffectCreatePersistent", type_int, "PeriodCount", 0);
+    AddRandomizedFieldArray("CEffectCreatePersistent", type_effect, "PeriodicEffectArray", 0);
+    AddRandomizedFieldArray("CEffectCreatePersistent", type_fixed, "PeriodicPeriodArray", 0);
+    AddRandomizedFieldArray("CEffectEnumArea", type_struct, "AreaArray", 0);
+    AddRandomizedField("CEffectApplyBehavior", type_behavior, "Behavior", 0);
+    AddRandomizedFieldArray("CEffectSet", type_behavior, "EffectArray", 0);
+    AddRandomizedField("CEffectTeleport", type_behavior, "PlacementRange", minbuff);
+    AddRandomizedField("CEffectTeleport", type_behavior, "Range", minbuff);
+
+    // Abilities
+    AddRandomizedFieldArray("CAbilBuild", type_struct, "InfoArray", 0);
+    AddRandomizedField("CAbilBuild", type_int, "Range", 0.5);
+    AddRandomizedFieldArray("CAbilBuild", type_effect, "EffectArray", 0);
+
+    AddRandomizedFieldArray("CAbilResearch", type_struct, "InfoArray", 0);
+
+    AddRandomizedFieldArray("CAbilEffectInstant", type_effect, "Effect", 0);
+    AddRandomizedField("CAbilEffectInstant", type_effect, "AINotifyEffect", 0);
+    AddRandomizedFieldArray("CAbilEffectInstant", type_struct, "Cost", 0);
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "CastIntroTime", minnerf);
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "PrepTime", minnerf);
+    AddRandomizedField("CAbilEffectInstant", type_fixed, "AutoCastRange", 0.5);
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "Range", 0.5);
+    AddRandomizedFieldArray("CAbilEffectInstant", type_int, "FinishTime", 0);
+    AddRandomizedField("CAbilEffectInstant", type_int, "Arc", 1);
+
+    AddRandomizedFieldArray("CAbilTrain", type_struct, "InfoArray", 0);
+
+    AddRandomizedFieldArray("CAbilArmMagazine", type_struct, "InfoArray", 0);
+    AddRandomizedField("CAbilArmMagazine", type_struct, "Cost", 0);
+
+    AddRandomizedFieldArray("CAbilWarpTrain", type_struct, "InfoArray", 0);
+
+    //AddRandomizedFieldArray("CAbilMorph", type_struct, "InfoArray", 0);
+    AddRandomizedField("CAbilMorph", type_struct, "Cost", 0);
+
+    //AddRandomizedFieldArray("CAbilMorphPlacement", type_struct, "InfoArray", 0);
+    AddRandomizedField("CAbilMorphPlacement", type_struct, "Cost", 0);
+
+    AddRandomizedField("CAbilBehavior", type_struct, "Cost", 0);
+    AddRandomizedFieldArray("CAbilBehavior", type_behavior, "BehaviorArray", 0);
+
+    AddRandomizedField("CAbilMerge", type_struct, "Info", 0);
+
+    AddRandomizedField("CAbilAugment", type_struct, "Cost", 0);
+    AddRandomizedField("CAbilAugment", type_effect, "Effect", 0);
+
+    AddRandomizedFieldArray("CAbilEffectTarget", type_struct, "Cost", 0);
+    AddRandomizedFieldArray("CAbilEffectTarget", type_effect, "Effect", 0);
+    AddRandomizedFieldArray("CAbilEffectTarget", type_int, "FinishTime", 0);
+    AddRandomizedFieldArray("CAbilEffectTarget", type_int, "Range", 0.5);
+
+    //AddRandomizedField("CAbilTransport", type_int, "MaxCargoCount");
+    //AddRandomizedField("CAbilTransport", type_int, "MaxCargoSize");
+    AddRandomizedField("CAbilTransport", type_int, "TotalCargoSpace", 1);
+    AddRandomizedField("CAbilTransport", type_fixed, "UnloadPeriod", 0);
+    //AddRandomizedField("CAbilTransport", type_int, "MaxUnloadRange");
+    AddRandomizedField("CAbilTransport", type_int, "Range", 1);
+    //AddRandomizedField("CAbilTransport", type_int, "SearchRadius");
+
+    // Behaviors
+    AddRandomizedField("CBehaviorBuff", type_effect, "InitialEffect", 0);
+    AddRandomizedField("CBehaviorBuff", type_effect, "PeriodicEffect", 0);
+    AddRandomizedField("CBehaviorBuff", type_effect, "AINotifyEffect", 0);
+    AddRandomizedFieldArray("CBehaviorBuff", type_effect, "PeriodicDisplayEffect", 0);
+    AddRandomizedField("CBehaviorBuff", type_fixed, "Duration", 0.5);
+    AddRandomizedField("CBehaviorBuff", type_fixed, "Period", -0.35);
+    AddRandomizedField("CBehaviorBuff", type_struct, "Cost", 0);
+
+    // Upgrades
+    //AddRandomizedFieldArray("CUpgrade", type_unknown, "EffectArray");
+
+    // structs
+    //AddRandomizedFieldFriendlyNameBuff("SCost", type_int, ".Cooldown.TimeStart", "Cooldown", 1);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Cooldown.TimeUse", "Cooldown", -0.5);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Resource[Minerals]", "Minerals Cost", minnerf);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Resource[Vespene]", "Gas Cost", minnerf);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Vital[Life]", "Life Cost", -0.5);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Vital[Shields]", "Shields Cost", -0.5);
+    AddRandomizedFieldFriendlyName("SCost", type_int, ".Vital[Energy]", "Energy Cost", -0.5);
+
+    AddRandomizedFieldFriendlyName("SAbilBuildInfo", type_int, ".Time", ".Unit Time", minnerf);
+    CopyRandomizedFields("SCost", "SAbilBuildInfo", ".Unit");
+
+    AddRandomizedFieldFriendlyName("SAbilResearchInfo", type_int, ".Time", ".Upgrade Time", minnerf);
+    AddRandomizedField("SAbilResearchInfo", type_upgrade, ".Upgrade", 0);
+    CopyRandomizedFields("SCost", "SAbilResearchInfo", ".Upgrade");
+
+    AddRandomizedFieldFriendlyName("SAbilTrainInfo", type_int, ".Time", ".Unit[0] Time", minnerf);
+    AddRandomizedField("SAbilTrainInfo", type_effect, ".Effect", 0);
+    CopyRandomizedFields("SCost", "SAbilTrainInfo", ".Unit[0]");// TODO: idk if this is needed
+
+    AddRandomizedField("SUnitAbilData", type_ability, ".Link", 0);
+    AddRandomizedField("SUnitWeaponData", type_weapon, ".Link", 0);
+
+    AddRandomizedFieldFriendlyName("SAbilArmMagazineInfo", type_int, ".Time", ".Unit", 0);
+    CopyRandomizedFields("SCost", "SAbilArmMagazineInfo", ".Unit");
+
+    AddRandomizedFieldFriendlyName("SAbilWarpTrainInfo", type_int, ".Time", ".Unit", 0);
+    CopyRandomizedFields("SCost", "SAbilWarpTrainInfo", ".Unit");
+
+    AddRandomizedField("SEffectEnumArea", type_effect, ".Effect", 0);
+    AddRandomizedField("SEffectEnumArea", type_fixed, ".Radius", 1);
+
+    create_dialog_start();
+}

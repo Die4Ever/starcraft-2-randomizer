@@ -1,3 +1,7 @@
+// https://marketplace.visualstudio.com/items?itemName=maptz.regionfolder regionfolder.collapseAllRegions
+// it won't work if the file is in plain text mode
+// "maptz.regionfolder":{"[galaxy]":{"foldEndRegex":"^//[\\s]*#endregion","foldStartRegex":"^//[\\s]*#region[\\s]*(.*)","disableFolding":false,"isFoldedByDefault":true}},"files.associations":{"*.galaxy":"c"}
+
 maybe there's something in the UI section that can show the changes to spectators https://mapster.talv.space/galaxy/reference#ui
 
 https://sc2mapster.fandom.com/wiki/Tutorials

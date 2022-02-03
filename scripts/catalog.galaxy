@@ -1,0 +1,331 @@
+
+bool set_field_string(int cat, string entry, string field, string value)
+{
+    if( ! CatalogFieldValueSet(cat, entry, field, default_player, value) ) {
+        return false;
+    }
+    return true;
+}
+
+bool set_field_string_player(int player, int cat, string entry, string field, string value)
+{
+    if( ! CatalogFieldValueSet(cat, entry, field, player, value) ) {
+        return false;
+    }
+    return true;
+}
+
+bool set_field_string_all(int cat, string entry, string field, string value)
+{
+    playergroup allplayers;
+    int player;
+    int num_players;
+    int i;
+
+    allplayers = PlayerGroupAll();
+    num_players = PlayerGroupCount(allplayers);
+    for( i=1; i<=num_players; i+=1 ) {
+        player = PlayerGroupPlayer( allplayers, i );
+        if( ! CatalogFieldValueSet(cat, entry, field, player, value) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+bool set_field_fixed(int cat, string entry, string field, fixed value)
+{
+    if( ! libNtve_gf_CatalogFieldValueSetAsReal(cat, entry, field, default_player, value) ) {
+        return false;
+    }
+    return true;
+}
+
+bool set_field_fixed_all(int cat, string entry, string field, fixed value)
+{
+    playergroup allplayers;
+    int player;
+    int num_players;
+    int i;
+    allplayers = PlayerGroupAll();
+    num_players = PlayerGroupCount(allplayers);
+    for( i=1; i<=num_players; i+=1 ) {
+        player = PlayerGroupPlayer( allplayers, i );
+        if( ! libNtve_gf_CatalogFieldValueSetAsReal(cat, entry, field, player, value) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+string apply_change_entry(int player, int cat, string entry, string field, fixed oldf, fixed f)
+{
+    string val;
+    string oldval;
+
+    if( IntToFixed(FixedToInt(f)) == f ) {
+        val = IntToString(FixedToInt(f));
+        oldval = IntToString(FixedToInt(oldf));
+    }
+    else {
+        val = FixedToString(f,precision);
+        oldval = FixedToString(oldf, precision);
+    }
+    if( ! set_field_string_player(player, cat, entry, field, val ) ) {
+        err(entry+" "+field+" failed to set to "+val);
+    }
+
+    if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
+        if( ! set_field_string_player(player, cat, entry, "LifeStart", val ) ) {
+            err(entry+" LifeStart failed to set to "+val);
+        }
+    }
+    if( field == "ShieldsMax" ) {
+        if( ! set_field_string_player(player, cat, entry, "ShieldsStart", val ) ) {
+            err(entry+" ShieldsStart failed to set to "+val);
+        }
+    }
+
+    return entry+" "+field+" changed from "+oldval+" to "+val;
+}
+
+
+void apply_linkage(int player, int cat, string parent, string entry, string field, fixed oldf, fixed f)
+{
+    fixed percent;
+    fixed oldval;
+    fixed newval;
+
+    percent = f / oldf;
+
+    oldval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, player);
+    newval = oldval * percent;
+
+    if( oldval == oldf ) {
+        newval = f;
+    }
+    else if( IntToFixed(FixedToInt(f)) == f ) {
+        newval = IntToFixed(FixedToInt(newval));
+    }
+
+    info( "apply_linkage("+parent+") "+FixedToString(percent*100.0, precision)+"% - " + apply_change_entry(player, cat, entry, field, oldval, newval) );
+}
+
+
+typedef string[128] string_array_128;
+typedef fixed[128] fixed_array_128;
+fixed add_unit_buff(arrayref<string_array_128> unit_entries, arrayref<fixed_array_128> buffs, string entry, fixed buff, fixed ratio)
+{
+    int i;
+    string attr;
+
+    if( entry == "" ) {
+        warning("add_unit_buff no entry?");
+        return 0;
+    }
+
+    attr = CatalogFieldValueGet(c_gameCatalogUnit, entry, "Attributes[Structure]", default_player);
+    if( attr != "0" ) {
+        return 0;
+    }
+
+    ratio -= 1.0;
+    buff = buff * ratio;
+    buff *= 0.5;
+
+    for( i=0 ; i < 128; i += 1 ) {
+        if( unit_entries[i] == "" ) {
+            unit_entries[i] = entry;
+            buffs[i] = 1;
+        }
+        if( unit_entries[i] == entry ) {
+            buffs[i] += buff;
+            break;
+        }
+    }
+
+    return buff;
+}
+
+
+void apply_scale(string entry, fixed scale, int player)
+{
+    fixed f;
+    f = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, entry, "Scale", player);
+    scale *= f;
+    info("changing "+entry+" scale from " + FixedToString(f, precision) + " to " + FixedToString(scale, precision) );
+    libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, entry, "Scale", player, scale);
+}
+
+
+void apply_changes(int r, int player)
+{
+    int i;
+    int k;
+    string entry;
+    string message;
+    string s;
+    text description;
+
+    string[128] unit_entries;
+    fixed[128] unit_buffs;
+    fixed f;
+
+    message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
+    info(message);
+    message = "- ";
+
+    for( i=0; i < race_changes[r].len; i+=1 ) {
+        if( StringLength(message) > 2 ) {
+            message += ", ";
+        }
+
+        entry = race_changes[r].changes[i].entry;
+        apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
+        s = change_to_string(race_changes[r].changes[i]);
+        message += s;
+        description += StringToText(s+"\n");
+
+        if( race_changes[r].changes[i].buff != 0 ) {
+            f = race_changes[r].changes[i].newval / race_changes[r].changes[i].oldval;
+            info("add_unit_buff "+race_changes[r].changes[i].unit_entry+" "+race_changes[r].changes[i].field+" buff "+FixedToString(race_changes[r].changes[i].buff, precision)+", ratio "+FixedToString(f, precision));
+            add_unit_buff(unit_entries, unit_buffs, race_changes[r].changes[i].unit_entry, race_changes[r].changes[i].buff, f);
+        }
+
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( entry == linked_units[k] ) {
+                apply_linkage(player, race_changes[r].changes[i].cat, entry, linked_units[k+1], race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
+            }
+        }
+
+        if( StringLength(message) > 200 ) {
+            info( message );
+            message = "- ";
+        }
+    }
+
+    if( StringLength(message) > 0 ) {
+        info(message);
+    }
+    info(" ");
+
+    HelpPanelAddTip(
+        PlayerGroupAll(),
+        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        description,
+        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        "Assets\\Textures\\ui_icon_attention.dds"
+    );
+
+    for( i=0; i<128; i+=1 ) {
+        if( unit_entries[i] == "" ) {
+            break;
+        }
+        
+        f = libNtve_gf_ArithmeticRealClamp(unit_buffs[i], 0.7, 1.4);
+        apply_scale(unit_entries[i], f, player);
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( unit_entries[i] == linked_units[k] ) {
+                apply_scale(linked_units[k+1], f, player);
+            }
+        }
+    }
+}
+
+
+bool rando_field_fixed(int cat, string unit_entry, string entry, string field, string friendly_name, int changes_id, fixed buff)
+{
+    fixed getval;
+    fixed setval;
+    fixed value;
+    Change change;
+
+    if( find_change(changes_id, entry, field) != -1 ) {
+        return false;
+    }
+
+    getval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, default_player);
+    if( getval == 0 ) {
+        debug(entry+" "+field+" failed to read");
+        return false;
+    }
+    value = randomize(getval, buff);
+    if( value == getval ) {
+        return false;
+    }
+    if( ! set_field_fixed(cat, entry, field, value ) ) {
+        debug(entry+" "+field+" was "+FixedToString(getval,precision)+", failed to change to "+FixedToString(value,precision));
+        return false;
+    }
+    setval = libNtve_gf_CatalogFieldValueGetAsReal(cat, entry, field, default_player);
+    // TODO: determine if the re-read is needed
+    if( getval == setval ) { return false; }
+
+    if( ! set_field_fixed(cat, entry, field, getval ) ) {
+        err(entry+" "+field+" was "+FixedToString(value,precision)+", failed to change back to "+FixedToString(getval,precision));
+        return false;
+    }
+
+    change.cat = cat;
+    change.unit_entry = unit_entry;
+    change.entry = entry;
+    change.field = field;
+    change.friendly_name = friendly_name;
+    change.oldval = getval;
+    change.newval = setval;
+    change.buff = buff;
+    add_change(changes_id, change);// TODO: maybe need to save the type or precision
+    set_field_fixed(cat, entry, field, getval );
+
+    return true;
+}
+
+
+bool rando_field_int(int cat, string unit_entry, string entry, string field, string friendly_name, int changes_id, fixed buff)
+{
+    int getval;
+    int setval;
+    int value;
+    Change change;
+
+    if( find_change(changes_id, entry, field) != -1 ) {
+        return false;
+    }
+
+    getval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
+    if( getval == 0 ) {
+        debug(entry+" "+field+" failed to read");
+        return false;
+    }
+    value = FixedToInt( randomize(getval, buff) );
+    if( value == getval ) {
+        return false;
+    }
+    if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
+        debug(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
+        return false;
+    }
+    setval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
+    // TODO: determine if the re-read is needed
+    if( getval == setval ) { return false; }
+
+    if( ! set_field_string(cat, entry, field, IntToString(getval) ) ) {
+        err(entry+" "+field+" was "+IntToString(value)+", failed to change back to "+IntToString(getval));
+        return false;
+    }
+
+    change.cat = cat;
+    change.unit_entry = unit_entry;
+    change.entry = entry;
+    change.field = field;
+    change.friendly_name = friendly_name;
+    change.oldval = getval;
+    change.newval = setval;
+    change.buff = buff;
+    add_change(changes_id, change);
+    set_field_string(cat, entry, field, IntToString(getval) );
+
+    return true;
+}

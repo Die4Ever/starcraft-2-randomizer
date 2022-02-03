@@ -1,0 +1,95 @@
+
+fixed min_percent;
+fixed max_percent;
+fixed min_resources;
+fixed max_resources;
+int seed;
+const int max_factions = 8;
+int num_factions;
+int num_bans;
+int changes_per_faction;
+int changes_per_unit;
+int min_starting_workers;
+int max_starting_workers;
+fixed buffs_nerfs;
+
+bool[max_factions * 4 * 16] players_bans;
+int[16] players_picks;
+bool[16] players_waiting;
+
+const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
+const int default_player = 1;
+int dialog_start;
+int seed_editbox;
+int num_factions_editbox;
+int num_bans_editbox;
+int changes_per_faction_editbox;
+int changes_per_unit_editbox;
+int min_percent_editbox;
+int max_percent_editbox;
+int min_workers_editbox;
+int max_workers_editbox;
+int buffs_nerfs_editbox;
+int dialog_bans;
+int changes_list;
+int dialog_wait;
+int dialog_pick_faction;
+int ban_button;
+int pick_button;
+int factions_dropdown;
+int submit_button;
+trigger dialog_timeout;
+
+struct Change {
+    int cat;
+    string unit_entry;
+    string entry;
+    string field;
+    string friendly_name;
+    fixed oldval;
+    fixed newval;
+    fixed buff;
+};
+
+struct RaceChanges {
+    string name;
+    Change[128] changes;
+    int len;
+};
+const int no_race=0;
+const int terran=1;
+const int protoss=2;
+const int zerg=3;
+RaceChanges[max_factions *4] race_changes;
+
+struct RandomizedField {
+    //int cat;
+    int type;
+    string scope;
+    string name;
+    string friendly_name;
+    bool is_array;
+    fixed buff;
+};
+RandomizedField[256] randomized_fields;
+const int type_unknown = 0;
+const int type_fixed = 1;
+const int type_int = 2;
+// scopes
+const int type_unit = 3;
+const int type_ability = 4;
+const int type_effect = 5;
+const int type_weapon = 6;
+const int type_upgrade = 7;
+const int type_behavior = 8;
+
+const int type_struct = 100;
+
+string[256] randomized_units;// defensive structures go here? so the weapon and HP gets randomized too?
+int num_randomized_units;
+string[128] randomized_buildings;
+int num_randomized_buildings;
+string[128] linked_units;
+int num_linked_units;
+
+const int precision = 4;

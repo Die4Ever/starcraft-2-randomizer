@@ -1,0 +1,49 @@
+
+void run_tests() {
+    int player;
+    int faction;
+    int i;
+    string_array_128 unit_entries;
+    fixed_array_128 buffs;
+    fixed buff;
+
+    info("run_tests");
+    players_bans[get_player_faction_ban_slot(1, 5)] = true;
+    for( player=0; player<16; player+=1 ) {
+        for( faction=0; faction < 4*max_factions; faction+=1 ) {
+            if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
+                debug( "Player " + IntToString(player) + " banned " + IntToString(faction) + " get_player_faction_ban_slot(player, faction) == " + IntToString(get_player_faction_ban_slot(player, faction)) );
+            }
+        }
+    }
+    players_bans[get_player_faction_ban_slot(1, 5)] = false;
+
+    info("PlayerGroupActive() found "+IntToString(PlayerGroupCount(PlayerGroupActive()))+" players");
+    info("PlayerGroupAll() found "+IntToString(PlayerGroupCount(PlayerGroupAll()))+" players");
+
+    for( i=0; i<16; i+=1 ) {
+        if( PlayerGroupHasPlayer(PlayerGroupAll(), i) ) {
+            info("PlayerGroupAll() has player "+IntToString(i)+" with type "+IntToString(PlayerType(i)) );
+        }
+    }
+
+    info( parse_friendly_name(c_gameCatalogUnit, "Factory", "", ".Name test", "prev") );
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 1.0);
+    info("add_unit_buff 0.5, 1.0 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.0);
+    info("add_unit_buff 1.5, 1.0 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 0.5);
+    info("add_unit_buff 1.0, 0.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 1.5);
+    info("add_unit_buff 1.0, 1.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.5);
+    info("add_unit_buff 1.5, 1.5 == "+FixedToString(buff, precision));
+
+    buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 0.5);
+    info("add_unit_buff 0.5, 0.5 == "+FixedToString(buff, precision));
+}

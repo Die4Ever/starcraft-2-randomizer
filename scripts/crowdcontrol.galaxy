@@ -1,0 +1,35 @@
+
+bank ccbank;
+trigger cc_ticker;
+
+bool banktimer(bool testConds, bool runActions) {
+    string msg;
+
+    info("before reload");
+    BankReload(ccbank);
+    info("after reload");
+    BankWait(ccbank);
+    info("after wait");
+    if( BankKeyExists(ccbank, "incoming", "msg") == false ) {
+        warning("msg doesn't exist");
+        return true;
+    }
+    msg = BankValueGetAsString(ccbank, "incoming", "msg");
+    info(msg);
+    return true;
+}
+
+void StartCrowdControl() {
+    ccbank = BankLoad("CrowdControl", default_player);
+    BankSectionRemove(ccbank, "incoming");
+    BankSectionCreate(ccbank, "incoming");
+    BankValueSetFromString(ccbank, "incoming", "msg", "default message");
+    BankSave(ccbank);
+    info("before reload");
+    BankReload(ccbank);
+    info("after reload");
+    BankWait(ccbank);
+    info("after wait");
+    cc_ticker = TriggerCreate("banktimer");
+    TriggerAddEventTimePeriodic(cc_ticker, 5, c_timeReal);
+}

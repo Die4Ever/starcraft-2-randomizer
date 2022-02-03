@@ -1,0 +1,286 @@
+
+fixed rng(fixed min, fixed max) {
+    return RandomFixed(min, max);
+}
+
+fixed randomize_min_max(fixed val, fixed min, fixed max) {
+    fixed percent;
+    // probably should make all changes far away from 100%, since there will be few things changed
+    percent = rng(min, max);
+    if( (percent - min) < (max - percent) ) {
+        percent = (percent+min) / 2.0;
+    } else {
+        percent = (percent+max) / 2.0;
+    }
+    return val * (percent / 100.0);
+}
+
+fixed randomize(fixed val, fixed buff) {
+    if(min_percent > 100 || max_percent < 100 || buff == 0.0) {
+        return randomize_min_max(val, min_percent, max_percent);
+    }
+    
+    if(rng(0,100) < buffs_nerfs) {
+        if(buff > 0) {
+            return randomize_min_max(val, MaxF(100.0, min_percent), max_percent);
+        }
+        else {
+            return randomize_min_max(val, min_percent, MinF(100.0, max_percent));
+        }
+    }
+    else {
+        if(buff > 0) {
+            return randomize_min_max(val, min_percent, MinF(100.0, max_percent));
+        }
+        else {
+            return randomize_min_max(val, MaxF(100.0, min_percent), max_percent);
+        }
+    }
+}
+
+
+void debug(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    //t = StringToText("debug: ") + t;
+    //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void info(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    //t = StringToText("info: ") + t;
+    //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void notice(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void warning(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    //t = StringToText("warning: ") + t;
+    //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void err(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("error: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void fatal(string message)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    t = StringToText("fatal error: ") + t;
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+string SPlayerName(int player)
+{
+    return TextToString(PlayerName(player));
+}
+
+
+int find_change(int self, string entry, string field)
+{
+    int i;
+    for( i=0; i < race_changes[self].len; i+=1 ) {
+        if( race_changes[self].changes[i].entry == entry && race_changes[self].changes[i].field == field ) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool add_change(int self, structref<Change> change)
+{
+    int len;
+
+    len = race_changes[self].len;
+    if( len >= 256 ) {
+        err("add_change failed with "+change.entry+" "+change.field+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision)+", buff "+FixedToString(change.buff, precision));
+        return false;
+    }
+    race_changes[self].changes[len].cat = change.cat;
+    race_changes[self].changes[len].unit_entry = change.unit_entry;
+    race_changes[self].changes[len].entry = change.entry;
+    race_changes[self].changes[len].field = change.field;
+    race_changes[self].changes[len].friendly_name = change.friendly_name;
+    race_changes[self].changes[len].oldval = change.oldval;
+    race_changes[self].changes[len].newval = change.newval;
+    race_changes[self].changes[len].buff = change.buff;
+    race_changes[self].len += 1;
+
+    debug("add_change with "+change.entry+" "+change.field+" "+change.friendly_name+" changing from "+FixedToString(change.oldval,precision)+" to "+FixedToString(change.newval,precision)+", buff "+FixedToString(change.buff, precision));
+
+    return true;
+}
+
+
+playergroup GetPlayersOfType(int type)
+{
+    playergroup players;
+    int i;
+
+    players = PlayerGroupCopy(PlayerGroupActive());
+    for( i=0; i<16; i+=1 ) {
+        if( PlayerGroupHasPlayer(players, i) && PlayerType(i) != type ) {
+            PlayerGroupRemove(players, i);
+        }
+    }
+
+    return players;
+}
+
+string[100] notes;
+bool note_add(string val)
+{
+    int i;
+    for( i=0; i<100; i+=1 ) {
+        if( notes[i] == val ) {
+            return false;
+        }
+        if( notes[i] == "" ) {
+            info("note_add "+val);
+            notes[i] = val;
+            return true;
+        }
+    }
+    return false;
+}
+
+void notes_log()
+{
+    int i;
+    for( i=0; i<100; i+=1 ) {
+        if( notes[i] == "" ) {
+            continue;
+        }
+        TriggerDebugOutput(1, StringToText(notes[i]), false );
+    }
+}
+
+int get_race_id(int cat, string scope, string entry) {
+    string EditorCategories;
+    string race;
+
+    if( CatalogFieldExists(scope, "EditorCategories") ) {
+        EditorCategories = CatalogFieldValueGet(cat, entry, "EditorCategories", default_player);
+        if( ! StringContains(EditorCategories, "ObjectFamily:Melee", c_stringAnywhere, c_stringCase) ) {
+            return no_race;
+        }
+    } else {
+        EditorCategories = "";
+    }
+
+    if( CatalogFieldExists(scope, "Race") ) {
+        race = "Race:" + CatalogFieldValueGet(cat, entry, "Race", default_player);
+    }
+    else {
+        race = EditorCategories;
+    }
+
+    if( StringContains(race, "Race:Terr", c_stringAnywhere, c_stringCase) ) {
+        return terran;
+    }
+    else if( StringContains(race, "Race:Prot", c_stringAnywhere, c_stringCase) ) {
+        return protoss;
+    }
+    else if( StringContains(race, "Race:Zerg", c_stringAnywhere, c_stringCase) ) {
+        return zerg;
+    }
+    
+    return no_race;
+}
+
+
+string get_name(int cat, string entry) {
+    string name;
+
+    if( cat == -1 ) {
+        return entry;
+    }
+    if( entry == "OverlordTransport" ) {
+        return "Overlord Transport";
+    }
+    name = CatalogFieldValueGet(cat, entry, "Name", default_player);
+    if( name == "" ) {
+        return entry;
+    } else {
+        return TextToString(StringExternal(name));
+    }
+}
+
+string change_to_string(structref<Change> change) {
+    string s;
+    string unit_name;
+
+    unit_name = change.unit_entry;
+    if( change.cat == c_gameCatalogUnit ) {
+        unit_name = change.entry;
+    }
+    unit_name = get_name(c_gameCatalogUnit, unit_name);
+    s = unit_name;
+
+    if( change.cat != c_gameCatalogUnit ) {
+        s += " " + get_name(change.cat, change.entry);
+    }
+
+    if( change.friendly_name != "" ) {
+        s += " " + change.friendly_name;
+        //s += " {" + change.field + "}";
+    } else {
+        s += " " + change.field;
+    }
+    s += " changed from ";
+
+    if( IntToFixed(FixedToInt(change.oldval)) == change.oldval
+        && IntToFixed(FixedToInt(change.newval)) == change.newval ) {
+        s += FixedToString(change.oldval,0)
+            + " to "+FixedToString(change.newval,0);
+    }
+    else {
+        s += FixedToString(change.oldval,precision)
+            + " to "+FixedToString(change.newval,precision);
+    }
+    return s;
+}
+
+void DeleteUnits(string name, int player, int num)
+{
+    unitgroup units;
+    int i;
+    unit u;
+
+    units = UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
+    //num = UnitGroupCount(units, c_unitCountAll);
+    num = MinI(num, UnitGroupCount(units, c_unitCountAll));
+    debug("found "+IntToString(num)+" of "+name);
+    for( i=1; i<=num; i+=1 ) {
+        u = UnitGroupUnit(units, i);
+        UnitRemove(u);
+    }
+}
