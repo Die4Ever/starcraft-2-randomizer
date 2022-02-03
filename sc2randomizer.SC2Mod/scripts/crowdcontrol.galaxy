@@ -1,6 +1,18 @@
 
 bank ccbank;
+bank cc_responses_bank;
 trigger cc_ticker;
+trigger cc_leave_game;
+
+void cc_update_status(string status, int player) {
+    string date;
+    BankValueSetFromString(cc_responses_bank, "header", "status", status);
+    BankValueSetFromString(cc_responses_bank, "header", "version", "0.23");
+    date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
+    BankValueSetFromString(cc_responses_bank, "header", "date", date);
+    BankSave(cc_responses_bank);
+    //BankWait(cc_responses_bank);
+}
 
 bool banktimer(bool testConds, bool runActions) {
     string msg;
@@ -10,12 +22,20 @@ bool banktimer(bool testConds, bool runActions) {
     info("after reload");
     BankWait(ccbank);
     info("after wait");
-    if( BankKeyExists(ccbank, "incoming", "msg") == false ) {
+
+    // loop through all the items in incoming
+        // if response is empty then run the effect and set the response
+        // else if response is acknowledged then delete the entry
+            // or just automatically delete the response when a new message comes in
+                // assuming it was acknowledged otherwise it wouldn't be in the file anymore
+                // in order to reduce the amount of regex/writing CrowdControl has to do
+
+    if( BankKeyExists(ccbank, "request", "method") == false ) {
         warning("msg doesn't exist");
         return true;
     }
-    msg = BankValueGetAsString(ccbank, "incoming", "msg");
-    if( msg == "ignore" ) {
+    msg = BankValueGetAsString(ccbank, "request", "method");
+    if( msg == "" ) {
         info(msg);
     } else {
         err(msg);
@@ -24,16 +44,42 @@ bool banktimer(bool testConds, bool runActions) {
 }
 
 void StartCrowdControl() {
-    ccbank = BankLoad("CrowdControl", default_player);
-    BankSectionRemove(ccbank, "incoming");
-    BankSectionCreate(ccbank, "incoming");
-    BankValueSetFromString(ccbank, "incoming", "msg", "ignore");
-    BankSave(ccbank);
+    cc_update_status("playing", default_player);
+
     info("before reload");
     BankReload(ccbank);
     info("after reload");
     BankWait(ccbank);
     info("after wait");
+
     cc_ticker = TriggerCreate("banktimer");
-    TriggerAddEventTimePeriodic(cc_ticker, 3, c_timeReal);
+    TriggerAddEventTimePeriodic(cc_ticker, 1, c_timeReal);
+}
+
+bool crowd_control_leave_game(bool testConds, bool runActions) {
+    int player;
+    player = EventPlayer();
+    if(PlayerGroupHasPlayer(PlayerGroupActive(), player)) {
+        return true;
+    }
+    cc_update_status("exited", player);
+    return true;
+}
+
+void init_crowd_control() {
+    string date;
+    cc_responses_bank = BankLoad("CrowdControlResponses", default_player);
+    // loop through and clear all the response sections? or use keys instead of sections?
+    BankSectionRemove(cc_responses_bank, "header");
+    BankSectionRemove(cc_responses_bank, "responses");
+    BankSave(cc_responses_bank);
+    
+    ccbank = BankLoad("CrowdControl", default_player);
+    
+    BankSectionCreate(cc_responses_bank, "header");
+    BankSectionCreate(cc_responses_bank, "responses");
+    cc_update_status("starting", default_player);
+
+    cc_leave_game = TriggerCreate("crowd_control_leave_game");
+    TriggerAddEventPlayerLeft(cc_leave_game, default_player, c_gameResultUndecided);
 }

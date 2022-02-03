@@ -19,4 +19,21 @@
     <Bank Name="CrowdControl" Player="14"/>
     <Bank Name="CrowdControl" Player="15"/>
     <Bank Name="CrowdControl" Player="16"/>
+
+    <Bank Name="CrowdControlResponses" Player="1"/>
+    <Bank Name="CrowdControlResponses" Player="2"/>
+    <Bank Name="CrowdControlResponses" Player="3"/>
+    <Bank Name="CrowdControlResponses" Player="4"/>
+    <Bank Name="CrowdControlResponses" Player="5"/>
+    <Bank Name="CrowdControlResponses" Player="6"/>
+    <Bank Name="CrowdControlResponses" Player="7"/>
+    <Bank Name="CrowdControlResponses" Player="8"/>
+    <Bank Name="CrowdControlResponses" Player="9"/>
+    <Bank Name="CrowdControlResponses" Player="10"/>
+    <Bank Name="CrowdControlResponses" Player="11"/>
+    <Bank Name="CrowdControlResponses" Player="12"/>
+    <Bank Name="CrowdControlResponses" Player="13"/>
+    <Bank Name="CrowdControlResponses" Player="14"/>
+    <Bank Name="CrowdControlResponses" Player="15"/>
+    <Bank Name="CrowdControlResponses" Player="16"/>
 </BankList>

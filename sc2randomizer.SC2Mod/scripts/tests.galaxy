@@ -7,6 +7,19 @@ void run_tests() {
     fixed_array_128 buffs;
     fixed buff;
 
+    // some tests could be run even in production code, possibly test to see if the bank is available
+
+    if (GameIsTestMap(true) == true) {
+        warning("automated test?");
+    }
+    else if (GameIsTestMap(false) == true) {
+        warning("manual test?");
+    }
+    else {
+        info("no test?");
+        return;
+    }
+
     info("run_tests");
     players_bans[get_player_faction_ban_slot(1, 5)] = true;
     for( player=0; player<16; player+=1 ) {

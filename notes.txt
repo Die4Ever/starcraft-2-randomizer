@@ -1,5 +1,7 @@
 http://www.zezula.net/en/mpq/download.html
 
+ping a random building on the map? https://mapster.talv.space/galaxy/reference#ping
+
 // https://marketplace.visualstudio.com/items?itemName=maptz.regionfolder regionfolder.collapseAllRegions
 // it won't work if the file is in plain text mode
 // "maptz.regionfolder":{"[galaxy]":{"foldEndRegex":"^//[\\s]*#endregion","foldStartRegex":"^//[\\s]*#region[\\s]*(.*)","disableFolding":false,"isFoldedByDefault":true}},"files.associations":{"*.galaxy":"c"}
@@ -99,3 +101,54 @@ Effects
 
 Behaviors
 // Behavior PsiStorm is a CBehaviorBuff
+
+
+
+
+            string eventsXml = $@"{debugConnectorTypes}
+<eventIndex>
+    <xmlSchemaVersion>{xmlSchemaVersion}</xmlSchemaVersion>
+    <events>
+        <event>{debugRequest}
+            <Method>{method}</Method>
+            <InventoryItem>{request.InventoryItem}</InventoryItem>
+            <ParameterItems>{parameterItems}</ParameterItems>
+            <FormulaVariableType>{request.FormulaVariableType}</FormulaVariableType>
+            <FinalCode>{request.FinalCode}</FinalCode>
+            <BaseCode>{request.BaseCode}</BaseCode>
+            <DisplayViewer>{request.DisplayViewer}</DisplayViewer>
+            <Test>{request.Test}</Test>
+            <Queued>{request.Queued}</Queued>
+            <Elite>{request.Elite}</Elite>
+            <Anonymous>{request.Anonymous}</Anonymous>
+            <Cost>{request.Cost}</Cost>
+            <ID>{request.ID}</ID>
+            <Stamp>{request.Stamp}</Stamp>
+            <BlockType>{request.BlockType}</BlockType>
+        </event>
+    </events>
+</eventIndex>
+";
+
+<eventIndex>
+    <xmlSchemaVersion>0.1.0</xmlSchemaVersion>
+    <events>
+        <event>
+            <Method>StartEffect</Method>
+            <InventoryItem>Repair Vehicle by ... % (repairvehicle) [▲0]</InventoryItem>
+            <ParameterItems><ParameterItem>4</ParameterItem></ParameterItems>
+            <FormulaVariableType>EffectRequest</FormulaVariableType>
+            <FinalCode>repairvehicle_4</FinalCode>
+            <BaseCode>repairvehicle</BaseCode>
+            <DisplayViewer>sdk</DisplayViewer>
+            <Test>True</Test>
+            <Queued>False</Queued>
+            <Elite>False</Elite>
+            <Anonymous>False</Anonymous>
+            <Cost>0</Cost>
+            <ID>b8d46b38-48ee-475e-9f85-15bbbdb72961</ID>
+            <Stamp>2/3/2022 1:56:43 PM +00:00</Stamp>
+            <BlockType>EffectRequest</BlockType>
+        </event>
+    </events>
+</eventIndex>
