@@ -18,14 +18,39 @@ void cc_update_status(string status, int player) {
 
 bool cc_nukes() {
     unitgroup townhalls;
+    // c_playerAny or just the current player?
     townhalls = GetUnitsOfTypes("Nexus CommandCenter CommandCenterFlying OrbitalCommand OrbitalCommandFlying PlanetaryFortress Hatchery Lair Hive", c_playerAny);
     return true;
 }
 
 bool cc_proc_request(int player, string code, string viewer, string params) {
-    notice(viewer + " used " + code + " " + params);
+    int iparam;
+    if(bdebug) {
+        notice(viewer + " used " + code + " " + params+" on player "+IntToString(player));
+    }
+    iparam = StringToInt(params);
     if( code == "nukes" ) {
         return cc_nukes();
+    } else if( code == "giveminerals" ) {
+        notice(viewer+" gave everyone "+IntToString(iparam)+" minerals");
+        for(player=1; player<16; player+=1) {
+            PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperAdd, iparam);
+        }
+    } else if( code == "givegas") {
+        notice(viewer+" gave everyone "+IntToString(iparam)+" gas");
+        for(player=1; player<16; player+=1) {
+            PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperAdd, iparam);
+        }
+    } else if( code == "takeminerals") {
+        notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone");
+        for(player=1; player<16; player+=1) {
+            PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperSubtract, iparam);
+        }
+    } else if( code == "takegas") {
+        notice(viewer+" took away "+IntToString(iparam)+" gas from everyone");
+        for(player=1; player<16; player+=1) {
+            PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperSubtract, iparam);
+        }
     } else {
         err("unknown crowd control effect");
     }
@@ -69,7 +94,7 @@ bool cc_ticker(bool testConds, bool runActions) {
         debug("code doesn't exist");
         return true;
     }
-    cc_read_request(EventPlayer());
+    cc_read_request(default_player);
     return true;
 }
 

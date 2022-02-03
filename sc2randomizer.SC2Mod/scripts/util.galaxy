@@ -68,11 +68,25 @@ void notice(string message)
     UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
+void notifyplayer(string message, int player)
+{
+    text t;
+    t = StringToText(message);
+    TriggerDebugOutput(1, t, false );
+    //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
+    UIDisplayMessage(PlayerGroupSingle(player), c_messageAreaChat, t);
+}
+
 void warning(string message)
 {
     text t;
     t = StringToText(message);
     TriggerDebugOutput(1, t, false );
+
+    if(bdebug) {
+        t = StringToText("warning: ") + t;
+        UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+    }
     //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
     //t = StringToText("warning: ") + t;
     //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);

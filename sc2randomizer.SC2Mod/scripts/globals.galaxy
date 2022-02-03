@@ -1,4 +1,5 @@
 
+bool bdebug = false;
 fixed min_percent;
 fixed max_percent;
 fixed min_resources;

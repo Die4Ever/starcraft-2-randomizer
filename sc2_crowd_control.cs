@@ -194,6 +194,8 @@ namespace CrowdControl.Games.Packs
                     new Effect("Debug Message", "debug"),
 
                     new Effect("Mean Things", "mean", ItemKind.Folder),
+                    new Effect("Take Minerals", "takeminerals", new[]{"minerals"}, "mean"),
+                    new Effect("Take Gas", "takegas", new[]{"gas"}, "mean"),
                     new Effect("Nuke All Town Halls", "nukes", "mean"),
                     new Effect("Kill All Workers", "killworkers", "mean"),
                     new Effect("Kill All Army", "killarmy", "mean"),
@@ -209,8 +211,8 @@ namespace CrowdControl.Games.Packs
         public override List<ItemType> ItemTypes => new List<ItemType>(new[]
         {
             new ItemType("Percent", "percent", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
-            new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":10000}"),
-            new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":10000}")
+            new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
+            new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}")
         });
 
         #endregion

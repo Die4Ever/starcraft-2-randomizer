@@ -10,13 +10,16 @@ void run_tests() {
     // some tests could be run even in production code, possibly test to see if the bank is available
 
     if (GameIsTestMap(true) == true) {
-        warning("automated test?");
+        bdebug = true;
+        warning("automated test");
     }
     else if (GameIsTestMap(false) == true) {
-        warning("manual test?");
+        bdebug = true;
+        warning("manual test");
     }
     else {
-        info("no test?");
+        bdebug = false;
+        info("no test");
         return;
     }
 
