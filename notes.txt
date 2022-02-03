@@ -1,3 +1,5 @@
+http://www.zezula.net/en/mpq/download.html
+
 // https://marketplace.visualstudio.com/items?itemName=maptz.regionfolder regionfolder.collapseAllRegions
 // it won't work if the file is in plain text mode
 // "maptz.regionfolder":{"[galaxy]":{"foldEndRegex":"^//[\\s]*#endregion","foldStartRegex":"^//[\\s]*#region[\\s]*(.*)","disableFolding":false,"isFoldedByDefault":true}},"files.associations":{"*.galaxy":"c"}

@@ -10,10 +10,7 @@ include "Lib8411D554_h"
 // Custom Script: sc2randomain
 //--------------------------------------------------------------------------------------------------
 include "TriggerLibs/NativeLib"
-include "../scripts/sc2randoincludes"
-void main() {
-    sc2randoinit();
-}
+include "scripts/sc2randoincludes"
 
 void lib8411D554_InitCustomScript () {
     main();

@@ -15,7 +15,11 @@ bool banktimer(bool testConds, bool runActions) {
         return true;
     }
     msg = BankValueGetAsString(ccbank, "incoming", "msg");
-    info(msg);
+    if( msg == "ignore" ) {
+        info(msg);
+    } else {
+        err(msg);
+    }
     return true;
 }
 
@@ -23,7 +27,7 @@ void StartCrowdControl() {
     ccbank = BankLoad("CrowdControl", default_player);
     BankSectionRemove(ccbank, "incoming");
     BankSectionCreate(ccbank, "incoming");
-    BankValueSetFromString(ccbank, "incoming", "msg", "default message");
+    BankValueSetFromString(ccbank, "incoming", "msg", "ignore");
     BankSave(ccbank);
     info("before reload");
     BankReload(ccbank);
@@ -31,5 +35,5 @@ void StartCrowdControl() {
     BankWait(ccbank);
     info("after wait");
     cc_ticker = TriggerCreate("banktimer");
-    TriggerAddEventTimePeriodic(cc_ticker, 5, c_timeReal);
+    TriggerAddEventTimePeriodic(cc_ticker, 3, c_timeReal);
 }
