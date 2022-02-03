@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BankList>
+<!-- DO NOT DELETE THIS! the editor deletes this when it compiles, make sure to put it back! -->
+    <Bank Name="CrowdControl" Player="1"/>
+    <Bank Name="CrowdControl" Player="2"/>
+    <Bank Name="CrowdControl" Player="3"/>
+    <Bank Name="CrowdControl" Player="4"/>
+    <Bank Name="CrowdControl" Player="5"/>
+    <Bank Name="CrowdControl" Player="6"/>
+    <Bank Name="CrowdControl" Player="7"/>
+    <Bank Name="CrowdControl" Player="8"/>
+    <Bank Name="CrowdControl" Player="9"/>
+    <Bank Name="CrowdControl" Player="10"/>
+    <Bank Name="CrowdControl" Player="11"/>
+    <Bank Name="CrowdControl" Player="12"/>
+    <Bank Name="CrowdControl" Player="13"/>
+    <Bank Name="CrowdControl" Player="14"/>
+    <Bank Name="CrowdControl" Player="15"/>
+    <Bank Name="CrowdControl" Player="16"/>
+</BankList>
