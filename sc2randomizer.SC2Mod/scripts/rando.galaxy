@@ -219,9 +219,7 @@ void randomize_economy() {
     len = PlayerGroupCount(players);
     for( i=1; i<=len; i+=1 ) {
         player = PlayerGroupPlayer(players, i);
-        DeleteUnits("Probe", player, started_workers-starting_workers);
-        DeleteUnits("SCV", player, started_workers-starting_workers);
-        DeleteUnits("Drone", player, started_workers-starting_workers);
+        DeleteUnits("Probe SCV Drone", player, started_workers-starting_workers);
     }
 
     change.cat = -1;

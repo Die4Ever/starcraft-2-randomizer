@@ -269,16 +269,36 @@ string change_to_string(structref<Change> change) {
     return s;
 }
 
-void DeleteUnits(string name, int player, int num)
+
+// separated by spaces
+unitgroup GetUnitsOfTypes(string names, int player)
+{
+    unitgroup units;
+    unitgroup tunits;
+    string name;
+    int i;
+
+    units = UnitGroupEmpty();
+    for(i=1; i<1000; i+=1) {
+        name = StringWord(names, i);
+        if(name == "") {
+            break;
+        }
+        tunits = UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
+        UnitGroupAddUnitGroup(units, tunits);
+    }
+    return units;
+}
+
+void DeleteUnits(string names, int player, int num)
 {
     unitgroup units;
     int i;
     unit u;
 
-    units = UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
-    //num = UnitGroupCount(units, c_unitCountAll);
+    units = GetUnitsOfTypes(names, player);//UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
     num = MinI(num, UnitGroupCount(units, c_unitCountAll));
-    debug("found "+IntToString(num)+" of "+name);
+    debug("found "+IntToString(num)+" of "+names);
     for( i=1; i<=num; i+=1 ) {
         u = UnitGroupUnit(units, i);
         UnitRemove(u);
