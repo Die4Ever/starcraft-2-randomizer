@@ -50,20 +50,9 @@ namespace CrowdControl.Games.Packs
 
         private const string ccEffectPackVersion = "0.2.0";
         private const string xmlSchemaVersion = "0.1.0";
-
-        // gonna need to crawl around for the correct file
-            // for test games C:\Users\die4e\Documents\StarCraft II\Banks\
-            // for real games C:\Users\die4e\Documents\StarCraft II\Accounts\12345\5-S9-2-543536\Banks\1-S2-1-258901
-            // the first number (12345) is the player's account id
-            // the 2nd number is maybe for the region?
-            // the last number is the map author's ID? (not the mod author's)
-            // we can use the status and date in the file to determine which one to use
-            // we could also make the mod delete the bank instead of setting the status to exited?
-            // search in the Accounts folder first, then the test folder if we don't find it
         
-        private static string connectorPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
-        private static string xmlPathRequests = Path.Join(connectorPath, "CrowdControl.SC2Bank");
-        private static string xmlPathResponses = Path.Join(connectorPath, "CrowdControlResponses.SC2Bank");
+        private static string xmlPathRequests;
+        private static string xmlPathResponses;
 
         // First argument is an effect pack index assigned internally by Warp World for official effect packs.
         // We can use any integer here since it's ignored for any SDK/ccpak plugin.
@@ -72,7 +61,6 @@ namespace CrowdControl.Games.Packs
         public SC2EffectPack([NotNull] IPlayer player, [NotNull] Func<CrowdControlBlock, bool> responseHandler, [NotNull] Action<object> statusUpdateHandler)
             : base(player, responseHandler, statusUpdateHandler)
         {
-            Directory.CreateDirectory(connectorPath);
         }
 
         #region debug
@@ -146,7 +134,7 @@ namespace CrowdControl.Games.Packs
         }
 
         protected bool XmlCheck(EffectRequest request, Method method) {
-            // TODO
+            // TODO: check for acknowledgement
             return true;
 
             if (!File.Exists(xmlPathResponses)) {
@@ -171,6 +159,45 @@ namespace CrowdControl.Games.Packs
             return false;
         }
 
+        protected bool FindXmlInPath(string root) {
+            string[] files = Directory.GetFiles(root, "CrowdControlResponses.SC2Bank", SearchOption.AllDirectories);
+
+            // TODO: proper sorting by date
+            foreach (string file in files) {
+                string data = File.ReadAllText(file);
+                string status = Regex.Match(data,
+                    @".*<Bank version=""1"">\s*"
+                    + @"<Section name=""responses""/>\s*"
+                        + @".*<Key name=""status"">\s*"
+                            + @"<Value string=""(\w+)""/>\s*"
+                    + @"</Key>.*</Section>.*</Bank>.*",
+                    RegexOptions.Singleline).Groups[1].Value;
+                ConnectorLib.Log.Message($"{file} status: {status}");
+
+                // TODO: started means we're connected but not ready yet
+                if(status == "playing" || status == "started") {
+                    ConnectorLib.Log.Message("found match");
+                    xmlPathResponses = file;
+                    xmlPathRequests = xmlPathResponses.Replace("CrowdControlResponses.SC2Bank", "CrowdControl.SC2Bank");
+                    ConnectorLib.Log.Message(xmlPathResponses);
+                    ConnectorLib.Log.Message(xmlPathRequests);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        protected bool FindXml() {
+            // we can use the status and date in the file to determine which one to use
+            // we could also make the mod delete the bank instead of setting the status to exited?
+            // search in the Accounts folder first, then the test folder if we don't find it
+            string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
+            if(FindXmlInPath(root)) return true;
+
+            root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
+            return FindXmlInPath(root);
+        }
+
         protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 500) {
             return SpinWait.SpinUntil(() => {
                 Thread.Sleep(millisecondsCheckInterval);
@@ -179,6 +206,8 @@ namespace CrowdControl.Games.Packs
         }
 
         protected bool SendEffect(EffectRequest request, Method method) {
+            if( ! FindXml() )
+                return false;
             XmlWrite(request, method);
             bool success = XmlWait(request, method);
             return success;
@@ -220,19 +249,21 @@ namespace CrowdControl.Games.Packs
         protected override bool IsReady(EffectRequest request)
         {
             //TODO: Implement
-            return true;
+            return FindXml();
         }
 
         protected override void StartEffect(EffectRequest request)
         {
+            //ConnectorLib.Log.Message(GetMethods(typeof(EffectRequest)));
             if (!IsReady(request))
             {
+                // TODO: make this fail out the request?
                 DelayEffect(request);
                 return;
             }
 
             TryEffect(request,
-                () => true,
+                () => true,// what are all these arguments?
                 () =>
                 {
                     try

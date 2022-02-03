@@ -114,7 +114,7 @@ void StartCrowdControl() {
     debug("StartCrowdControl after wait 2");
 
     cc_ticker_trigger = TriggerCreate("cc_ticker");
-    TriggerAddEventTimePeriodic(cc_ticker_trigger, 5, c_timeReal);
+    TriggerAddEventTimePeriodic(cc_ticker_trigger, 0.5, c_timeReal);
 }
 
 bool cc_leave_game(bool testConds, bool runActions) {
