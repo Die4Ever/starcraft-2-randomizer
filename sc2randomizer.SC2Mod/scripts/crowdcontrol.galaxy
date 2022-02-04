@@ -5,10 +5,11 @@ trigger cc_ticker_trigger;
 trigger cc_leave_game_trigger;
 string cc_last_id;
 
+// TODO: proper handling of a bank per player
+
 void cc_update_status(string status, int player) {
     string date;
     BankValueSetFromString(cc_responses_bank, "header", "status", status);
-    BankValueSetFromString(cc_responses_bank, "header", "version", "0.23");
     date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
     BankValueSetFromString(cc_responses_bank, "header", "date", date);
     BankSave(cc_responses_bank);
@@ -16,17 +17,28 @@ void cc_update_status(string status, int player) {
     info("cc_update_status "+status+" "+IntToString(player));
 }
 
+void cc_set_last_id(string id, string status, int player) {
+    string date;
+    cc_last_id = id;
+    BankSectionRemove(cc_responses_bank, "responses");
+    BankSectionCreate(cc_responses_bank, "responses");
+    BankValueSetFromString(cc_responses_bank, "responses", id, status);
+    date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
+    BankValueSetFromString(cc_responses_bank, "header", "date", date);
+    BankSave(cc_responses_bank);
+}
+
 bool cc_nukes() {
     unitgroup townhalls;
     // c_playerAny or just the current player?
     townhalls = GetUnitsOfTypes("Nexus CommandCenter CommandCenterFlying OrbitalCommand OrbitalCommandFlying PlanetaryFortress Hatchery Lair Hive", c_playerAny);
-    return true;
+    return false;
 }
 
 bool cc_proc_request(int player, string code, string viewer, string params) {
     int iparam;
     if(bdebug) {
-        notice(viewer + " used " + code + " " + params+" on player "+IntToString(player));
+        notice(viewer + " used " + code + " " + params+" from player "+IntToString(player));
     }
     iparam = StringToInt(params);
     if( code == "nukes" ) {
@@ -54,6 +66,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         }
     } else {
         err("unknown crowd control effect");
+        return false;
     }
     return true;
 }
@@ -74,7 +87,9 @@ void cc_read_request(int player) {
     }
 
     if( cc_proc_request(player, code, viewer, params) ) {
-        cc_last_id = id;
+        cc_set_last_id(id, "success", player);
+    } else {
+        cc_set_last_id(id, "fail", player);
     }
 }
 
@@ -105,6 +120,7 @@ void StartCrowdControl() {
     debug("StartCrowdControl after wait 1");
     if( BankKeyExists(cc_bank, "request", "id") ) {
         cc_last_id = BankValueGetAsString(cc_bank, "request", "id");
+        cc_set_last_id(cc_last_id, "fail", default_player);
     }
     info("cc_last_id: "+cc_last_id);
 
@@ -136,11 +152,9 @@ void init_crowd_control() {
     cc_responses_bank = BankLoad("CrowdControlResponses", default_player);
     // loop through and clear all the response sections? or use keys instead of sections?
     BankSectionRemove(cc_responses_bank, "header");
-    BankSectionRemove(cc_responses_bank, "responses");
-    BankSave(cc_responses_bank);
-    
     BankSectionCreate(cc_responses_bank, "header");
-    BankSectionCreate(cc_responses_bank, "responses");
+    BankValueSetFromString(cc_responses_bank, "header", "version", "0.23");
+    cc_set_last_id("", "success", default_player);
     cc_update_status("starting", default_player);
 
     cc_leave_game_trigger = TriggerCreate("cc_leave_game");

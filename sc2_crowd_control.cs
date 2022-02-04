@@ -126,30 +126,14 @@ namespace CrowdControl.Games.Packs
             return true;
         }
 
-        protected bool XmlCheck(EffectRequest request, Method method) {
-            // TODO: check for acknowledgement
-            return true;
-
+        protected string XmlCheckStatus(EffectRequest request, Method method) {
             if (!File.Exists(xmlPathResponses)) {
-                return false;
+                return "fail";
             }
 
-            string outXml = File.ReadAllText(xmlPathResponses);
-            string eventIndexXml = Regex.Match(outXml, @"<eventIndex>\s*(.*)\s*<\/eventIndex>", RegexOptions.Singleline).Groups[1].Value;
-            string eventsXml = Regex.Match(eventIndexXml, @"<events>\s*(.*)\s*<\/events>", RegexOptions.Singleline).Groups[1].Value;
-            MatchCollection eventXmls = Regex.Matches(eventsXml, @"<event>\s*?(.*?)\s*?<\/event>", RegexOptions.Singleline);
-
-            foreach (Match eventXmlMatch in eventXmls) {
-                string eventXml = eventXmlMatch.Groups[1].Value;
-
-                if (
-                    Regex.IsMatch(eventXml, $@"<ID>\s*?{Regex.Escape(request.ID.ToString())}\s*?<\/ID>", RegexOptions.Singleline) &&
-                    Regex.IsMatch(eventXml, $@"<executed>\s*?[Tt]rue\s*?<\/executed>", RegexOptions.Singleline)
-                ) {
-                    return true;
-                }
-            }
-            return false;
+            string data = File.ReadAllText(xmlPathResponses);
+            data = GetXmlSection(data, "responses");
+            return GetXmlString(data, request.ID.ToString());
         }
 
         protected string GetXmlSection(string xml, string section) {
@@ -158,10 +142,12 @@ namespace CrowdControl.Games.Packs
                         "<Bank version=\".*?\">.*"
                         + "<Section name=\""+section+"\">(.*?)</Section>.*</Bank>",
                         RegexOptions.Singleline);
+                
+                if (!match.Success) return null;
                 return match.Groups[1].Value;
             } catch(Exception e) {
                 Log.Message(e.ToString());
-                return "";
+                return null;
             }
         }
 
@@ -171,10 +157,12 @@ namespace CrowdControl.Games.Packs
                     "<Key name=\""+key+"\">\\s*"
                     + "<Value string=\"([^\"]+)\"/>",
                     RegexOptions.Singleline);
+                
+                if (!match.Success) return null;
                 return match.Groups[1].Value;
             } catch(Exception e) {
                 Log.Message(e.ToString());
-                return "";
+                return null;
             }
         }
 
@@ -233,11 +221,16 @@ namespace CrowdControl.Games.Packs
             return FindXmlInPath(root);
         }
 
-        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 500) {
-            return SpinWait.SpinUntil(() => {
+        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 100) {
+            string status = null;
+            SpinWait.SpinUntil(() => {
                 Thread.Sleep(millisecondsCheckInterval);
-                return XmlCheck(request, method);
+                status = XmlCheckStatus(request, method);
+                return status is not null;
             }, millisecondsTimeout);
+
+            Log.Message($"XmlWait got status {status}");
+            return status is not null && status == "success";
         }
 
         protected bool SendEffect(EffectRequest request, Method method) {
@@ -290,8 +283,8 @@ namespace CrowdControl.Games.Packs
             //Log.Message(GetMethods(typeof(EffectRequest)));
             if (!IsReady(request))
             {
-                // TODO: make this fail out the request?
-                DelayEffect(request);
+                Respond(request, EffectStatus.FailTemporary, "Not ready yet");
+                //DelayEffect(request);
                 return;
             }
 
@@ -306,7 +299,7 @@ namespace CrowdControl.Games.Packs
                     catch { return false; }
                 },
                 () => Connector.SendMessage($"{request.DisplayViewer} invoked {request.InventoryItem}."),
-                null, true, request.FinalCode);
+                null, false, request.FinalCode);
         }
 
         protected override bool StopEffect(EffectRequest request)
