@@ -47,14 +47,6 @@ namespace CrowdControl.Games.Packs
 
     public class SC2EffectPack : PCEffectPack<NullConnector>
     {
-        private const bool debug = false;
-
-        private const string ccEffectPackVersion = "0.2.0";
-        private const string xmlSchemaVersion = "0.1.0";
-        
-        private static string xmlPathRequests;
-        private static string xmlPathResponses;
-
         // First argument is an effect pack index assigned internally by Warp World for official effect packs.
         // We can use any integer here since it's ignored for any SDK/ccpak plugin.
         public override Game Game { get; } = new Game(99999, "StarCraft 2 Randomizer", "SC2EffectPack", "PC", ConnectorType.NullConnector);
@@ -100,7 +92,7 @@ namespace CrowdControl.Games.Packs
 <Bank version=""1"">
     <Section name=""header"">
         <Key name=""version"">
-            <Value string=""0.23""/>
+            <Value string=""{version}""/>
         </Key>
         <Key name=""date"">
             <Value string=""{request.Stamp}""/>
@@ -160,30 +152,60 @@ namespace CrowdControl.Games.Packs
             return false;
         }
 
-        protected bool FindXmlInPath(string root) {
-            string[] files = Directory.GetFiles(root, "CrowdControlResponses.SC2Bank", SearchOption.AllDirectories);
+        protected Dictionary<string, string> ParseXml(string file) {
+            var dict = new Dictionary<string, string>();
 
-            // TODO: proper sorting by date
-            foreach (string file in files) {
+            try {
                 string data = File.ReadAllText(file);
-                string status = Regex.Match(data,
+                var match = Regex.Match(data,
                     @".*<Bank version=""1"">\s*"
                     + @"<Section name=""responses""/>\s*"
-                        + @".*<Key name=""status"">\s*"
-                            + @"<Value string=""(\w+)""/>\s*"
-                    + @"</Key>.*</Section>.*</Bank>.*",
-                    RegexOptions.Singleline).Groups[1].Value;
-                Log.Message($"{file} status: {status}");
 
-                // TODO: started means we're connected but not ready yet
-                if(status == "playing" || status == "started") {
-                    Log.Message("found match");
-                    xmlPathResponses = file;
-                    xmlPathRequests = xmlPathResponses.Replace("CrowdControlResponses.SC2Bank", "CrowdControl.SC2Bank");
-                    Log.Message(xmlPathResponses);
-                    Log.Message(xmlPathRequests);
-                    return true;
+                        + @".*<Key name=""((date)|(status))"">\s*"
+                            + @"<Value string=""([^""]+)""/>\s*"
+
+                        + @".*<Key name=""((date)|(status))"">\s*"
+                            + @"<Value string=""([^""]+)""/>\s*"
+                    
+                    + @"</Key>.*</Section>.*</Bank>.*",
+                    RegexOptions.Singleline);
+                
+                dict[match.Groups[1].Value] = match.Groups[4].Value;
+                dict[match.Groups[5].Value] = match.Groups[8].Value;
+            } catch(Exception e) {
+                Log.Message(e.ToString());
+                dict["date"] = "1970-01-01";
+                dict["status"] = "error";
+            }
+            return dict;
+        }
+
+        protected bool FindXmlInPath(string root) {
+            string[] files = Directory.GetFiles(root, "CrowdControlResponses.SC2Bank", SearchOption.AllDirectories);
+            string newest_file = "";
+            string newest_status = "";
+            DateTime newest = new DateTime(0);
+
+            foreach (string file in files) {
+                var dict = ParseXml(file);
+                DateTime t = DateTime.Parse(dict["date"]);
+                Log.Message($"{file} status: {dict["status"]}, date: {t}");
+
+                // should it care about status starting?
+                if( t > newest && dict["status"] != "exited") {
+                    newest = t;
+                    newest_file = file;
+                    newest_status = dict["status"];
                 }
+            }
+
+            // ignore files older than 12 hours
+            if( newest > DateTime.Now.AddHours(-12) ) {
+                Log.Message($"found file {newest_file} with date: {newest}, status: {newest_status}");
+                fileStatus = newest_status;
+                xmlPathResponses = newest_file;
+                xmlPathRequests = xmlPathResponses.Replace("CrowdControlResponses.SC2Bank", "CrowdControl.SC2Bank");
+                return true;
             }
             return false;
         }
@@ -207,8 +229,7 @@ namespace CrowdControl.Games.Packs
         }
 
         protected bool SendEffect(EffectRequest request, Method method) {
-            if( ! FindXml() )
-                return false;
+            // don't think I need FindXml() here since we already call it in IsReady()
             XmlWrite(request, method);
             bool success = XmlWait(request, method);
             return success;
@@ -249,8 +270,7 @@ namespace CrowdControl.Games.Packs
 
         protected override bool IsReady(EffectRequest request)
         {
-            //TODO: Implement
-            return FindXml();
+            return FindXml() && fileStatus == "playing";
         }
 
         protected override void StartEffect(EffectRequest request)
@@ -283,5 +303,13 @@ namespace CrowdControl.Games.Packs
         }
 
         protected override void RequestData(DataRequest request) => Respond(request, request.Key, null, false, $"Variable name \"{request.Key}\" not known.");
+
+        const bool debug = false;
+
+        const string version = "0.23";
+        
+        string xmlPathRequests = "";
+        string xmlPathResponses = "";
+        string fileStatus = "";
     }
 }

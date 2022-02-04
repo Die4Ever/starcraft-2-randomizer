@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <BankList>
 <!-- DO NOT DELETE THIS! the editor deletes this when it compiles, make sure to put it back! -->
-<!-- to publish, use the editor to save as a .SC2Mod file, then use an mpqeditor to put this file into that file, then open that file in the editor and publish it -->
+<!-- to publish, run packmpq.bat, then it will open in the editor so you can publish it -->
 <!-- http://www.zezula.net/en/mpq/download.html -->
     <Bank Name="CrowdControl" Player="1"/>
     <Bank Name="CrowdControl" Player="2"/>
