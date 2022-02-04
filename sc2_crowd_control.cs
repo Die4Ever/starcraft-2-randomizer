@@ -289,8 +289,8 @@ namespace CrowdControl.Games.Packs
             }
 
             TryEffect(request,
-                () => true,// what are all these arguments?
-                () =>
+                () => true, // "condition"
+                () => // action
                 {
                     try
                     {
@@ -298,8 +298,8 @@ namespace CrowdControl.Games.Packs
                     }
                     catch { return false; }
                 },
-                () => Connector.SendMessage($"{request.DisplayViewer} invoked {request.InventoryItem}."),
-                null, false, request.FinalCode);
+                () => Connector.SendMessage($"{request.DisplayViewer} invoked {request.InventoryItem}."), // followUp
+                null, false, request.FinalCode); // TimeSpan retryDelay, bool retryOnFail, string mutex name, TimeSpan? holdMutex = null
         }
 
         protected override bool StopEffect(EffectRequest request)
