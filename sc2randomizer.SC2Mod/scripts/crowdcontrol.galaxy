@@ -1,31 +1,31 @@
 
-bank cc_bank;
-bank cc_responses_bank;
+bank[16] cc_bank;
+bank[16] cc_responses_bank;
+string[16] cc_last_id;
 trigger cc_ticker_trigger;
 trigger cc_leave_game_trigger;
-string cc_last_id;
 
 // TODO: proper handling of a bank per player
 
 void cc_update_status(string status, int player) {
     string date;
-    BankValueSetFromString(cc_responses_bank, "header", "status", status);
+    BankValueSetFromString(cc_responses_bank[player], "header", "status", status);
     date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
-    BankValueSetFromString(cc_responses_bank, "header", "date", date);
-    BankSave(cc_responses_bank);
-    //BankWait(cc_responses_bank);
+    BankValueSetFromString(cc_responses_bank[player], "header", "date", date);
+    BankSave(cc_responses_bank[player]);
+    //BankWait(cc_responses_bank[player]);
     info("cc_update_status "+status+" "+IntToString(player));
 }
 
 void cc_set_last_id(string id, string status, int player) {
     string date;
-    cc_last_id = id;
-    BankSectionRemove(cc_responses_bank, "responses");
-    BankSectionCreate(cc_responses_bank, "responses");
-    BankValueSetFromString(cc_responses_bank, "responses", id, status);
+    cc_last_id[player] = id;
+    BankSectionRemove(cc_responses_bank[player], "responses");
+    BankSectionCreate(cc_responses_bank[player], "responses");
+    BankValueSetFromString(cc_responses_bank[player], "responses", id, status);
     date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
-    BankValueSetFromString(cc_responses_bank, "header", "date", date);
-    BankSave(cc_responses_bank);
+    BankValueSetFromString(cc_responses_bank[player], "header", "date", date);
+    BankSave(cc_responses_bank[player]);
 }
 
 bool cc_nukes() {
@@ -77,12 +77,20 @@ void cc_read_request(int player) {
     string id;
     string params;
 
-    code = BankValueGetAsString(cc_bank, "request", "code");
-    viewer = BankValueGetAsString(cc_bank, "request", "DisplayViewer");
-    id = BankValueGetAsString(cc_bank, "request", "id");
-    params = BankValueGetAsString(cc_bank, "request", "params");
+    BankReload(cc_bank[player]);
+    BankWait(cc_bank[player]);
 
-    if(id == cc_last_id) {
+    if( BankKeyExists(cc_bank[player], "request", "code") == false ) {
+        debug("code doesn't exist");
+        return;
+    }
+
+    code = BankValueGetAsString(cc_bank[player], "request", "code");
+    viewer = BankValueGetAsString(cc_bank[player], "request", "DisplayViewer");
+    id = BankValueGetAsString(cc_bank[player], "request", "id");
+    params = BankValueGetAsString(cc_bank[player], "request", "params");
+
+    if(id == cc_last_id[player]) {
         return;
     }
 
@@ -94,41 +102,38 @@ void cc_read_request(int player) {
 }
 
 bool cc_ticker(bool testConds, bool runActions) {
-    string msg;
+    int player;
 
-    BankReload(cc_bank);
-    BankWait(cc_bank);
-
-    // loop through all the items in incoming
-        // if response is empty then run the effect and set the response
-        // else if response is acknowledged then delete the entry
-            // or just automatically delete the response when a new message comes in
-                // assuming it was acknowledged otherwise it wouldn't be in the file anymore
-                // in order to reduce the amount of regex/writing CrowdControl has to do
-
-    if( BankKeyExists(cc_bank, "request", "code") == false ) {
-        debug("code doesn't exist");
-        return true;
+    for(player=1; player<16; player+=1) {
+        if( PlayerIsActive(player) ) {
+            cc_read_request(player);
+        }
     }
-    cc_read_request(default_player);
     return true;
 }
 
 void StartCrowdControl() {
-    BankReload(cc_bank);
-    BankWait(cc_bank);
-    debug("StartCrowdControl after wait 1");
-    if( BankKeyExists(cc_bank, "request", "id") ) {
-        cc_last_id = BankValueGetAsString(cc_bank, "request", "id");
-        cc_set_last_id(cc_last_id, "fail", default_player);
+    int player;
+
+    for(player=1; player<16; player+=1) {
+        if( ! PlayerIsActive(player) ) {
+            continue;
+        }
+
+        BankReload(cc_bank[player]);
+        BankWait(cc_bank[player]);
+
+        if( BankKeyExists(cc_bank[player], "request", "id") ) {
+            cc_last_id[player] = BankValueGetAsString(cc_bank[player], "request", "id");
+            cc_set_last_id(cc_last_id[player], "fail", player);
+        }
+
+        cc_update_status("playing", player);
+
+        BankReload(cc_bank[player]);
+        BankWait(cc_bank[player]);
     }
-    info("cc_last_id: "+cc_last_id);
-
-    cc_update_status("playing", default_player);
-
-    BankReload(cc_bank);
-    BankWait(cc_bank);
-    debug("StartCrowdControl after wait 2");
+    debug("StartCrowdControl after waits");
 
     cc_ticker_trigger = TriggerCreate("cc_ticker");
     TriggerAddEventTimePeriodic(cc_ticker_trigger, 0.5, c_timeReal);
@@ -146,17 +151,23 @@ bool cc_leave_game(bool testConds, bool runActions) {
 
 void init_crowd_control() {
     string date;
+    int player;
 
-    cc_bank = BankLoad("CrowdControl", default_player);
+    for(player=1; player<16; player+=1) {
+        if( ! PlayerIsActive(player) ) {
+            continue;
+        }
 
-    cc_responses_bank = BankLoad("CrowdControlResponses", default_player);
-    // loop through and clear all the response sections? or use keys instead of sections?
-    BankSectionRemove(cc_responses_bank, "header");
-    BankSectionCreate(cc_responses_bank, "header");
-    BankValueSetFromString(cc_responses_bank, "header", "version", "0.23");
-    cc_set_last_id("", "success", default_player);
-    cc_update_status("starting", default_player);
+        cc_bank[player] = BankLoad("CrowdControl", player);
+        cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
+        // loop through and clear all the response sections? or use keys instead of sections?
+        BankSectionRemove(cc_responses_bank[player], "header");
+        BankSectionCreate(cc_responses_bank[player], "header");
+        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.23");
+        cc_set_last_id("", "success", player);
+        cc_update_status("starting", player);
+    }
 
     cc_leave_game_trigger = TriggerCreate("cc_leave_game");
-    TriggerAddEventPlayerLeft(cc_leave_game_trigger, default_player, c_gameResultUndecided);
+    TriggerAddEventPlayerLeft(cc_leave_game_trigger, c_playerAny, c_gameResultUndecided);
 }
