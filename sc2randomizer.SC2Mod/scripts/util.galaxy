@@ -169,6 +169,11 @@ playergroup GetPlayersOfType(int type)
     return players;
 }
 
+bool PlayerIsActive(int player)
+{
+    return PlayerGroupHasPlayer(PlayerGroupActive(), player);
+}
+
 string[100] notes;
 bool note_add(string val)
 {

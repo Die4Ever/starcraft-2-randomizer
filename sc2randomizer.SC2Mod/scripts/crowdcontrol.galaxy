@@ -42,6 +42,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperAdd, iparam);
         }
     } else if( code == "takeminerals") {
+        // TODO: check minerals/gas first, return failure when not enough
         notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone");
         for(player=1; player<16; player+=1) {
             PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperSubtract, iparam);
@@ -120,7 +121,7 @@ void StartCrowdControl() {
 bool cc_leave_game(bool testConds, bool runActions) {
     int player;
     player = EventPlayer();
-    if(PlayerGroupHasPlayer(PlayerGroupActive(), player)) {
+    if(PlayerIsActive(player)) {
         return true;
     }
     cc_update_status("exited", player);

@@ -1,5 +1,8 @@
 http://www.zezula.net/en/mpq/download.html
 
+https://sc2mapster.github.io/ui/2018/02/07/testing-map-without-editor.html
+https://www.hiveworkshop.com/threads/ladiks-mpq-editor-version-2-0-1-278.91512/
+
 ping a random building on the map? https://mapster.talv.space/galaxy/reference#ping
 
 // https://marketplace.visualstudio.com/items?itemName=maptz.regionfolder regionfolder.collapseAllRegions

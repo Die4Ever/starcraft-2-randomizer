@@ -26,8 +26,4 @@
             <Value>4,5,6</Value>
         </Notes>
     </PatchNote>
-    <Preload>
-        <Value>Bank;testbank</Value>
-        <Value>Bank;BankSync</Value>
-    </Preload>
 </DocInfo>

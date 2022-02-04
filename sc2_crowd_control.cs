@@ -36,6 +36,7 @@ using ConnectorLib;
 using CrowdControl.Common;
 using JetBrains.Annotations;
 using ConnectorType = CrowdControl.Common.ConnectorType;
+using Log = CrowdControl.Common.Log;
 
 namespace CrowdControl.Games.Packs
 {
@@ -172,15 +173,15 @@ namespace CrowdControl.Games.Packs
                             + @"<Value string=""(\w+)""/>\s*"
                     + @"</Key>.*</Section>.*</Bank>.*",
                     RegexOptions.Singleline).Groups[1].Value;
-                ConnectorLib.Log.Message($"{file} status: {status}");
+                Log.Message($"{file} status: {status}");
 
                 // TODO: started means we're connected but not ready yet
                 if(status == "playing" || status == "started") {
-                    ConnectorLib.Log.Message("found match");
+                    Log.Message("found match");
                     xmlPathResponses = file;
                     xmlPathRequests = xmlPathResponses.Replace("CrowdControlResponses.SC2Bank", "CrowdControl.SC2Bank");
-                    ConnectorLib.Log.Message(xmlPathResponses);
-                    ConnectorLib.Log.Message(xmlPathRequests);
+                    Log.Message(xmlPathResponses);
+                    Log.Message(xmlPathRequests);
                     return true;
                 }
             }
@@ -254,7 +255,7 @@ namespace CrowdControl.Games.Packs
 
         protected override void StartEffect(EffectRequest request)
         {
-            //ConnectorLib.Log.Message(GetMethods(typeof(EffectRequest)));
+            //Log.Message(GetMethods(typeof(EffectRequest)));
             if (!IsReady(request))
             {
                 // TODO: make this fail out the request?
