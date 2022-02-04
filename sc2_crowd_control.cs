@@ -152,31 +152,38 @@ namespace CrowdControl.Games.Packs
             return false;
         }
 
-        protected Dictionary<string, string> ParseXml(string file) {
-            var dict = new Dictionary<string, string>();
-
+        protected string GetXmlSection(string xml, string section) {
             try {
-                string data = File.ReadAllText(file);
-                var match = Regex.Match(data,
-                    @".*<Bank version=""1"">\s*"
-                    + @"<Section name=""responses""/>\s*"
-
-                        + @".*<Key name=""((date)|(status))"">\s*"
-                            + @"<Value string=""([^""]+)""/>\s*"
-
-                        + @".*<Key name=""((date)|(status))"">\s*"
-                            + @"<Value string=""([^""]+)""/>\s*"
-                    
-                    + @"</Key>.*</Section>.*</Bank>.*",
-                    RegexOptions.Singleline);
-                
-                dict[match.Groups[1].Value] = match.Groups[4].Value;
-                dict[match.Groups[5].Value] = match.Groups[8].Value;
+                var match = Regex.Match(xml,
+                        "<Bank version=\".*?\">.*"
+                        + "<Section name=\""+section+"\">(.*?)</Section>.*</Bank>",
+                        RegexOptions.Singleline);
+                return match.Groups[1].Value;
             } catch(Exception e) {
                 Log.Message(e.ToString());
-                dict["date"] = "1970-01-01";
-                dict["status"] = "error";
+                return "";
             }
+        }
+
+        protected string GetXmlString(string section, string key) {
+            try {
+                var match = Regex.Match(section,
+                    "<Key name=\""+key+"\">\\s*"
+                    + "<Value string=\"([^\"]+)\"/>",
+                    RegexOptions.Singleline);
+                return match.Groups[1].Value;
+            } catch(Exception e) {
+                Log.Message(e.ToString());
+                return "";
+            }
+        }
+
+        protected Dictionary<string, string> ParseXml(string file) {
+            var dict = new Dictionary<string, string>();
+            string data = File.ReadAllText(file);
+            data = GetXmlSection(data, "header");
+            dict["date"] = GetXmlString(data, "date");
+            dict["status"] = GetXmlString(data, "status");
             return dict;
         }
 
@@ -187,15 +194,19 @@ namespace CrowdControl.Games.Packs
             DateTime newest = new DateTime(0);
 
             foreach (string file in files) {
-                var dict = ParseXml(file);
-                DateTime t = DateTime.Parse(dict["date"]);
-                Log.Message($"{file} status: {dict["status"]}, date: {t}");
+                try {
+                    var dict = ParseXml(file);
+                    DateTime t = DateTime.Parse(dict["date"]);
+                    Log.Message($"{file} status: {dict["status"]}, date: {t}");
 
-                // should it care about status starting?
-                if( t > newest && dict["status"] != "exited") {
-                    newest = t;
-                    newest_file = file;
-                    newest_status = dict["status"];
+                    // should it care about status starting?
+                    if( t > newest && dict["status"] != "exited") {
+                        newest = t;
+                        newest_file = file;
+                        newest_status = dict["status"];
+                    }
+                } catch(Exception e) {
+                    Log.Message("error with "+file+": "+ e.ToString());
                 }
             }
 
@@ -214,6 +225,7 @@ namespace CrowdControl.Games.Packs
             // we can use the status and date in the file to determine which one to use
             // we could also make the mod delete the bank instead of setting the status to exited?
             // search in the Accounts folder first, then the test folder if we don't find it
+            Log.Message("FindXml");
             string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
             if(FindXmlInPath(root)) return true;
 
