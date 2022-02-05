@@ -248,7 +248,7 @@ namespace CrowdControl.Games.Packs
                 List<Effect> result = new List<Effect>
                 {
                     new Effect("Musical Chairs", "musicalchairs"),
-                    new Effect("Black Sheep Wall", "fullvision"),
+                    new Effect("Black Sheep Wall (30 sec)", "fullvision"),
                     new Effect("Terrible, Terrible Damage", "extradamage"),
                     
                     new Effect("Half Game Speed", "halfspeed"),

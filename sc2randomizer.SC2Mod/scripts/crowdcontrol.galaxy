@@ -30,7 +30,6 @@ void cc_set_last_id(string id, string status, int player) {
 
 bool cc_nukes() {
     unitgroup townhalls;
-    // c_playerAny or just the current player?
     townhalls = GetUnitsOfTypes("Nexus CommandCenter CommandCenterFlying OrbitalCommand OrbitalCommandFlying PlanetaryFortress Hatchery Lair Hive", c_playerAny);
     return false;
 }
@@ -99,15 +98,151 @@ int get_resource_any_player(int resource) {
     return 0;
 }
 
+int set_upgrade_level(int player, string upgrade, int set) {
+    int has;
+    has = TechTreeUpgradeCount(player, upgrade, c_techCountCompleteOnly);
+    if(has == set) {
+        return 0;
+    }
+    if( has > 0 && set > 0 ) {
+        return 0;
+    }
+    libNtve_gf_SetUpgradeLevelForPlayer(player, upgrade, set);
+    return 1;
+}
+
+bool set_player_armor_upgrades(int player, int level) {
+    int set;
+    int i;
+    string slevel;
+    int counter;
+
+    if(!PlayerIsActive(player)) {
+        return false;
+    }
+
+    for(i=1; i<=3; i+=1) {
+        if(i<=level) {
+            set = 1;
+        } else {
+            set = 0;
+        }
+        slevel = IntToString(i);
+        counter += set_upgrade_level(player, "ProtossAirArmorsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ProtossGroundArmorsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ProtossShieldsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "TerranInfantryArmorsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "TerranVehicleAndShipArmorsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ZergFlyerArmorsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ZergGroundArmorsLevel"+slevel, set);
+    }
+
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossAirArmors", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossGroundArmors", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossShields", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranInfantryArmors", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranVehicleAndShipArmors", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergFlyerArmors", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergGroundArmors", level);
+
+    return counter > 0;
+}
+
+bool set_player_weapon_upgrades(int player, int level) {
+    int set;
+    int i;
+    string slevel;
+    int counter;
+
+    if(!PlayerIsActive(player)) {
+        return false;
+    }
+
+    for(i=1; i<=3; i+=1) {
+        if(i<=level) {
+            set = 1;
+        } else {
+            set = 0;
+        }
+        slevel = IntToString(i);
+        counter += set_upgrade_level(player, "ProtossAirWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ProtossGroundWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "TerranInfantryWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "TerranShipWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "TerranVehicleWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ZergFlyerWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ZergMeleeWeaponsLevel"+slevel, set);
+        counter += set_upgrade_level(player, "ZergMissileWeaponsLevel"+slevel, set);
+    }
+
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossAirWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossGroundWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranInfantryWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranShipWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranVehicleWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergFlyerWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergMeleeWeapons", level);
+    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergMissileWeapons", level);
+
+    return counter > 0;
+}
+
+bool set_units_owner(unitgroup units, int player, bool change_color) {
+    int i;
+    int len;
+    unit u;
+
+    len = UnitGroupCount(units, c_unitCountAll);
+    for(i=1; i<=len; i+=1) {
+        u = UnitGroupUnit(units, i);
+        UnitSetOwner(u, player, change_color);
+    }
+    return true;
+}
+
+bool cc_musical_chairs() {
+    unitgroup[16] groups;
+    int[16] newplayers;
+    playergroup players;
+    int i;
+    int len;
+    int player;
+    int newplayer;
+
+    players = PlayerGroupActive();
+    len = PlayerGroupCount(players);
+    if(len < 2) {
+        return false;
+    }
+    for(i=1; i<=len; i+=1) {
+        player = PlayerGroupPlayer(players, i);
+        newplayer = player;
+        while(newplayer == player) {
+            newplayer = PlayerGroupPlayer(players, rngi(1, len) );
+        }
+        newplayers[i] = newplayer;
+        groups[i] = UnitGroup(null, player, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
+    }
+
+    for(i=1; i<=len; i+=1) {
+        set_units_owner(groups[i], newplayers[i], true);
+    }
+
+    return true;
+}
+
 
 bool cc_proc_request(int player, string code, string viewer, string params) {
     int iparam;
     int i;
+    int counter;
 
     if(bdebug) {
         notice(viewer + " used " + code + " " + params+" from player "+IntToString(player));
     }
-    iparam = StringToInt(params);
+    if(params != "") {
+        iparam = StringToInt(params);
+    }
     if( code == "nukes" ) {
         return cc_nukes();
     } else if( code == "giveminerals" ) {
@@ -175,7 +310,54 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         }
         notice(viewer+" killed "+IntToString(i)+" workers");
     } else if( code == "killarmy" ) {
-        // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...")
+        // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...") and UnitFilter((1 << c_targetFilterStructure,0,0,0)) or UnitFilterStr("Structure")
+        return false;
+    } else if( code == "fullvision" ) {
+        for(player=1; player<16; player+=1) {
+            if(PlayerIsActive(player)) {
+                VisRevealArea(player, RegionEntireMap(), 30, false);
+            }
+        }
+        notice(viewer+" revealed the whole map for 30 seconds");
+    } else if( code == "maxupgrades" ) {
+        counter = 0;
+        for(player=1; player<16; player+=1) {
+            if(set_player_weapon_upgrades(player, 3)) {
+                counter += 1;
+            }
+            if(set_player_armor_upgrades(player, 3)) {
+                counter += 1;
+            }
+        }
+        if(counter > 0) {
+            notice(viewer+" gave everyone max upgrades");
+        } else {
+            notice("everyone already has max upgrades");
+        }
+    } else if( code == "resetupgrades" ) {
+        counter = 0;
+        for(player=1; player<16; player+=1) {
+            if(set_player_weapon_upgrades(player, 0)) {
+                counter += 1;
+            }
+            if(set_player_armor_upgrades(player, 0)) {
+                counter += 1;
+            }
+        }
+        if(counter > 0) {
+            notice(viewer+" reset everyone's upgrades");
+        } else {
+            notice("nobody has any upgrades");
+        }
+    } else if( code == "musicalchairs" ) {
+        if(cc_musical_chairs()) {
+            notice(viewer+" has invoked musical chairs");
+        } else {
+            notice("musical chairs failed");
+            return false;
+        }
+    } else if( code == "extradamage" ) {
+        // https://mapster.talv.space/galaxy/reference/lib-ntve-gf-change-unit-damage
         return false;
     } else {
         err("unknown crowd control effect");

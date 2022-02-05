@@ -1,4 +1,8 @@
 
+int rngi(int min, int max) {
+    return RandomInt(min, max);
+}
+
 fixed rng(fixed min, fixed max) {
     return RandomFixed(min, max);
 }
