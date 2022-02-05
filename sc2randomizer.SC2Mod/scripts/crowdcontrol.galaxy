@@ -5,6 +5,8 @@ string[16] cc_last_id;
 trigger cc_ticker_trigger;
 trigger cc_leave_game_trigger;
 trigger normalgamespeed_trigger;
+trigger damage_trigger;
+trigger normal_damage_timer;
 
 void cc_update_status(string status, int player) {
     string date;
@@ -261,6 +263,42 @@ bool normal_game_speed(bool testConds, bool runActions) {
     return true;
 }
 
+int set_damage(int amount) {
+    unitgroup units;
+    unit u;
+    int i;
+    int num;
+    units = UnitGroup(null, c_playerAny, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
+
+    num = UnitGroupCount(units, c_unitCountAll);
+    for( i=1; i<=num; i+=1 ) {
+        u = UnitGroupUnit(units, i);
+        libNtve_gf_ChangeUnitDamage(u, libNtve_ge_UnitDamageTakenDealt_Damage_Deal, amount);
+    }
+    return num;
+}
+
+bool extra_damage(bool testConds, bool runActions) {
+    unit attacker;
+    attacker = EventUnit();
+    libNtve_gf_ChangeUnitDamage(attacker, libNtve_ge_UnitDamageTakenDealt_Damage_Deal, libNtve_ge_UnitDamageChangeOption_Mega2);
+    return true;
+}
+
+bool reduced_damage(bool testConds, bool runActions) {
+    unit attacker;
+    attacker = EventUnit();
+    libNtve_gf_ChangeUnitDamage(attacker, libNtve_ge_UnitDamageTakenDealt_Damage_Deal, libNtve_ge_UnitDamageChangeOption_Minimal);
+    return true;
+}
+
+bool normal_damage(bool testConds, bool runActions) {
+    TriggerDestroy(damage_trigger);
+    set_damage(libNtve_ge_UnitDamageChangeOption_Full);
+    notice("Damage is back to normal.");
+    return true;
+}
+
 bool cc_proc_request(int player, string code, string viewer, string params) {
     int iparam;
     int i;
@@ -397,8 +435,23 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             return false;
         }
     } else if( code == "extradamage" ) {
-        // https://mapster.talv.space/galaxy/reference/lib-ntve-gf-change-unit-damage
-        return false;
+        TriggerDestroy(damage_trigger);
+        TriggerDestroy(normal_damage_timer);
+        damage_trigger = TriggerCreate("extra_damage");
+        normal_damage_timer = TriggerCreate("normal_damage");
+        TriggerAddEventTimeElapsed(normal_damage_timer, 60, c_timeGame);
+        set_damage(libNtve_ge_UnitDamageChangeOption_Mega2);
+        TriggerAddEventUnitStartedAttack2(damage_trigger, null, null);
+        notice(viewer+" enabled extra damage for 1 minute.");
+    } else if( code == "reduceddamage" ) {
+        TriggerDestroy(damage_trigger);
+        TriggerDestroy(normal_damage_timer);
+        damage_trigger = TriggerCreate("reduced_damage");
+        normal_damage_timer = TriggerCreate("normal_damage");
+        TriggerAddEventTimeElapsed(normal_damage_timer, 60, c_timeGame);
+        set_damage(libNtve_ge_UnitDamageChangeOption_Minimal);
+        TriggerAddEventUnitStartedAttack2(damage_trigger, null, null);
+        notice(viewer+" enabled reduced damage for 1 minute.");
     } else {
         err("unknown crowd control effect");
         return false;

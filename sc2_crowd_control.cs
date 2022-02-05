@@ -250,6 +250,7 @@ namespace CrowdControl.Games.Packs
                     new Effect("Musical Chairs", "musicalchairs"),
                     new Effect("Black Sheep Wall (1 min)", "fullvision"),
                     new Effect("Terrible, Terrible Damage (1 min)", "extradamage"),
+                    new Effect("Reduced Damage (1 min)", "reduceddamage"),
                     
                     new Effect("Slow Game Speed (1 min)", "slowspeed"),
                     new Effect("Super Game Speed (1 min)", "superspeed"),
