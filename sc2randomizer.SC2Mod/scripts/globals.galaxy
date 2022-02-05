@@ -13,33 +13,11 @@ int changes_per_unit;
 int min_starting_workers;
 int max_starting_workers;
 fixed buffs_nerfs;
+bool crowd_control_enabled = false;
 
 bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;
-bool[16] players_waiting;
-
-const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
 const int default_player = 1;
-int dialog_start;
-int seed_editbox;
-int num_factions_editbox;
-int num_bans_editbox;
-int changes_per_faction_editbox;
-int changes_per_unit_editbox;
-int min_percent_editbox;
-int max_percent_editbox;
-int min_workers_editbox;
-int max_workers_editbox;
-int buffs_nerfs_editbox;
-int dialog_bans;
-int changes_list;
-int dialog_wait;
-int dialog_pick_faction;
-int ban_button;
-int pick_button;
-int factions_dropdown;
-int submit_button;
-trigger dialog_timeout;
 
 struct Change {
     int cat;

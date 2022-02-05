@@ -4,8 +4,7 @@ bank[16] cc_responses_bank;
 string[16] cc_last_id;
 trigger cc_ticker_trigger;
 trigger cc_leave_game_trigger;
-
-// TODO: proper handling of a bank per player
+trigger normalgamespeed_trigger;
 
 void cc_update_status(string status, int player) {
     string date;
@@ -26,6 +25,11 @@ void cc_set_last_id(string id, string status, int player) {
     date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
     BankValueSetFromString(cc_responses_bank[player], "header", "date", date);
     BankSave(cc_responses_bank[player]);
+}
+
+bool cc_id_has_processed(string id, int player) {
+    // might want to make this use a circular array so it can keep track of multiple IDs
+    return id == cc_last_id[player];
 }
 
 bool cc_nukes() {
@@ -231,6 +235,13 @@ bool cc_musical_chairs() {
     return true;
 }
 
+bool normal_game_speed(bool testConds, bool runActions) {
+    if( GameGetGlobalTimeScale() != 1 ) {
+        GameSetGlobalTimeScale(1);
+        notice("game speed is now back to normal");
+    }
+    return true;
+}
 
 bool cc_proc_request(int player, string code, string viewer, string params) {
     int iparam;
@@ -281,18 +292,24 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         }
     } else if( code == "superspeed" ) {
         if( GameGetGlobalTimeScale() < 1.5 ) {
+            TriggerDestroy(normalgamespeed_trigger);
+            normalgamespeed_trigger = TriggerCreate("normal_game_speed");
+            TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
             GameSetGlobalTimeScale(1.5);
-            notice(viewer+" set the game to super speed");
+            notice(viewer+" set the game to super speed for 1 minute");
         } else {
             notice("the game is already at super speed");
             return false;
         }
-    } else if( code == "halfspeed" ) {
+    } else if( code == "slowspeed" ) {
         if( GameGetGlobalTimeScale() > 0.5 ) {
+            TriggerDestroy(normalgamespeed_trigger);
+            normalgamespeed_trigger = TriggerCreate("normal_game_speed");
+            TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
             GameSetGlobalTimeScale(0.5);
-            notice(viewer+" set the game to half speed");
+            notice(viewer+" set the game to slow speed for 1 minute");
         } else {
-            notice("the game is already at half speed");
+            notice("the game is already at slow speed");
             return false;
         }
     } else if( code == "killworkers" ) {
@@ -315,10 +332,10 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
     } else if( code == "fullvision" ) {
         for(player=1; player<16; player+=1) {
             if(PlayerIsActive(player)) {
-                VisRevealArea(player, RegionEntireMap(), 30, false);
+                VisRevealArea(player, RegionEntireMap(), 60, false);
             }
         }
-        notice(viewer+" revealed the whole map for 30 seconds");
+        notice(viewer+" revealed the whole map for 1 minute");
     } else if( code == "maxupgrades" ) {
         counter = 0;
         for(player=1; player<16; player+=1) {
@@ -385,7 +402,7 @@ void cc_read_request(int player) {
     id = BankValueGetAsString(cc_bank[player], "request", "id");
     params = BankValueGetAsString(cc_bank[player], "request", "params");
 
-    if(id == cc_last_id[player]) {
+    if(cc_id_has_processed(id, player)) {
         return;
     }
 
@@ -410,6 +427,12 @@ bool cc_ticker(bool testConds, bool runActions) {
 void StartCrowdControl() {
     int player;
 
+    if(!crowd_control_enabled) {
+        info("crowd control not enabled");
+        cc_update_status("exited", player);
+        return;
+    }
+
     for(player=1; player<16; player+=1) {
         if( ! PlayerIsActive(player) ) {
             continue;
@@ -419,8 +442,7 @@ void StartCrowdControl() {
         BankWait(cc_bank[player]);
 
         if( BankKeyExists(cc_bank[player], "request", "id") ) {
-            cc_last_id[player] = BankValueGetAsString(cc_bank[player], "request", "id");
-            cc_set_last_id(cc_last_id[player], "fail", player);
+            cc_set_last_id(BankValueGetAsString(cc_bank[player], "request", "id"), "fail", player);
         }
 
         cc_update_status("playing", player);
@@ -432,6 +454,7 @@ void StartCrowdControl() {
 
     cc_ticker_trigger = TriggerCreate("cc_ticker");
     TriggerAddEventTimePeriodic(cc_ticker_trigger, 0.5, c_timeReal);
+    notice("Crowd Control enabled!");
 }
 
 bool cc_leave_game(bool testConds, bool runActions) {

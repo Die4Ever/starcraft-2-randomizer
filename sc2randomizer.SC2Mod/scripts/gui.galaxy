@@ -1,4 +1,28 @@
 
+const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
+bool[16] players_waiting;
+int dialog_start;
+int seed_editbox;
+int num_factions_editbox;
+int num_bans_editbox;
+int changes_per_faction_editbox;
+int changes_per_unit_editbox;
+int min_percent_editbox;
+int max_percent_editbox;
+int min_workers_editbox;
+int max_workers_editbox;
+int buffs_nerfs_editbox;
+int crowd_control_checkbox;
+int dialog_bans;
+int changes_list;
+int dialog_wait;
+int dialog_pick_faction;
+int ban_button;
+int pick_button;
+int factions_dropdown;
+int submit_button;
+trigger dialog_timeout;
+
 int create_continue_button(int dialog, string button_text, string callback) {
     submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
     libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
@@ -644,6 +668,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     }
     buffs_nerfs = libNtve_gf_ArithmeticRealClamp(buffs_nerfs, 0, 100);
 
+    crowd_control_enabled = libNtve_gf_DialogItemIsChecked(crowd_control_checkbox, default_player);
+
     DialogSetVisible(dialog_start, PlayerGroupAll(), false);
     DialogDestroy(dialog_start);
 
@@ -683,7 +709,7 @@ int create_edit_box_with_label(int dialog, playergroup players, string defaultte
     int row_height;
 
     row_height = 80;
-    y = row*row_height - 4*row_height;
+    y = row*row_height - 5*row_height;
 
     editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
     DialogControlSetSize(editbox, players, 300, 50);
@@ -698,6 +724,31 @@ int create_edit_box_with_label(int dialog, playergroup players, string defaultte
 
     DialogControlSetPositionRelative(label, players, c_anchorRight, editbox, c_anchorLeft, 0, 15);
     return editbox;
+}
+
+
+int create_checkbox_with_label(int dialog, playergroup players, bool checked, string labeltext, string tooltip, int row) {
+    int label;
+    int checkbox;
+    int y;
+    int row_height;
+
+    row_height = 80;
+    y = row*row_height - 5*row_height;
+
+    checkbox = DialogControlCreate(dialog, c_triggerControlTypeCheckBox);
+    DialogControlSetSize(checkbox, players, 30, 50);
+    DialogControlSetPosition(checkbox, players, c_anchorCenter, 15, y);
+    libNtve_gf_SetDialogItemTooltip(checkbox, StringToText(tooltip), players);
+    libNtve_gf_SetDialogItemChecked(checkbox, checked, players);
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, players, 300, 50);
+    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
+    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
+
+    DialogControlSetPositionRelative(label, players, c_anchorRight, checkbox, c_anchorLeft, 0, 15);
+    return checkbox;
 }
 
 
@@ -756,6 +807,8 @@ int create_dialog_settings() {
     max_workers_editbox = create_edit_box_with_label(dialog_start, players, IntToString(max_starting_workers), "Maximum Starting Workers: ", "The highest for starting workers", 7);
 
     buffs_nerfs_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(buffs_nerfs, 0), "Buffs vs nerfs %: ", "The chances that each change will be a buff instead of a nerf", 8);
+
+    crowd_control_checkbox = create_checkbox_with_label(dialog_start, players, false, "Enable Crowd Control", "Allow your viewers on Twitch to mess with the game!", 9);
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 

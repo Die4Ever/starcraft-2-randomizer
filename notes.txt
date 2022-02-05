@@ -156,3 +156,46 @@ Behaviors
         </event>
     </events>
 </eventIndex>
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, bool retryOnFail = true, string mutex = null, TimeSpan? holdMutex = null)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, TimeSpan retryDelay, bool retryOnFail = true, string mutex = null, TimeSpan? holdMutex = null)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Func<TimeSpan> retryDelay, bool retryOnFail = true, string mutex = null, TimeSpan? holdMutex = null)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, bool retryOnFail = true)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, bool retryOnFail, string? mutex)
+    => TryEffect(request, condition, action, followUp, retryOnFail, mutex, null);
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, bool retryOnFail, string[]? mutex)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, bool retryOnFail, string? mutex, TimeSpan? holdMutex)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, bool retryOnFail, string[]? mutex, TimeSpan? holdMutex)
+
+
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, TimeSpan retryDelay, bool retryOnFail = true, string mutex = null, TimeSpan? holdMutex = null)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, [NotNull] Func<TimeSpan> retryDelay, bool retryOnFail = true)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition, [NotNull] Func<bool> action, [NotNull] Action followUp, [NotNull] Func<TimeSpan> retryDelay, bool retryOnFail, string mutex, TimeSpan? holdMutex = null)
+
+[UsedImplicitly]
+protected bool TryEffect([NotNull] EffectRequest request, [NotNull] Func<bool> condition,
+    [NotNull] Func<bool> action, [NotNull] Action followUp, [NotNull] Func<TimeSpan> retryDelay,
+    bool retryOnFail, string[] mutex, TimeSpan? holdMutex = null)
+
+
