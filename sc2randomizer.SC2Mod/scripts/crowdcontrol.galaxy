@@ -235,6 +235,24 @@ bool cc_musical_chairs() {
     return true;
 }
 
+int kill_armies() {
+    unitgroup units;
+    unit u;
+    int i;
+    int num;
+    // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...") and UnitFilter((1 << c_targetFilterStructure,0,0,0)) or UnitFilterStr("Structure")
+    units = UnitGroup(null, c_playerAny, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
+    UnitGroupRemoveUnitGroup(units, UnitGroup(null, c_playerAny, RegionEntireMap(), UnitFilterStr("Structure"), 999999) );
+    UnitGroupRemoveUnitGroup(units, GetUnitsOfTypes("Probe SCV Drone DroneBurrowed MULE Overlord Larva Egg", c_playerAny));
+
+    num = UnitGroupCount(units, c_unitCountAll);
+    for( i=1; i<=num; i+=1 ) {
+        u = UnitGroupUnit(units, i);
+        UnitRemove(u);
+    }
+    return num;
+}
+
 bool normal_game_speed(bool testConds, bool runActions) {
     if( GameGetGlobalTimeScale() != 1 ) {
         GameSetGlobalTimeScale(1);
@@ -325,10 +343,15 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice("no one has more than 1 worker");
             return false;
         }
-        notice(viewer+" killed "+IntToString(i)+" workers");
+        notice(viewer+" killed "+IntToString(i)+" workers");// say the number killed since not all of them are killed
     } else if( code == "killarmy" ) {
-        // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...") and UnitFilter((1 << c_targetFilterStructure,0,0,0)) or UnitFilterStr("Structure")
-        return false;
+        i = kill_armies();
+        if(i > 0) {
+            notice(viewer+" killed every army unit");// should we instead say how many units have been killed?
+        } else {
+            notice("kill armies failed");
+            return false;
+        }
     } else if( code == "fullvision" ) {
         for(player=1; player<16; player+=1) {
             if(PlayerIsActive(player)) {
