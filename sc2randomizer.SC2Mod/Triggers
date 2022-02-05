@@ -9,7 +9,7 @@
             <ScriptCode>
                 include &quot;TriggerLibs/NativeLib&quot;
                 include &quot;scripts/sc2randoincludes&quot;
-                 
+                  
             </ScriptCode>
             <InitFunc>main</InitFunc>
         </Element>

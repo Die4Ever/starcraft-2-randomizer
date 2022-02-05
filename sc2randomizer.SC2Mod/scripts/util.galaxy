@@ -309,17 +309,25 @@ unitgroup GetUnitsOfTypes(string names, int player)
     return units;
 }
 
-void DeleteUnits(string names, int player, int num)
+int DeleteUnits(string names, int player, int num)
 {
     unitgroup units;
     int i;
     unit u;
 
-    units = GetUnitsOfTypes(names, player);//UnitGroup(name, player, RegionEntireMap(), UnitFilter(0,0,0,0), 99999 );
-    num = MinI(num, UnitGroupCount(units, c_unitCountAll));
+    units = GetUnitsOfTypes(names, player);
+    if(num < 0) {
+        num = UnitGroupCount(units, c_unitCountAll) + num;
+    } else {
+        num = MinI(num, UnitGroupCount(units, c_unitCountAll));
+    }
     debug("found "+IntToString(num)+" of "+names);
+    if( num < 0 ) {
+        return 0;
+    }
     for( i=1; i<=num; i+=1 ) {
         u = UnitGroupUnit(units, i);
         UnitRemove(u);
     }
+    return num;
 }

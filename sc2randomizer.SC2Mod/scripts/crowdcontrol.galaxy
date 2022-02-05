@@ -35,8 +35,75 @@ bool cc_nukes() {
     return false;
 }
 
+int num_has_resources(int resource, int minimum, int maximum) {
+    int player;
+    int counter;
+    int i;
+
+    for(player=1; player<16; player+=1) {
+        if( PlayerIsActive(player) ) {
+            i = PlayerGetPropertyInt(player, resource);
+            if( i >= minimum && i <= maximum ) {
+                counter += 1;
+            }
+        }
+    }
+
+    return counter;
+}
+
+bool add_resources(int resource, int amount, int min, int max, int minimum_players) {
+    int player;
+    int i;
+    int a;
+
+    if( amount >= 0 ) {
+        if( num_has_resources(resource, min, max - 1) < minimum_players ) {
+            return false;
+        }
+    } else {
+        if( num_has_resources(resource, min + 1, max) < minimum_players ) {
+            return false;
+        }
+    }
+
+    for(player=1; player<16; player+=1) {
+        if( PlayerIsActive(player) ) {
+            i = PlayerGetPropertyInt(player, resource);
+            a = amount;
+            if( i + a > max ) {
+                a = max - i;
+            }
+            if( i + a < min ) {
+                a = min - i;
+            }
+            if( amount > 0 ) {
+                PlayerModifyPropertyInt(player, resource, c_playerPropOperAdd, a);
+            } else if(amount < 0) {
+                PlayerModifyPropertyInt(player, resource, c_playerPropOperSubtract, -a);
+            }
+        }
+    }
+    return true;
+}
+
+int get_resource_any_player(int resource) {
+    int player;
+
+    for(player=1; player<16; player+=1) {
+        if( PlayerIsActive(player) ) {
+            return PlayerGetPropertyInt(player, resource);
+        }
+    }
+
+    return 0;
+}
+
+
 bool cc_proc_request(int player, string code, string viewer, string params) {
     int iparam;
+    int i;
+
     if(bdebug) {
         notice(viewer + " used " + code + " " + params+" from player "+IntToString(player));
     }
@@ -44,26 +111,72 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
     if( code == "nukes" ) {
         return cc_nukes();
     } else if( code == "giveminerals" ) {
+        add_resources(c_playerPropMinerals, iparam, 0, 999999, 0);
         notice(viewer+" gave everyone "+IntToString(iparam)+" minerals");
-        for(player=1; player<16; player+=1) {
-            PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperAdd, iparam);
-        }
     } else if( code == "givegas") {
+        add_resources(c_playerPropVespene, iparam, 0, 999999, 0);
         notice(viewer+" gave everyone "+IntToString(iparam)+" gas");
-        for(player=1; player<16; player+=1) {
-            PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperAdd, iparam);
-        }
     } else if( code == "takeminerals") {
-        // TODO: check minerals/gas first, return failure when not enough
-        notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone");
-        for(player=1; player<16; player+=1) {
-            PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperSubtract, iparam);
+        if( add_resources(c_playerPropMinerals, -iparam, iparam, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone");
+        } else {
+            notice("no one has enough minerals");
+            return false;
         }
     } else if( code == "takegas") {
-        notice(viewer+" took away "+IntToString(iparam)+" gas from everyone");
-        for(player=1; player<16; player+=1) {
-            PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperSubtract, iparam);
+        if( add_resources(c_playerPropVespene, -iparam, iparam, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(iparam)+" gas from everyone");
+        } else {
+            notice("no one has enough vespene gas");
+            return false;
         }
+    } else if( code == "raisesupply") {
+        if( add_resources(c_playerPropSuppliesLimit, iparam, 0, 250, 1) ) {
+            notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
+        } else {
+            notice("supply limit is already at the maximum");
+            return false;
+        }
+    } else if( code == "lowersupply") {
+        if( add_resources(c_playerPropSuppliesLimit, -iparam, 50, 9999, 1) ) {
+            notice(viewer+" lowered the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
+        } else {
+            notice("supply limit is already at the minimum");
+            return false;
+        }
+    } else if( code == "superspeed" ) {
+        if( GameGetGlobalTimeScale() < 1.5 ) {
+            GameSetGlobalTimeScale(1.5);
+            notice(viewer+" set the game to super speed");
+        } else {
+            notice("the game is already at super speed");
+            return false;
+        }
+    } else if( code == "halfspeed" ) {
+        if( GameGetGlobalTimeScale() > 0.5 ) {
+            GameSetGlobalTimeScale(0.5);
+            notice(viewer+" set the game to half speed");
+        } else {
+            notice("the game is already at half speed");
+            return false;
+        }
+    } else if( code == "killworkers" ) {
+        i = 0;
+        for(player=1; player<16; player+=1) {
+            if( ! PlayerIsActive(player) ) {
+                continue;
+            }
+            i += DeleteUnits("Probe SCV Drone DroneBurrowed", player, -1);
+            i += DeleteUnits("MULE", player, 99999);
+        }
+        if(i <= 0) {
+            notice("no one has more than 1 worker");
+            return false;
+        }
+        notice(viewer+" killed "+IntToString(i)+" workers");
+    } else if( code == "killarmy" ) {
+        // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...")
+        return false;
     } else {
         err("unknown crowd control effect");
         return false;

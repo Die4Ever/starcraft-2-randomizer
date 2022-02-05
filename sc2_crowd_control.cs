@@ -250,23 +250,24 @@ namespace CrowdControl.Games.Packs
                     new Effect("Musical Chairs", "musicalchairs"),
                     new Effect("Black Sheep Wall", "fullvision"),
                     new Effect("Terrible, Terrible Damage", "extradamage"),
+                    
+                    new Effect("Half Game Speed", "halfspeed"),
+                    new Effect("Super Game Speed", "superspeed"),
                     new Effect("Max Upgrades", "maxupgrades"),
                     new Effect("Reset Upgrades", "resetupgrades"),
-                    new Effect("Half Game Speed", "halfspeed"),
-                    new Effect("Double Game Speed", "doublespeed"),
-                    new Effect("Kill Workers", "killworkers"),
-                    new Effect("Kill Armies", "killarmies"),
-
-                    new Effect("Mean Things", "mean", ItemKind.Folder),
-                    new Effect("Take Minerals", "takeminerals", new[]{"minerals"}, "mean"),
-                    new Effect("Take Gas", "takegas", new[]{"gas"}, "mean"),
+                    
+                    new Effect("Mean Things That Kill", "mean", ItemKind.Folder),
                     new Effect("Nuke All Town Halls", "nukes", "mean"),
                     new Effect("Kill All Workers", "killworkers", "mean"),
                     new Effect("Kill All Army", "killarmy", "mean"),
-
-                    new Effect("Nice Things", "nice", ItemKind.Folder),
-                    new Effect("Give Minerals", "giveminerals", new[]{"minerals"}, "nice"),
-                    new Effect("Give Gas", "givegas", new[]{"gas"}, "nice"),
+                    
+                    new Effect("Resources", "resources", ItemKind.Folder),
+                    new Effect("Give Minerals", "giveminerals", new[]{"minerals"}, "resources"),
+                    new Effect("Give Gas", "givegas", new[]{"gas"}, "resources"),
+                    new Effect("Take Minerals", "takeminerals", new[]{"minerals"}, "resources"),
+                    new Effect("Take Gas", "takegas", new[]{"gas"}, "resources"),
+                    new Effect("Raise Supply Limit", "raisesupply", new[]{"supply"}, "resources"),
+                    new Effect("Lower Supply Limit", "lowersupply", new[]{"supply"}, "resources"),
                 };
                 return result;
             }
@@ -276,7 +277,8 @@ namespace CrowdControl.Games.Packs
         {
             new ItemType("Percent", "percent", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
             new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
-            new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}")
+            new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
+            new ItemType("Supply", "supply", ItemType.Subtype.Slider, "{\"min\":1,\"max\":50}"),
         });
 
         #endregion
