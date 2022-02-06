@@ -9,6 +9,28 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 
 ## How it works
 
+### Steps to play:
+
+![create lobby](https://i.imgur.com/6dAUIuu.png)
+
+1. Click on CUSTOM at the top
+
+2. Click on MELEE
+
+3. Choose a map to play on
+
+4. Click on CREATE WITH MOD
+
+![choose mod](https://i.imgur.com/MmUxyta.png)
+
+5. Search for "Randomizer Mod"
+
+6. Choose the "Randomizer Mod", you'll see in the description it's created by Raymonster aka Die4Ever (this is a good chance to right click on the mod and Bookmark it)
+
+7. Click CREATE LOBBY
+
+### Options:
+
 ![settings](https://i.imgur.com/SgVMnYX.png)
 
 To reduce the chances of getting something too strong or too weak, there are also bans and picks. Default settings will give each race 2 factions, and no bans. A faction is a randomization of a race, so Terran Faction 1 and Terran Faction 2 will both be based on Terran but have differently randomized stats.
