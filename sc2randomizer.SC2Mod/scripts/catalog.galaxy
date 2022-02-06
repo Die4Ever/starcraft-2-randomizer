@@ -235,6 +235,34 @@ void apply_changes(int r, int player)
 }
 
 
+void revert_changes(int r, int player)
+{
+    int i;
+    int k;
+    string entry;
+    string u;
+
+    for( i=0; i < race_changes[r].len; i+=1 ) {
+        entry = race_changes[r].changes[i].entry;
+        apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].newval, race_changes[r].changes[i].oldval);
+
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( entry == linked_units[k] ) {
+                apply_linkage(player, race_changes[r].changes[i].cat, entry, linked_units[k+1], race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
+            }
+        }
+        
+        u = race_changes[r].changes[i].unit_entry;
+        apply_scale(u, 1.0, player);
+        for( k=0; k<num_linked_units; k+=2 ) {
+            if( u == linked_units[k] ) {
+                apply_scale(linked_units[k+1], 1.0, player);
+            }
+        }
+    }
+}
+
+
 bool rando_field_fixed(int cat, string unit_entry, string entry, string field, string friendly_name, int changes_id, fixed buff)
 {
     fixed getval;
@@ -328,4 +356,20 @@ bool rando_field_int(int cat, string unit_entry, string entry, string field, str
     set_field_string(cat, entry, field, IntToString(getval) );
 
     return true;
+}
+
+void create_general_tips() {
+    text general_changes;
+    int i;
+
+    for( i=0; i<race_changes[0].len; i+=1 ) {
+        general_changes += StringToText( change_to_string(race_changes[0].changes[i]) +"\n");
+    }
+    HelpPanelAddTip(
+        PlayerGroupAll(),
+        StringToText("General Changes"),
+        general_changes,
+        StringToText("Review Changes"),
+        "Assets\\Textures\\ui_icon_attention.dds"
+    );
 }

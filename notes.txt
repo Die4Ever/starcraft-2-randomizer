@@ -15,6 +15,7 @@ https://sc2mapster.fandom.com/wiki/Tutorials
 https://mapster.talv.space/galaxy/reference#catalog
 https://marketplace.visualstudio.com/items?itemName=talv.sc2galaxy
 http://www.fooo.fr/~vjeux/curse/sc2/sc2_declarations.html
+https://sc2mapster.github.io/mkdocs/setup/
 
 structref and arrayref https://www.sc2mapster.com/forums/development/galaxy-scripting/148197-passing-arrays-as-parameters
 CatalogFieldValueSet(c_gameCatalogActor, entry, "Scale", default_player, "5.0");

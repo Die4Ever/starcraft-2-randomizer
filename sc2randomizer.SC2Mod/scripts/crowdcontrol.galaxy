@@ -218,6 +218,7 @@ bool cc_musical_chairs() {
     unitgroup[16] groups;
     int[16] newplayers;
     int[16] available_players;
+    int[16] new_picks;
     int num_available_players;
     int available_player;
     playergroup players;
@@ -225,6 +226,7 @@ bool cc_musical_chairs() {
     int len;
     int player;
     int newplayer;
+    int faction;
 
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
@@ -248,10 +250,17 @@ bool cc_musical_chairs() {
         available_players[available_player] = available_players[num_available_players];
         num_available_players -= 1;
         groups[i] = UnitGroup(null, player, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
+
+        new_picks[newplayer] = players_picks[player];
+        revert_changes(players_picks[player], player);
     }
 
+    TipAlertPanelClear(PlayerGroupAll());
+    HelpPanelDestroyAllTips();
+    create_general_tips();
     for(i=1; i<=len; i+=1) {
-        // TODO: also rollback the factions and swap the factions
+        players_picks[newplayers[i]] = new_picks[newplayers[i]];
+        apply_changes(players_picks[newplayers[i]], newplayers[i]);
         set_units_owner(groups[i], newplayers[i], true);
     }
 

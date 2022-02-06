@@ -334,6 +334,7 @@ void apply_changes_player(int player) {
             err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
         }
 
+        players_picks[player] = faction;
         notice( SPlayerName(player) + " was assigned " + race_changes[faction].name );
     }
     else {
@@ -367,7 +368,6 @@ void start_review() {
     int i;
     int len;
     playergroup players;
-    text general_changes;
 
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
@@ -376,17 +376,8 @@ void start_review() {
         apply_changes_player( PlayerGroupPlayer(players, i) );
     }
 
-    for( i=0; i<race_changes[0].len; i+=1 ) {
-        general_changes += StringToText( change_to_string(race_changes[0].changes[i]) +"\n");
-    }
     TipAlertPanelClear(PlayerGroupAll());
-    HelpPanelAddTip(
-        PlayerGroupAll(),
-        StringToText("General Changes"),
-        general_changes,
-        StringToText("Review Changes"),
-        "Assets\\Textures\\ui_icon_attention.dds"
-    );
+    create_general_tips();
 
     DialogControlSetVisible(pick_button, players, false);
     DialogControlDestroy(submit_button);
