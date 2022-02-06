@@ -198,8 +198,8 @@ namespace CrowdControl.Games.Packs
                 }
             }
 
-            // ignore files older than 12 hours
-            if( newest > DateTime.Now.AddHours(-12) ) {
+            // ignore files older than 24 hours
+            if( newest > DateTime.Now.AddHours(-24) ) {
                 Log.Message($"found file {newest_file} with date: {newest}, status: {newest_status}");
                 fileStatus = newest_status;
                 xmlPathResponses = newest_file;

@@ -223,6 +223,9 @@ bool set_units_owner(unitgroup units, int player, bool change_color) {
 bool cc_musical_chairs() {
     unitgroup[16] groups;
     int[16] newplayers;
+    int[16] available_players;
+    int num_available_players;
+    int available_player;
     playergroup players;
     int i;
     int len;
@@ -234,13 +237,22 @@ bool cc_musical_chairs() {
     if(len < 2) {
         return false;
     }
+    num_available_players = len;
+    for(i=1; i<=len; i+=1) {
+        player = PlayerGroupPlayer(players, i);
+        available_players[i] = player;
+    }
+
     for(i=1; i<=len; i+=1) {
         player = PlayerGroupPlayer(players, i);
         newplayer = player;
         while(newplayer == player) {
-            newplayer = PlayerGroupPlayer(players, rngi(1, len) );
+            available_player = rngi(1, num_available_players);
+            newplayer = available_players[available_player];
         }
         newplayers[i] = newplayer;
+        available_players[available_player] = available_players[num_available_players];
+        num_available_players -= 1;
         groups[i] = UnitGroup(null, player, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
     }
 
@@ -512,7 +524,7 @@ bool cc_ticker(bool testConds, bool runActions) {
     int player;
 
     for(player=1; player<16; player+=1) {
-        if( PlayerIsActive(player) ) {
+        if( PlayerIsActiveHuman(player) ) {
             cc_read_request(player);
         }
     }
@@ -529,23 +541,31 @@ void StartCrowdControl() {
     }
 
     for(player=1; player<16; player+=1) {
-        if( ! PlayerIsActive(player) ) {
+        if( ! PlayerIsActiveHuman(player) ) {
             continue;
         }
 
-        BankReload(cc_bank[player]);
-        BankWait(cc_bank[player]);
+        cc_bank[player] = BankLoad("CrowdControl", player);
+        BankSectionRemove(cc_bank[player], "header");
+        BankSectionCreate(cc_bank[player], "header");
+        BankSectionRemove(cc_bank[player], "request");
+        BankSectionCreate(cc_bank[player], "request");
+        BankSave(cc_bank[player]);
 
-        if( BankKeyExists(cc_bank[player], "request", "id") ) {
-            cc_set_last_id(BankValueGetAsString(cc_bank[player], "request", "id"), "fail", player);
-        }
-
+        cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
+        BankSectionRemove(cc_responses_bank[player], "header");
+        BankSectionCreate(cc_responses_bank[player], "header");
+        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.23");
+        cc_set_last_id("", "success", player);
         cc_update_status("playing", player);
 
         BankReload(cc_bank[player]);
         BankWait(cc_bank[player]);
     }
     debug("StartCrowdControl after waits");
+
+    cc_leave_game_trigger = TriggerCreate("cc_leave_game");
+    TriggerAddEventPlayerLeft(cc_leave_game_trigger, c_playerAny, c_gameResultUndecided);
 
     cc_ticker_trigger = TriggerCreate("cc_ticker");
     TriggerAddEventTimePeriodic(cc_ticker_trigger, 0.5, c_timeReal);
@@ -555,32 +575,9 @@ void StartCrowdControl() {
 bool cc_leave_game(bool testConds, bool runActions) {
     int player;
     player = EventPlayer();
-    if(PlayerIsActive(player)) {
+    if(PlayerIsActiveHuman(player)) {
         return true;
     }
     cc_update_status("exited", player);
     return true;
-}
-
-void init_crowd_control() {
-    string date;
-    int player;
-
-    for(player=1; player<16; player+=1) {
-        if( ! PlayerIsActive(player) ) {
-            continue;
-        }
-
-        cc_bank[player] = BankLoad("CrowdControl", player);
-        cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
-        // loop through and clear all the response sections? or use keys instead of sections?
-        BankSectionRemove(cc_responses_bank[player], "header");
-        BankSectionCreate(cc_responses_bank[player], "header");
-        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.23");
-        cc_set_last_id("", "success", player);
-        cc_update_status("starting", player);
-    }
-
-    cc_leave_game_trigger = TriggerCreate("cc_leave_game");
-    TriggerAddEventPlayerLeft(cc_leave_game_trigger, c_playerAny, c_gameResultUndecided);
 }

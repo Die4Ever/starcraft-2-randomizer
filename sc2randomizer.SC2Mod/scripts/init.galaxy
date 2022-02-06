@@ -275,6 +275,5 @@ void sc2randoinit() {
     AddRandomizedField("SEffectEnumArea", type_effect, ".Effect", 0);
     AddRandomizedField("SEffectEnumArea", type_fixed, ".Radius", 1);
 
-    init_crowd_control();
     create_dialog_start();
 }

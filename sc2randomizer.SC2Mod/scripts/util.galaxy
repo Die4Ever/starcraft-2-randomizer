@@ -178,6 +178,11 @@ bool PlayerIsActive(int player)
     return PlayerGroupHasPlayer(PlayerGroupActive(), player);
 }
 
+bool PlayerIsActiveHuman(int player)
+{
+    return PlayerGroupHasPlayer(GetPlayersOfType(c_playerTypeUser), player);
+}
+
 string[100] notes;
 bool note_add(string val)
 {
