@@ -1,0 +1,5 @@
+﻿Actor/Name/CCGhostNukeLaunch=CCGhostNukeLaunch
+Actor/Name/CCGhostNukeSeek=CCGhostNukeSeek
+Actor/Name/CCGhostNukeTarget=CC Ghost Nuke Target
+Effect/EditorPrefix/CCNukePersistent=Ghost -
+Effect/EditorSuffix/CCNukePersistent=(Persistent)

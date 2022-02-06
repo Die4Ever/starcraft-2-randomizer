@@ -34,10 +34,24 @@ bool cc_id_has_processed(string id, int player) {
     return id == cc_last_id[player];
 }
 
-bool cc_nukes() {
+void nuke(unit u) {
+    point target;
+    target = UnitGetPosition(u);
+    PlayerCreateEffectPoint(15, "CCNukePersistent", target);
+}
+
+int cc_nukes() {
     unitgroup townhalls;
+    unit u;
+    int num;
+    int i;
     townhalls = GetUnitsOfTypes("Nexus CommandCenter CommandCenterFlying OrbitalCommand OrbitalCommandFlying PlanetaryFortress Hatchery Lair Hive", c_playerAny);
-    return false;
+    num = UnitGroupCount(townhalls, c_unitCountAll);
+    for(i=1; i<=num; i+=1) {
+        u = UnitGroupUnit(townhalls, i);
+        nuke(u);
+    }
+    return num;
 }
 
 int num_has_resources(int resource, int minimum, int maximum) {
@@ -311,7 +325,12 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         iparam = StringToInt(params);
     }
     if( code == "nukes" ) {
-        return cc_nukes();
+        if(cc_nukes() > 0) {
+            notice(viewer+" sends their regards.");
+        } else {
+            notice("Nukes failed.");
+            return false;
+        }
     } else if( code == "giveminerals" ) {
         add_resources(c_playerPropMinerals, iparam, 0, 999999, 0);
         notice(viewer+" gave everyone "+IntToString(iparam)+" minerals");

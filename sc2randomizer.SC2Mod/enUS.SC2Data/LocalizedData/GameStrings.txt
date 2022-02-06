@@ -10,3 +10,5 @@ DocInfo/PatchNote004=Added buffs vs nerfs % chances.
 DocInfo/PatchNote005=Having buffs means you want to build those things and play with the changes.
 DocInfo/PatchNote006=But randomized nerfs usually just means you avoid using those units.
 DocInfo/Website=https://discord.gg/sUzjZ3RPhw
+Effect/Name/CCNuke=CCNuke
+Effect/Name/CCNukePersistent=CCNuke

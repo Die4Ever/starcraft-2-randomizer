@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Catalog>
+    <CActorModel id="CCGhostNukeTarget" parent="ModelAnimationStyleOneShot">
+        <Flags index="SuppressSaveLoad" value="0"/>
+        <Filter index="Self" value="1"/>
+        <Filter index="Ally" value="1"/>
+        <Inherits index="Scale" value="1"/>
+        <FogVisibility value="Visible"/>
+        <On Terms="Effect.CCNukePersistent.Start" Send="Create"/>
+        <On Terms="Effect.CCNukePersistent.Stop" Send="AnimBracketStop BSD"/>
+        <Host Subject="GhostNukeTargetBillboard" Actor="Create"/>
+        <Model value="GhostNukeTarget"/>
+    </CActorModel>
+    <CActorSound id="CCGhostNukeLaunch" parent="SoundOneShot">
+        <Flags index="SuppressSaveLoad" value="0"/>
+        <InheritType value="Continuous"/>
+        <Inherits index="Visibility" value="0"/>
+        <On index="0" Terms="Effect.CCNukePersistent.Start" Send="Create"/>
+        <HostSiteOps Ops="SOpSourcePointSationary"/>
+        <Sound value="Ghost_NukeLaunch"/>
+    </CActorSound>
+    <CActorSound id="CCGhostNukeSeek" parent="SoundContinuous">
+        <On Terms="Effect.CCNukePersistent.Initial" Send="Create"/>
+        <On Terms="Effect.CCNukePersistent.Stop; At Effect" Send="Destroy"/>
+        <On Terms="ActorCreation" Send="SoundSetPitch Inverse 10.000000@0.000000,0.000000@8750.000000"/>
+        <Sound value="Ghost_NukeSeek"/>
+    </CActorSound>
+</Catalog>

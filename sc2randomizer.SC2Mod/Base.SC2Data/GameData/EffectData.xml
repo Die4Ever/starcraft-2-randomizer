@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Catalog>
+    <CEffectCreatePersistent id="CCNukePersistent">
+        <EditorCategories value="Race:Terran"/>
+        <AINotifyFlags index="HurtFriend" value="1"/>
+        <AINotifyFlags index="HurtEnemy" value="1"/>
+        <Alert value="CalldownLaunch"/>
+        <InitialDelay value="8.75"/>
+        <ExpireEffect value="NukeDetonate"/>
+        <FinalEffect value="NukeSuicide"/>
+        <PeriodCount value="50"/>
+        <PeriodicPeriodArray value="0.2"/>
+        <AINotifyEffect value="NukeDamage"/>
+    </CEffectCreatePersistent>
+</Catalog>
