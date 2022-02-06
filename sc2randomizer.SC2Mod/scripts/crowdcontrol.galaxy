@@ -118,7 +118,7 @@ int get_resource_any_player(int resource) {
     return 0;
 }
 
-int set_upgrade_level(int player, string upgrade, int set) {
+int set_upgrade(int player, string upgrade, int set) {
     int has;
     has = TechTreeUpgradeCount(player, upgrade, c_techCountCompleteOnly);
     if(has == set) {
@@ -131,9 +131,37 @@ int set_upgrade_level(int player, string upgrade, int set) {
     return 1;
 }
 
+int set_upgrade_level(int player, string upgrade, int level) {
+    int i;
+    string slevel;
+    int counter;
+    unitgroup units;
+    unit u;
+
+    counter += set_upgrade(player, upgrade+"Level0", 0);
+
+    for(i=3; i>level; i-=1) {
+        slevel = "Level" + IntToString(i);
+        counter += set_upgrade(player, upgrade+slevel, 0);
+    }
+
+    for(i=1; i<=level; i+=1) {
+        slevel = "Level" + IntToString(i);
+        counter += set_upgrade(player, upgrade+slevel, 1);
+    }
+
+    if(level == 0) {
+        counter += set_upgrade(player, upgrade+"Level0", 1);
+        counter += set_upgrade(player, upgrade+"Level0", 0);
+    }
+
+    return counter;
+}
+
 bool set_player_armor_upgrades(int player, int level) {
     int set;
     int i;
+    int inc;
     string slevel;
     int counter;
 
@@ -141,36 +169,20 @@ bool set_player_armor_upgrades(int player, int level) {
         return false;
     }
 
-    for(i=1; i<=3; i+=1) {
-        if(i<=level) {
-            set = 1;
-        } else {
-            set = 0;
-        }
-        slevel = IntToString(i);
-        counter += set_upgrade_level(player, "ProtossAirArmorsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ProtossGroundArmorsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ProtossShieldsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "TerranInfantryArmorsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "TerranVehicleAndShipArmorsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ZergFlyerArmorsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ZergGroundArmorsLevel"+slevel, set);
-    }
-
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossAirArmors", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossGroundArmors", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossShields", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranInfantryArmors", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranVehicleAndShipArmors", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergFlyerArmors", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergGroundArmors", level);
-
+    counter += set_upgrade_level(player, "ProtossAirArmors", level);
+    counter += set_upgrade_level(player, "ProtossGroundArmors", level);
+    counter += set_upgrade_level(player, "ProtossShields", level);
+    counter += set_upgrade_level(player, "TerranInfantryArmors", level);
+    counter += set_upgrade_level(player, "TerranVehicleAndShipArmors", level);
+    counter += set_upgrade_level(player, "ZergFlyerArmors", level);
+    counter += set_upgrade_level(player, "ZergGroundArmors", level);
     return counter > 0;
 }
 
 bool set_player_weapon_upgrades(int player, int level) {
     int set;
     int i;
+    int inc;
     string slevel;
     int counter;
 
@@ -178,32 +190,14 @@ bool set_player_weapon_upgrades(int player, int level) {
         return false;
     }
 
-    for(i=1; i<=3; i+=1) {
-        if(i<=level) {
-            set = 1;
-        } else {
-            set = 0;
-        }
-        slevel = IntToString(i);
-        counter += set_upgrade_level(player, "ProtossAirWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ProtossGroundWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "TerranInfantryWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "TerranShipWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "TerranVehicleWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ZergFlyerWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ZergMeleeWeaponsLevel"+slevel, set);
-        counter += set_upgrade_level(player, "ZergMissileWeaponsLevel"+slevel, set);
-    }
-
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossAirWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ProtossGroundWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranInfantryWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranShipWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "TerranVehicleWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergFlyerWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergMeleeWeapons", level);
-    libNtve_gf_SetUpgradeLevelForPlayer(player, "ZergMissileWeapons", level);
-
+    counter += set_upgrade_level(player, "ProtossAirWeapons", level);
+    counter += set_upgrade_level(player, "ProtossGroundWeapons", level);
+    counter += set_upgrade_level(player, "TerranInfantryWeapons", level);
+    counter += set_upgrade_level(player, "TerranShipWeapons", level);
+    counter += set_upgrade_level(player, "TerranVehicleWeapons", level);
+    counter += set_upgrade_level(player, "ZergFlyerWeapons", level);
+    counter += set_upgrade_level(player, "ZergMeleeWeapons", level);
+    counter += set_upgrade_level(player, "ZergMissileWeapons", level);
     return counter > 0;
 }
 
@@ -257,6 +251,7 @@ bool cc_musical_chairs() {
     }
 
     for(i=1; i<=len; i+=1) {
+        // TODO: also rollback the factions and swap the factions
         set_units_owner(groups[i], newplayers[i], true);
     }
 
@@ -457,6 +452,21 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice(viewer+" reset everyone's upgrades");
         } else {
             notice("nobody has any upgrades");
+        }
+    } else if( code == "setupgrades" ) {
+        counter = 0;
+        for(player=1; player<16; player+=1) {
+            if(set_player_weapon_upgrades(player, iparam)) {
+                counter += 1;
+            }
+            if(set_player_armor_upgrades(player, iparam)) {
+                counter += 1;
+            }
+        }
+        if(counter > 0) {
+            notice(viewer+" gave everyone level "+IntToString(iparam)+" upgrades");
+        } else {
+            notice("everyone already has level "+IntToString(iparam)+" upgrades");
         }
     } else if( code == "musicalchairs" ) {
         if(cc_musical_chairs()) {

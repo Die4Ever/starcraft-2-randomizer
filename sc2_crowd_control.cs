@@ -256,6 +256,7 @@ namespace CrowdControl.Games.Packs
                     new Effect("Super Game Speed (1 min)", "superspeed"),
                     new Effect("Max Upgrades", "maxupgrades"),
                     new Effect("Reset Upgrades", "resetupgrades"),
+                    new Effect("Set Upgrades", "setupgrades", new[]{"upgrades"}),
                     
                     new Effect("Mean Things That Kill", "mean", ItemKind.Folder),
                     new Effect("Nuke All Town Halls", "nukes", "mean"),
@@ -280,6 +281,7 @@ namespace CrowdControl.Games.Packs
             new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
             new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
             new ItemType("Supply", "supply", ItemType.Subtype.Slider, "{\"min\":1,\"max\":50}"),
+            new ItemType("Upgrades", "upgrades", ItemType.Subtype.Slider, "{\"min\":0,\"max\":3}"),
         });
 
         #endregion
