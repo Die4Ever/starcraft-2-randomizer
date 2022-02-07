@@ -9,6 +9,13 @@ int AddRandomizedField(string scope, int type, string name, fixed buff)
             randomized_fields[i].name = name;
             randomized_fields[i].is_array = false;
             randomized_fields[i].buff = buff;
+            if(type == type_fixed || type == type_int) {
+                randomized_fields[i].chance = 1;
+            } else if(type == type_ability) {
+                randomized_fields[i].chance = 10;
+            } else {
+                randomized_fields[i].chance = 3;
+            }
             return i;
         }
     }
@@ -27,6 +34,13 @@ int AddRandomizedFieldFriendlyName(string scope, int type, string name, string f
             randomized_fields[i].friendly_name = friendly_name;
             randomized_fields[i].is_array = false;
             randomized_fields[i].buff = buff;
+            if(type == type_fixed || type == type_int) {
+                randomized_fields[i].chance = 1;
+            } else if(type == type_ability) {
+                randomized_fields[i].chance = 10;
+            } else {
+                randomized_fields[i].chance = 3;
+            }
             return i;
         }
     }
@@ -44,6 +58,13 @@ int AddRandomizedFieldArray(string scope, int type, string name, fixed buff)
             randomized_fields[i].name = name;
             randomized_fields[i].is_array = true;
             randomized_fields[i].buff = buff;
+            if(type == type_fixed || type == type_int) {
+                randomized_fields[i].chance = 5;
+            } else if(type == type_ability) {
+                randomized_fields[i].chance = 20;
+            } else {
+                randomized_fields[i].chance = 10;
+            }
             return i;
         }
     }

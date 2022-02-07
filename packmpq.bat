@@ -18,3 +18,4 @@ REM MPQEditor.exe /compact %TMP%\sc2randomizer.SC2Mod
 REM MPQEditor.exe /list %TMP%\sc2randomizer.SC2Mod
 dir %TMP%\sc2randomizer.SC2Mod
 start %TMP%\sc2randomizer.SC2Mod
+echo "SUCCESS!"

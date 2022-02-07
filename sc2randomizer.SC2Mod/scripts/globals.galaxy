@@ -49,6 +49,7 @@ struct RandomizedField {
     string friendly_name;
     bool is_array;
     fixed buff;
+    int chance;
 };
 RandomizedField[256] randomized_fields;
 const int type_unknown = 0;
@@ -71,4 +72,4 @@ int num_randomized_buildings;
 string[128] linked_units;
 int num_linked_units;
 
-const int precision = 4;
+const int precision = 3;

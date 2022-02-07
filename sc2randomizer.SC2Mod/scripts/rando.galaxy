@@ -13,31 +13,31 @@ bool IsBuilding(string entry)
 
 int GetRandomField(int cat, string scope, string entry)
 {
-    int num;
+    int chances;
     int i;
 
     if( scope == "CUnit" && IsBuilding(entry) ) {
         scope = "CUnitBuilding";
     }
 
-    num = 0;
+    chances = 0;
     for( i=0; i<256; i+=1 ) {
         if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
-            num+=1;
+            chances += randomized_fields[i].chance;
         }
     }
 
-    if( num == 0 ) {
+    if( chances == 0 ) {
         return -1;
     }
 
-    num = RandomInt(0, num-1);
+    chances = RandomInt(0, chances-1);
     for( i=0; i<256; i+=1 ) {
         if( randomized_fields[i].scope == scope && randomized_fields[i].name != "" ) {
-            if( num == 0 ) {
+            if( chances < randomized_fields[i].chance ) {
                 return i;
             }
-            num-=1;
+            chances-=randomized_fields[i].chance;
         }
     }
 
@@ -442,7 +442,7 @@ string get_random_unit() {
     slot = RandomInt(0, num_randomized_units-1);
 
     // reduce chances for buildings, or maybe TODO: I should keep them as separate arrays
-    if( RandomInt(0, 1) == 0 && IsBuilding(randomized_units[slot]) ) {
+    if( RandomInt(0, 4) > 0 && IsBuilding(randomized_units[slot]) ) {
         return get_random_unit();
     }
     return randomized_units[slot];
