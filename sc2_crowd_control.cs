@@ -214,11 +214,20 @@ namespace CrowdControl.Games.Packs
             // we could also make the mod delete the bank instead of setting the status to exited?
             // search in the Accounts folder first, then the test folder if we don't find it
             Log.Message("FindXml");
-            string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
-            if(FindXmlInPath(root)) return true;
+            try {
+                string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
+                if(FindXmlInPath(root)) return true;
+            } catch(Exception e) {
+                Log.Message("error with searching user path: "+ e.ToString());
+            }
 
-            root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
-            return FindXmlInPath(root);
+            try {
+                string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
+                return FindXmlInPath(root);
+            } catch(Exception e) {
+                Log.Message("error with searching dev path: "+ e.ToString());
+                return false;
+            }
         }
 
         protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 100) {

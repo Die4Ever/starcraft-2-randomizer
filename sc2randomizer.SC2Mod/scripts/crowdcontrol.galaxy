@@ -7,6 +7,7 @@ trigger cc_leave_game_trigger;
 trigger normalgamespeed_trigger;
 trigger damage_trigger;
 trigger normal_damage_timer;
+trigger cc_enable_cheat_trigger;
 
 void cc_update_status(string status, int player) {
     string date;
@@ -550,12 +551,18 @@ bool cc_ticker(bool testConds, bool runActions) {
     return true;
 }
 
+void cc_enable_cheat() {
+    cc_enable_cheat_trigger = TriggerCreate("cc_start_from_cheat");
+    TriggerAddEventChatMessage(cc_enable_cheat_trigger, c_playerAny, "laputan machine", true);
+}
+
 void StartCrowdControl() {
     int player;
 
     if(!crowd_control_enabled) {
         info("crowd control not enabled");
         cc_update_status("exited", player);
+        cc_enable_cheat();
         return;
     }
 
@@ -589,6 +596,12 @@ void StartCrowdControl() {
     cc_ticker_trigger = TriggerCreate("cc_ticker");
     TriggerAddEventTimePeriodic(cc_ticker_trigger, 0.5, c_timeReal);
     notice("Crowd Control enabled!");
+}
+
+bool cc_start_from_cheat(bool testConds, bool runActions) {
+    crowd_control_enabled = true;
+    StartCrowdControl();
+    return true;
 }
 
 bool cc_leave_game(bool testConds, bool runActions) {

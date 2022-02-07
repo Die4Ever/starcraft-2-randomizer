@@ -799,7 +799,7 @@ int create_dialog_settings() {
 
     buffs_nerfs_editbox = create_edit_box_with_label(dialog_start, players, FixedToString(buffs_nerfs, 0), "Buffs vs nerfs %: ", "The chances that each change will be a buff instead of a nerf", 8);
 
-    crowd_control_checkbox = create_checkbox_with_label(dialog_start, players, false, "Enable Crowd Control", "Allow your viewers on Twitch to mess with the game!", 9);
+    //crowd_control_checkbox = create_checkbox_with_label(dialog_start, players, false, "Enable Crowd Control", "Allow your viewers on Twitch to mess with the game!", 9);
 
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
