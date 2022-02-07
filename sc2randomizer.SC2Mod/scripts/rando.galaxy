@@ -118,6 +118,7 @@ void randomize_economy() {
     int player;
     int starting_workers;
     int started_workers;
+    int supply_limit;
 
     GameSetSeed( 0451 + seed );
 
@@ -227,6 +228,20 @@ void randomize_economy() {
     change.field = "";
     change.oldval = 12;
     change.newval = starting_workers;
+    add_change(no_race, change);
+
+    supply_limit = FixedToInt(rng(min_supply_limit, max_supply_limit));
+    for(player=1; player<16; player+=1) {
+        if( PlayerIsActive(player) ) {
+            PlayerModifyPropertyInt(player, c_playerPropSuppliesLimit, c_playerPropOperSetTo, supply_limit);
+        }
+    }
+
+    change.cat = -1;
+    change.entry = "Supply Limit";
+    change.field = "";
+    change.oldval = 200;
+    change.newval = supply_limit;
     add_change(no_race, change);
 }
 

@@ -4,6 +4,8 @@ fixed min_percent;
 fixed max_percent;
 fixed min_resources;
 fixed max_resources;
+int min_supply_limit;
+int max_supply_limit;
 int seed;
 const int max_factions = 8;
 int num_factions;

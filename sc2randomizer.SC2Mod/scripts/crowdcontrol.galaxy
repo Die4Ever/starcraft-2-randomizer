@@ -369,14 +369,14 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             return false;
         }
     } else if( code == "raisesupply") {
-        if( add_resources(c_playerPropSuppliesLimit, iparam, 0, 250, 1) ) {
+        if( add_resources(c_playerPropSuppliesLimit, iparam, 0, max_supply_limit, 1) ) {
             notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
         } else {
             notice("supply limit is already at the maximum");
             return false;
         }
     } else if( code == "lowersupply") {
-        if( add_resources(c_playerPropSuppliesLimit, -iparam, 50, 9999, 1) ) {
+        if( add_resources(c_playerPropSuppliesLimit, -iparam, min_supply_limit/2, 9999, 1) ) {
             notice(viewer+" lowered the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
         } else {
             notice("supply limit is already at the minimum");
