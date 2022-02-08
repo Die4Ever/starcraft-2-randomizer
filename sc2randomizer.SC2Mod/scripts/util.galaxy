@@ -7,6 +7,25 @@ fixed rng(fixed min, fixed max) {
     return RandomFixed(min, max);
 }
 
+fixed rngexp(fixed origmin, fixed origmax, fixed curve)
+{// has trouble with large numbers and small curves, like (100, 250, 0.4) doesn't work but (10, 25, 0.4)*10 works fine
+    fixed frange;
+    fixed f;
+    fixed min;
+    fixed max;
+    min = origmin;
+    max = origmax;
+    if(min != 0) {
+        min = Pow(min, 1.0/curve);
+    }
+    max = Pow(max+1.0, 1.0/curve);
+    frange = max-min;
+    f = rng(0, 1)*frange + min;
+    f = Pow(f, curve);
+    f = libNtve_gf_ArithmeticRealClamp( f, origmin, origmax );
+    return f;
+}
+
 fixed randomize_min_max(fixed val, fixed min, fixed max) {
     fixed percent;
     // probably should make all changes far away from 100%, since there will be few things changed
