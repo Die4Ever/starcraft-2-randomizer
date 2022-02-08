@@ -552,20 +552,22 @@ void do_rando() {
     bool seed_was_locked;
 
     notice("Randomizing with seed "+IntToString(seed)+", "+IntToString(num_factions)+" factions, "+IntToString(num_bans)+" bans, "+IntToString(changes_per_faction)+" changes per faction, "+FixedToString(min_percent,1)+"% minimum, "+FixedToString(max_percent,1)+"% maximum.");
-    Wait(0.1, c_timeReal);
-
+    Wait(0.01, c_timeReal);
+    
     seed_was_locked = GameIsSeedLocked();
     GameSetSeed(seed);
 
     randomize_economy();
     for( i=0; i < num_factions; i+=1 ) {
-        Wait(0.1, c_timeReal);
+        Wait(0.01, c_timeReal);
         race_changes[i*4 + no_race].name = "General";
         race_changes[i*4 + terran].name = "Terran Faction "+IntToString(i+1);
         race_changes[i*4 + protoss].name = "Protoss Faction "+IntToString(i+1);
         race_changes[i*4 + zerg].name = "Zerg Faction "+IntToString(i+1);
         randomize_units(i, changes_per_faction);
     }
+
+    sort_changes();
 
     notes_log();
     GameSetSeedLocked(seed_was_locked);

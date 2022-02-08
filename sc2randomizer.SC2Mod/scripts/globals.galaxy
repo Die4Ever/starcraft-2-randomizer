@@ -30,11 +30,13 @@ struct Change {
     fixed oldval;
     fixed newval;
     fixed buff;
+    string as_string;
 };
 
+typedef Change[128] changes_array;
 struct RaceChanges {
     string name;
-    Change[128] changes;
+    changes_array changes;
     int len;
 };
 const int no_race=0;

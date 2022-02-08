@@ -285,6 +285,10 @@ string change_to_string(structref<Change> change) {
     string s;
     string unit_name;
 
+    if(change.as_string != "") {
+        return change.as_string;
+    }
+
     unit_name = change.unit_entry;
     if( change.cat == c_gameCatalogUnit ) {
         unit_name = change.entry;
@@ -313,6 +317,8 @@ string change_to_string(structref<Change> change) {
         s += FixedToString(change.oldval,precision)
             + " to "+FixedToString(change.newval,precision);
     }
+
+    change.as_string = s;
     return s;
 }
 
@@ -358,4 +364,96 @@ int DeleteUnits(string names, int player, int num)
         UnitRemove(u);
     }
     return num;
+}
+
+void copy_change(structref<Change> dst, structref<Change> src) {
+    dst.cat = src.cat;
+    dst.unit_entry = src.unit_entry;
+    dst.entry = src.entry;
+    dst.field = src.field;
+    dst.friendly_name = src.friendly_name;
+    dst.oldval = src.oldval;
+    dst.newval = src.newval;
+    dst.buff = src.buff;
+    dst.as_string = src.as_string;
+}
+
+
+void swap_changes(structref<Change> a, structref<Change> b) {
+    Change tc;
+    copy_change(tc, a);
+    copy_change(a, b);
+    copy_change(b, tc);
+}
+
+
+typedef string[128] string_array;
+int sort_faction_partition(arrayref<changes_array> changes, int start, int end) {
+    string pivot;
+    int pivotIndex;
+    int i;
+    int j;
+    int count;
+
+    pivot = change_to_string(changes[start]);
+    count = 0;
+    for(i=start+1; i<=end; i+=1) {
+        if(StringCompare(change_to_string(changes[i]), pivot, true) <= 0) {
+            count += 1;
+        }
+    }
+
+    pivotIndex = start + count;
+    swap_changes(changes[start], changes[pivotIndex]);
+
+    i = start;
+    j = end;
+
+    while (i < pivotIndex && j > pivotIndex) {
+        while(StringCompare(change_to_string(changes[i]), pivot, true) <= 0) {
+            i+=1;
+        }
+
+        while(StringCompare(change_to_string(changes[j]), pivot, true) > 0) {
+            j-=1;
+        }
+
+        if(i < pivotIndex && j > pivotIndex) {
+            swap_changes(changes[i], changes[j]);
+            i+=1;
+            j-=1;
+        }
+    }
+
+    return pivotIndex;
+}
+
+
+void sort_faction_changes(arrayref<changes_array> changes, int start, int end) {
+    int i;
+    string a;
+    string b;
+    int cmp;
+    Change t;
+    int p;
+
+    if(start >= end) {
+        return;
+    }
+
+    p = sort_faction_partition(changes, start, end);
+    sort_faction_changes(changes, start, p-1);
+    sort_faction_changes(changes, p+1, end);
+}
+
+
+void sort_changes() {
+    int i;
+
+    for(i=0; i< max_factions*4; i+=1) {
+        if(race_changes[i].len > 0) {
+            Wait(0.01, c_timeReal);
+            sort_faction_changes(race_changes[i].changes, 0, race_changes[i].len-1);
+        }
+    }
 }

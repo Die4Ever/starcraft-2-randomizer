@@ -36,14 +36,14 @@ int create_continue_button(int dialog, string button_text, string callback) {
     libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
     DialogControlSetSize(submit_button, PlayerGroupAll(), 400, 60);
     DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 40);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 5 seconds"), PlayerGroupAll());
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 1 second"), PlayerGroupAll());
     TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
 
     if(!bdebug) {
         TriggerDestroy(enable_button_trigger);
         DialogControlSetEnabled(submit_button, PlayerGroupAll(), false);
         enable_button_trigger = TriggerCreate("enable_button");
-        TriggerAddEventTimeElapsed( enable_button_trigger, 5, c_timeReal );
+        TriggerAddEventTimeElapsed( enable_button_trigger, 1, c_timeReal );
     }
 
     return submit_button;
@@ -701,8 +701,8 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     loading_text = DialogControlCreate(loading_screen, c_triggerControlTypeLabel);
     DialogControlSetSize(loading_text, PlayerGroupAll(), 300, 300);
     DialogControlSetPosition(loading_text, PlayerGroupAll(), c_anchorCenter, 0, 0);
-    libNtve_gf_SetDialogItemText( loading_text, StringToText("Please wait while randomizing, this might take a few seconds..."), PlayerGroupAll() );
-    libNtve_gf_SetDialogItemTooltip( loading_text, StringToText("Please wait while randomizing, this might take a few seconds..."), PlayerGroupAll() );
+    libNtve_gf_SetDialogItemText( loading_text, StringToText("Please wait while randomizing..."), PlayerGroupAll() );
+    libNtve_gf_SetDialogItemTooltip( loading_text, StringToText("Please wait while randomizing..."), PlayerGroupAll() );
 
     DialogSetVisible(loading_screen, PlayerGroupAll(), true);
 
