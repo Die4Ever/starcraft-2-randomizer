@@ -2,6 +2,7 @@
 DocInfo/DescShort=Any
 DocInfo/HowToPlayBasic00=First players will ban what faction(s) they think are the strongest, your bans only affect your opponents.
 DocInfo/HowToPlayBasic01=Then you will pick which faction you think is the strongest from whatever wasn't banned.
+DocInfo/HowToPlayBasic02=During the game, you can press F12 to review the changes again.
 DocInfo/Name=Randomizer Mod
 DocInfo/PatchNote001=Randomize number of starting workers
 DocInfo/PatchNote002=prevent mineral fields from disappearing

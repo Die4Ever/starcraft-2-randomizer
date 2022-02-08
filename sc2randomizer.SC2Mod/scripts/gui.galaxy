@@ -23,13 +23,28 @@ int factions_dropdown;
 int submit_button;
 trigger dialog_timeout;
 
+trigger enable_button_trigger;
+
+bool enable_button(bool testConds, bool runActions) {
+    DialogControlSetEnabled(submit_button, PlayerGroupAll(), true);
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(""), PlayerGroupAll());
+    return true;
+}
+
 int create_continue_button(int dialog, string button_text, string callback) {
     submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
     libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
     DialogControlSetSize(submit_button, PlayerGroupAll(), 400, 60);
     DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 40);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(button_text), PlayerGroupAll());
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 5 seconds"), PlayerGroupAll());
     TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
+
+    if(!bdebug) {
+        TriggerDestroy(enable_button_trigger);
+        DialogControlSetEnabled(submit_button, PlayerGroupAll(), false);
+        enable_button_trigger = TriggerCreate("enable_button");
+        TriggerAddEventTimeElapsed( enable_button_trigger, 5, c_timeReal );
+    }
 
     return submit_button;
 }
@@ -354,9 +369,11 @@ bool start_game(bool testConds, bool runActions) {
     DialogDestroy(dialog_pick_faction);
 
     libNtve_gf_HideGameUI( true, PlayerGroupAll() );
-    for( i=0; i<16; i+=1 ) {// TODO: active players only?
-        CameraLockInput(i, false);
-        MeleeSetOption(i, c_meleeOptionStalemate, true);
+    for( i=1; i<16; i+=1 ) {
+        if(PlayerIsActive(i)) {
+            CameraLockInput(i, false);
+            MeleeSetOption(i, c_meleeOptionStalemate, true);
+        }
     }
     GameSetGlobalTimeScale(1);
     StartCrowdControl();
@@ -432,6 +449,8 @@ int create_dialog_pick_faction() {
     DialogSetFullscreen(dialog_pick_faction, true);
 
     create_continue_button(dialog_pick_faction, "Continue To Review", "review_button_pressed");
+    TriggerDestroy(enable_button_trigger);
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Pick a faction"), PlayerGroupAll());
     DialogControlSetEnabled(submit_button, players, false);
 
     changes_list = create_changes_list(dialog_pick_faction);
@@ -583,9 +602,17 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     int loading_text;
     int num_players;
     int max_bans;
+    int i;
 
     info("start_rando_button_pressed");
     TriggerDestroy(dialog_timeout);
+
+    for( i=1; i<16; i+=1 ) {
+        if(PlayerIsActive(i)) {
+            CameraLockInput(i, true);
+            MeleeSetOption(i, c_meleeOptionStalemate, false);
+        }
+    }
 
     sseed = libNtve_gf_DialogItemEditValue(seed_editbox, default_player);
     if( sseed != "" ) {
@@ -804,7 +831,7 @@ int create_dialog_settings() {
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     dialog_timeout = TriggerCreate("start_rando_button_pressed");
-    TriggerAddEventTimeElapsed( dialog_timeout, 45, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 
     DialogSetVisible(dialog_start, players, true);
 
@@ -825,10 +852,10 @@ int create_dialog_wait_settings() {
 
     create_label(dialog_wait, players, "Waiting for host to choose settings...", "", 0);
     create_label(dialog_wait, players, "StarCraft 2 Randomizer is still early in development, some bugs are expected.", "", 1);
-    create_label(dialog_wait, players, "After the host chooses the settings, each race will get some randomized factions generated for them.", "", 2);
-    create_label(dialog_wait, players, "If the host chooses to allow bans, make sure to ban the factions that you think look too strong!", "", 3);
-    create_label(dialog_wait, players, "Then you will pick which faction you get to play as, so pick the one you think looks the strongest.", "", 4);
-    create_label(dialog_wait, players, "During the game, you can press F12 to review the changes again.", "", 5);
+    create_label(dialog_wait, players, "After the host chooses the settings, each race will have some randomized factions generated for them.", "", 2);
+    //create_label(dialog_wait, players, "If the host chooses to allow bans, make sure to ban the factions that you think look too strong!", "", 3);
+    create_label(dialog_wait, players, "Then you will pick which faction you get to play as, so pick the one you think looks the strongest.", "", 3);
+    create_label(dialog_wait, players, "During the game, you can press F12 to review the changes again.", "", 4);
 
     DialogSetVisible(dialog_wait, players, true);
     return dialog_wait;
@@ -839,10 +866,10 @@ void create_dialog_start() {
     int i;
 
     info("create_dialog_start");
-    for( i=0; i<16; i+=1 ) {// TODO: active players only?
-        CameraLockInput(i, true);
-        // TODO: fix disabling stalemate
-        MeleeSetOption(i, c_meleeOptionStalemate, false);
+    for( i=1; i<16; i+=1 ) {
+        if(PlayerIsActive(i)) {
+            CameraLockInput(i, true);
+        }
     }
 
     GameSetGlobalTimeScale(0);
