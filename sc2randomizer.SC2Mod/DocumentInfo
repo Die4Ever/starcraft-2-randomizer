@@ -12,18 +12,21 @@
             <Value>0.19</Value>
             <Value>0.20</Value>
             <Value>0.21</Value>
+            <Value>0.25</Value>
         </Version>
         <Date>
             <Value>9/3/2021</Value>
             <Value>9/4/2021</Value>
             <Value>9/4/2021</Value>
             <Value>12/18/2021</Value>
+            <Value>2/7/2022</Value>
         </Date>
         <Notes>
             <Value>1</Value>
             <Value>2</Value>
             <Value>3</Value>
             <Value>4,5,6</Value>
+            <Value>7,8,9</Value>
         </Notes>
     </PatchNote>
 </DocInfo>

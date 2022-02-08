@@ -289,7 +289,7 @@ int kill_armies() {
 bool normal_game_speed(bool testConds, bool runActions) {
     if( GameGetGlobalTimeScale() != 1 ) {
         GameSetGlobalTimeScale(1);
-        notice("game speed is now back to normal");
+        notice("Game speed is now back to normal.");
     }
     return true;
 }
@@ -326,7 +326,7 @@ bool reduced_damage(bool testConds, bool runActions) {
 bool normal_damage(bool testConds, bool runActions) {
     TriggerDestroy(damage_trigger);
     set_damage(libNtve_ge_UnitDamageChangeOption_Full);
-    notice("Damage is back to normal.");
+    notice("Damage is now back to normal.");
     return true;
 }
 
@@ -350,36 +350,36 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         }
     } else if( code == "giveminerals" ) {
         add_resources(c_playerPropMinerals, iparam, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam)+" minerals");
+        notice(viewer+" gave everyone "+IntToString(iparam)+" minerals.");
     } else if( code == "givegas") {
         add_resources(c_playerPropVespene, iparam, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam)+" gas");
+        notice(viewer+" gave everyone "+IntToString(iparam)+" gas.");
     } else if( code == "takeminerals") {
         if( add_resources(c_playerPropMinerals, -iparam, iparam, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone");
+            notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone.");
         } else {
-            notice("no one has enough minerals");
+            notice("No one has enough minerals.");
             return false;
         }
     } else if( code == "takegas") {
         if( add_resources(c_playerPropVespene, -iparam, iparam, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam)+" gas from everyone");
+            notice(viewer+" took away "+IntToString(iparam)+" gas from everyone.");
         } else {
-            notice("no one has enough vespene gas");
+            notice("No one has enough vespene gas.");
             return false;
         }
     } else if( code == "raisesupply") {
         if( add_resources(c_playerPropSuppliesLimit, iparam, 0, max_supply_limit, 1) ) {
-            notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
+            notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit))+".");
         } else {
-            notice("supply limit is already at the maximum");
+            notice("Supply limit is already at the maximum.");
             return false;
         }
     } else if( code == "lowersupply") {
         if( add_resources(c_playerPropSuppliesLimit, -iparam, min_supply_limit/2, 9999, 1) ) {
             notice(viewer+" lowered the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
         } else {
-            notice("supply limit is already at the minimum");
+            notice("Supply limit is already at the minimum.");
             return false;
         }
     } else if( code == "superspeed" ) {
@@ -388,9 +388,9 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             normalgamespeed_trigger = TriggerCreate("normal_game_speed");
             TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
             GameSetGlobalTimeScale(1.5);
-            notice(viewer+" set the game to super speed for 1 minute");
+            notice(viewer+" set the game to super speed for 1 minute.");
         } else {
-            notice("the game is already at super speed");
+            notice("The game is already at super speed.");
             return false;
         }
     } else if( code == "slowspeed" ) {
@@ -399,9 +399,9 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             normalgamespeed_trigger = TriggerCreate("normal_game_speed");
             TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
             GameSetGlobalTimeScale(0.5);
-            notice(viewer+" set the game to slow speed for 1 minute");
+            notice(viewer+" set the game to slow speed for 1 minute.");
         } else {
-            notice("the game is already at slow speed");
+            notice("The game is already at slow speed.");
             return false;
         }
     } else if( code == "killworkers" ) {
@@ -414,16 +414,16 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             i += DeleteUnits("MULE", player, 99999);
         }
         if(i <= 0) {
-            notice("no one has more than 1 worker");
+            notice("No one has more than 1 worker.");
             return false;
         }
-        notice(viewer+" killed "+IntToString(i)+" workers");// say the number killed since not all of them are killed
+        notice(viewer+" killed "+IntToString(i)+" workers.");// say the number killed since not all of them are killed
     } else if( code == "killarmy" ) {
         i = kill_armies();
         if(i > 0) {
-            notice(viewer+" killed every army unit");// should we instead say how many units have been killed?
+            notice(viewer+" killed every army unit.");// should we instead say how many units have been killed?
         } else {
-            notice("kill armies failed");
+            notice("Kill armies failed.");
             return false;
         }
     } else if( code == "fullvision" ) {
@@ -432,7 +432,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
                 VisRevealArea(player, RegionEntireMap(), 60, false);
             }
         }
-        notice(viewer+" revealed the whole map for 1 minute");
+        notice(viewer+" revealed the whole map for 1 minute.");
     } else if( code == "maxupgrades" ) {
         counter = 0;
         for(player=1; player<16; player+=1) {
@@ -444,9 +444,10 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             }
         }
         if(counter > 0) {
-            notice(viewer+" gave everyone max upgrades");
+            notice(viewer+" gave everyone max upgrades.");
         } else {
-            notice("everyone already has max upgrades");
+            notice("Everyone already has max upgrades.");
+            return false;
         }
     } else if( code == "resetupgrades" ) {
         counter = 0;
@@ -459,9 +460,9 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             }
         }
         if(counter > 0) {
-            notice(viewer+" reset everyone's upgrades");
+            notice(viewer+" reset everyone's upgrades.");
         } else {
-            notice("nobody has any upgrades");
+            notice("Nobody has any upgrades.");
         }
     } else if( code == "setupgrades" ) {
         counter = 0;
@@ -474,15 +475,15 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             }
         }
         if(counter > 0) {
-            notice(viewer+" gave everyone level "+IntToString(iparam)+" upgrades");
+            notice(viewer+" gave everyone level "+IntToString(iparam)+" upgrades.");
         } else {
-            notice("everyone already has level "+IntToString(iparam)+" upgrades");
+            notice("Everyone already has level "+IntToString(iparam)+" upgrades.");
         }
     } else if( code == "musicalchairs" ) {
         if(cc_musical_chairs()) {
-            notice(viewer+" has invoked musical chairs");
+            notice(viewer+" has invoked musical chairs.");
         } else {
-            notice("musical chairs failed");
+            notice("Musical chairs failed.");
             return false;
         }
     } else if( code == "extradamage" ) {
@@ -504,7 +505,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         TriggerAddEventUnitStartedAttack2(damage_trigger, null, null);
         notice(viewer+" enabled reduced damage for 1 minute.");
     } else {
-        err("unknown crowd control effect");
+        err("Unknown crowd control effect.");
         return false;
     }
     return true;
