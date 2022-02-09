@@ -71,6 +71,9 @@ namespace CrowdControl.Games.Packs
         <Key name=""date"">
             <Value string=""{request.Stamp}""/>
         </Key>
+        <Key name=""ticker"">
+            <Value int=""{DateTime.Now.Ticks}""/>
+        </Key>
     </Section>
     <Section name=""request"">
         <Key name=""code"">
@@ -204,8 +207,8 @@ namespace CrowdControl.Games.Packs
             }
         }
 
-        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 100) {
-            // waiting in here seems to block up the queue of other incoming effects? maybe we should instead call DelayEffect(request);
+        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 1000, int millisecondsCheckInterval = 100) {
+            // waiting in here seems to block up the queue of other incoming effects
             string status = null;
             SpinWait.SpinUntil(() => {
                 Thread.Sleep(millisecondsCheckInterval);
@@ -214,7 +217,16 @@ namespace CrowdControl.Games.Packs
             }, millisecondsTimeout);
 
             Log.Message($"XmlWait got status {status}");
-            return status is not null && status == "success";
+            if(status is null) {
+                DelayEffect(request);
+                return false;
+            } else if(status == "retry") {
+                DelayEffect(request);
+                return false;
+            } else if(status != "success") {
+                return false;
+            }
+            return true;
         }
 
         protected bool SendEffect(EffectRequest request, Method method) {
@@ -261,10 +273,9 @@ namespace CrowdControl.Games.Packs
 
         public override List<ItemType> ItemTypes => new List<ItemType>(new[]
         {
-            new ItemType("Percent", "percent", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
             // minerals and gas probably need to be in increments of 100, since we can't do fractional costs?
-            new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
-            new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
+            new ItemType("Minerals x1000", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
+            new ItemType("Gas x1000", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
             new ItemType("Supply", "supply", ItemType.Subtype.Slider, "{\"min\":1,\"max\":50}"),
             new ItemType("Upgrades", "upgrades", ItemType.Subtype.Slider, "{\"min\":0,\"max\":3}"),
         });
@@ -281,7 +292,6 @@ namespace CrowdControl.Games.Packs
             if (!IsReady(request))
             {
                 Respond(request, EffectStatus.FailTemporary, "Not ready yet");
-                //DelayEffect(request); // can we limit how many times we delay a request?
                 return;
             }
 
@@ -308,7 +318,7 @@ namespace CrowdControl.Games.Packs
 
         const bool debug = false;
 
-        const string version = "0.26";
+        const string version = "0.27";
         
         string xmlPathRequests = "";
         string xmlPathResponses = "";

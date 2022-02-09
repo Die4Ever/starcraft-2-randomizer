@@ -1,7 +1,18 @@
 
 bank[16] cc_bank;
 bank[16] cc_responses_bank;
-string[16] cc_last_id;
+
+const int num_responses = 32;
+string[16][num_responses] cc_last_id;
+string[16][num_responses] cc_response_statuses;
+int[num_responses] cc_responses_end;// end of the circular array
+int[16] last_ticks;
+
+const string cc_success = "success";
+const string cc_retry = "retry";
+const string cc_perm_fail = "perm_fail";
+const int cc_was_processed = -1;
+
 trigger cc_ticker_trigger;
 trigger cc_leave_game_trigger;
 trigger normalgamespeed_trigger;
@@ -21,18 +32,38 @@ void cc_update_status(string status, int player) {
 
 void cc_set_last_id(string id, string status, int player) {
     string date;
-    cc_last_id[player] = id;
+    int i;
+
+    cc_last_id[player][cc_responses_end[player]] = id;
+    cc_response_statuses[player][cc_responses_end[player]] = status;
+
     BankSectionRemove(cc_responses_bank[player], "responses");
     BankSectionCreate(cc_responses_bank[player], "responses");
-    BankValueSetFromString(cc_responses_bank[player], "responses", id, status);
+
+    for(i=0; i<num_responses; i+=1) {
+        BankValueSetFromString(cc_responses_bank[player], "responses", cc_last_id[player][i], cc_response_statuses[player][i]);
+    }
+
     date = libNtve_gf_FormatDateTimeasString(CurrentDateTimeGet());
     BankValueSetFromString(cc_responses_bank[player], "header", "date", date);
     BankSave(cc_responses_bank[player]);
+
+    cc_responses_end[player] += 1;
+    cc_responses_end[player] %= num_responses;
 }
 
-bool cc_id_has_processed(string id, int player) {
-    // might want to make this use a circular array so it can keep track of multiple IDs
-    return id == cc_last_id[player];
+int cc_id_has_processed(string id, int player) {
+    int i;
+
+    for(i=0; i<num_responses; i+=1) {
+        if( id == cc_last_id[player][i] ) {
+            if( cc_response_statuses[player][i] == cc_retry ) {
+                return 1;
+            }
+            return cc_was_processed;
+        }
+    }
+    return 0;
 }
 
 void nuke(unit u) {
@@ -258,12 +289,12 @@ bool cc_musical_chairs() {
 
     TipAlertPanelClear(PlayerGroupAll());
     HelpPanelDestroyAllTips();
-    create_general_tips();
     for(i=1; i<=len; i+=1) {
         players_picks[newplayers[i]] = new_picks[newplayers[i]];
         apply_changes(players_picks[newplayers[i]], newplayers[i]);
         set_units_owner(groups[i], newplayers[i], true);
     }
+    create_general_tips();
 
     return true;
 }
@@ -273,7 +304,7 @@ int kill_armies() {
     unit u;
     int i;
     int num;
-    // TODO: maybe do a UnitGroup of all units, and then do unit group subtraction with GetUnitsOfTypes("SCV Overlord...") and UnitFilter((1 << c_targetFilterStructure,0,0,0)) or UnitFilterStr("Structure")
+
     units = UnitGroup(null, c_playerAny, RegionEntireMap(), UnitFilter(0,0,0,0), 999999 );
     UnitGroupRemoveUnitGroup(units, UnitGroup(null, c_playerAny, RegionEntireMap(), UnitFilterStr("Structure"), 999999) );
     UnitGroupRemoveUnitGroup(units, GetUnitsOfTypes("Probe SCV Drone DroneBurrowed MULE Overlord Larva Egg", c_playerAny));
@@ -330,7 +361,7 @@ bool normal_damage(bool testConds, bool runActions) {
     return true;
 }
 
-bool cc_proc_request(int player, string code, string viewer, string params) {
+string cc_proc_request(int player, string code, string viewer, string params, int retries) {
     int iparam;
     int i;
     int counter;
@@ -341,46 +372,53 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
     if(params != "") {
         iparam = StringToInt(params);
     }
+    
     if( code == "nukes" ) {
         if(cc_nukes() > 0) {
             notice(viewer+" sends their regards.");
         } else {
-            notice("Nukes failed.");
-            return false;
+            if(retries == 0) {
+                notice("Nukes failed.");
+            }
+            return cc_retry;
         }
     } else if( code == "giveminerals" ) {
-        add_resources(c_playerPropMinerals, iparam, 0, 999999, 0);
+        add_resources(c_playerPropMinerals, iparam*1000, 0, 999999, 0);
         notice(viewer+" gave everyone "+IntToString(iparam)+" minerals.");
     } else if( code == "givegas") {
-        add_resources(c_playerPropVespene, iparam, 0, 999999, 0);
+        add_resources(c_playerPropVespene, iparam*1000, 0, 999999, 0);
         notice(viewer+" gave everyone "+IntToString(iparam)+" gas.");
     } else if( code == "takeminerals") {
-        if( add_resources(c_playerPropMinerals, -iparam, iparam, 999999, 1) ) {
+        if( add_resources(c_playerPropMinerals, -iparam*1000, 0, 999999, 1) ) {
             notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone.");
         } else {
-            notice("No one has enough minerals.");
-            return false;
+            if(retries == 0) {
+                notice("No one has enough minerals.");
+            }
+            return cc_retry;
         }
     } else if( code == "takegas") {
-        if( add_resources(c_playerPropVespene, -iparam, iparam, 999999, 1) ) {
+        if( add_resources(c_playerPropVespene, -iparam*1000, 0, 999999, 1) ) {
             notice(viewer+" took away "+IntToString(iparam)+" gas from everyone.");
         } else {
-            notice("No one has enough vespene gas.");
-            return false;
+            if(retries == 0) {
+                notice("No one has enough vespene gas.");
+            }
+            return cc_retry;
         }
     } else if( code == "raisesupply") {
         if( add_resources(c_playerPropSuppliesLimit, iparam, 0, max_supply_limit, 1) ) {
             notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit))+".");
         } else {
             notice("Supply limit is already at the maximum.");
-            return false;
+            return cc_perm_fail;
         }
     } else if( code == "lowersupply") {
         if( add_resources(c_playerPropSuppliesLimit, -iparam, min_supply_limit/2, 9999, 1) ) {
             notice(viewer+" lowered the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
         } else {
             notice("Supply limit is already at the minimum.");
-            return false;
+            return cc_perm_fail;
         }
     } else if( code == "superspeed" ) {
         if( GameGetGlobalTimeScale() < 1.5 ) {
@@ -390,8 +428,10 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             GameSetGlobalTimeScale(1.5);
             notice(viewer+" set the game to super speed for 1 minute.");
         } else {
-            notice("The game is already at super speed.");
-            return false;
+            if(retries == 0) {
+                notice("The game is already at super speed.");
+            }
+            return cc_retry;
         }
     } else if( code == "slowspeed" ) {
         if( GameGetGlobalTimeScale() > 0.5 ) {
@@ -401,8 +441,10 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             GameSetGlobalTimeScale(0.5);
             notice(viewer+" set the game to slow speed for 1 minute.");
         } else {
-            notice("The game is already at slow speed.");
-            return false;
+            if(retries == 0) {
+                notice("The game is already at slow speed.");
+            }
+            return cc_retry;
         }
     } else if( code == "killworkers" ) {
         i = 0;
@@ -415,7 +457,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         }
         if(i <= 0) {
             notice("No one has more than 1 worker.");
-            return false;
+            return cc_perm_fail;
         }
         notice(viewer+" killed "+IntToString(i)+" workers.");// say the number killed since not all of them are killed
     } else if( code == "killarmy" ) {
@@ -424,7 +466,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice(viewer+" killed every army unit.");// should we instead say how many units have been killed?
         } else {
             notice("Kill armies failed.");
-            return false;
+            return cc_perm_fail;
         }
     } else if( code == "fullvision" ) {
         for(player=1; player<16; player+=1) {
@@ -447,7 +489,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice(viewer+" gave everyone max upgrades.");
         } else {
             notice("Everyone already has max upgrades.");
-            return false;
+            return cc_perm_fail;
         }
     } else if( code == "resetupgrades" ) {
         counter = 0;
@@ -463,6 +505,7 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice(viewer+" reset everyone's upgrades.");
         } else {
             notice("Nobody has any upgrades.");
+            return cc_perm_fail;
         }
     } else if( code == "setupgrades" ) {
         counter = 0;
@@ -478,13 +521,14 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
             notice(viewer+" gave everyone level "+IntToString(iparam)+" upgrades.");
         } else {
             notice("Everyone already has level "+IntToString(iparam)+" upgrades.");
+            return cc_perm_fail;
         }
     } else if( code == "musicalchairs" ) {
         if(cc_musical_chairs()) {
             notice(viewer+" has invoked musical chairs.");
         } else {
             notice("Musical chairs failed.");
-            return false;
+            return cc_perm_fail;
         }
     } else if( code == "extradamage" ) {
         TriggerDestroy(damage_trigger);
@@ -506,9 +550,9 @@ bool cc_proc_request(int player, string code, string viewer, string params) {
         notice(viewer+" enabled reduced damage for 1 minute.");
     } else {
         err("Unknown crowd control effect.");
-        return false;
+        return cc_perm_fail;
     }
-    return true;
+    return cc_success;
 }
 
 void cc_read_request(int player) {
@@ -516,6 +560,9 @@ void cc_read_request(int player) {
     string viewer;
     string id;
     string params;
+    string response;
+    int ticker;
+    int retries;
 
     BankReload(cc_bank[player]);
     BankWait(cc_bank[player]);
@@ -525,20 +572,24 @@ void cc_read_request(int player) {
         return;
     }
 
+    ticker = BankValueGetAsInt(cc_bank[player], "header", "ticker");
+    if(ticker == last_ticks[player]) {
+        return;
+    }
+    last_ticks[player] = ticker;
+
     code = BankValueGetAsString(cc_bank[player], "request", "code");
     viewer = BankValueGetAsString(cc_bank[player], "request", "DisplayViewer");
     id = BankValueGetAsString(cc_bank[player], "request", "id");
     params = BankValueGetAsString(cc_bank[player], "request", "params");
 
-    if(cc_id_has_processed(id, player)) {
+    retries = cc_id_has_processed(id, player);
+    if(retries == cc_was_processed) {
         return;
     }
 
-    if( cc_proc_request(player, code, viewer, params) ) {
-        cc_set_last_id(id, "success", player);
-    } else {
-        cc_set_last_id(id, "fail", player);
-    }
+    response = cc_proc_request(player, code, viewer, params, retries);
+    cc_set_last_id(id, response, player);
 }
 
 bool cc_ticker(bool testConds, bool runActions) {
@@ -582,7 +633,7 @@ void StartCrowdControl() {
         cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
         BankSectionRemove(cc_responses_bank[player], "header");
         BankSectionCreate(cc_responses_bank[player], "header");
-        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.23");
+        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.27");
         cc_set_last_id("", "success", player);
         cc_update_status("playing", player);
 
