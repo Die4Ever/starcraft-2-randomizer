@@ -266,6 +266,7 @@ int get_race_id(int cat, string scope, string entry) {
 
 string get_name(int cat, string entry) {
     string name;
+    string t;
 
     if( cat == -1 ) {
         return entry;
@@ -277,7 +278,11 @@ string get_name(int cat, string entry) {
     if( name == "" ) {
         return entry;
     } else {
-        return TextToString(StringExternal(name));
+        t = TextToString(StringExternal(name));
+        if( t == name ) {
+            return entry;
+        }
+        return t;
     }
 }
 
