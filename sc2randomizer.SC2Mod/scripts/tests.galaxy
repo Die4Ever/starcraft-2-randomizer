@@ -1,4 +1,15 @@
 
+bool testint(int result, int expected, string testname) {
+    if(result == expected) {
+        debug("pass: "+testname+": got "+IntToString(result));
+        return true;
+    }
+    else {
+        err("fail: "+testname+": got "+IntToString(result)+", expected "+IntToString(expected));
+        return false;
+    }
+}
+
 void run_tests() {
     int player;
     int faction;
@@ -11,11 +22,11 @@ void run_tests() {
 
     if (GameIsTestMap(true) == true) {
         bdebug = true;
-        warning("automated test");
+        info("automated test");
     }
     else if (GameIsTestMap(false) == true) {
         bdebug = true;
-        warning("manual test");
+        info("manual test");
     }
     else {
         bdebug = false;
@@ -34,32 +45,42 @@ void run_tests() {
     }
     players_bans[get_player_faction_ban_slot(1, 5)] = false;
 
-    info("PlayerGroupActive() found "+IntToString(PlayerGroupCount(PlayerGroupActive()))+" players");
-    info("PlayerGroupAll() found "+IntToString(PlayerGroupCount(PlayerGroupAll()))+" players");
+    debug("PlayerGroupActive() found "+IntToString(PlayerGroupCount(PlayerGroupActive()))+" players");
+    debug("PlayerGroupAll() found "+IntToString(PlayerGroupCount(PlayerGroupAll()))+" players");
 
     for( i=0; i<16; i+=1 ) {
         if( PlayerGroupHasPlayer(PlayerGroupAll(), i) ) {
-            info("PlayerGroupAll() has player "+IntToString(i)+" with type "+IntToString(PlayerType(i)) );
+            debug("PlayerGroupAll() has player "+IntToString(i)+" with type "+IntToString(PlayerType(i)) );
         }
     }
 
-    info( parse_friendly_name(c_gameCatalogUnit, "Factory", "", ".Name test", "prev") );
+    debug( parse_friendly_name(c_gameCatalogUnit, "Factory", "", ".Name test", "prev") );
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 1.0);
-    info("add_unit_buff 0.5, 1.0 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 0.5, 1.0 == "+FixedToString(buff, precision));
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.0);
-    info("add_unit_buff 1.5, 1.0 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 1.5, 1.0 == "+FixedToString(buff, precision));
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 0.5);
-    info("add_unit_buff 1.0, 0.5 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 1.0, 0.5 == "+FixedToString(buff, precision));
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 1.0, 1.5);
-    info("add_unit_buff 1.0, 1.5 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 1.0, 1.5 == "+FixedToString(buff, precision));
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 1.5, 1.5);
-    info("add_unit_buff 1.5, 1.5 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 1.5, 1.5 == "+FixedToString(buff, precision));
 
     buff = add_unit_buff(unit_entries, buffs, "Marine", 0.5, 0.5);
-    info("add_unit_buff 0.5, 0.5 == "+FixedToString(buff, precision));
+    debug("add_unit_buff 0.5, 0.5 == "+FixedToString(buff, precision));
+
+    testint( limit_num_bans(2, 5, 999), 4, "limit_num_bans 2 players, 5 factions" );
+    testint( limit_num_bans(4, 5, 999), 2, "limit_num_bans 4 players, 5 factions" );
+    testint( limit_num_bans(5, 5, 999), 1, "limit_num_bans 5 players, 5 factions" );
+    testint( limit_num_bans(6, 5, 999), 0, "limit_num_bans 6 players, 5 factions" );
+
+    testint( limit_num_bans(2, 3, 999), 2, "limit_num_bans 2 players, 3 factions" );
+    testint( limit_num_bans(2, 8, 999), 7, "limit_num_bans 2 players, 8 factions" );
+
+    testint( limit_num_bans(7, 8, 999), 2, "limit_num_bans 7 players, 8 factions" );
 }

@@ -330,25 +330,57 @@ bool is_waiting(int player, int button) {
 }
 
 
+int get_default_faction(int player) {
+    int race;
+    string s_race;
+    int faction;
+    bool banned;
+    int i;
+    int num;
+
+    s_race = PlayerRace(player);
+    if( s_race == "Terr" ) {
+        race = terran;
+    } else if( s_race == "Prot" ) {
+        race = protoss;
+    } else if( s_race == "Zerg" ) {
+        race = zerg;
+    } else {
+        err("unknown PlayerRace("+IntToString(player)+" == "+s_race);
+        return 0;
+    }
+
+    for(i=0; i<num_factions; i+=1) {
+        faction = i*4 + race;
+        if( ! faction_banned_for_player(player, faction) ) {
+            num+=1;
+        }
+    }
+
+    num = rngi(0, num-1);
+    for(i=0; i<num_factions; i+=1) {
+        faction = i*4 + race;
+        if( ! faction_banned_for_player(player, faction) ) {
+            if(num == 0) {
+                return faction;
+            }
+            num-=1;
+        }
+    }
+
+    // default to Faction 1
+    return race;
+}
+
+
 void apply_changes_player(int player) {
     int faction;
 
     info("apply_changes_player " + SPlayerName(player) );
     faction = players_picks[player];
-    // TODO: ensure null picks don't pick a banned faction, give them a random faction for more fun AI FFAs
-    // TODO: ensure picked correct race
 
     if( faction == 0 ) {
-        if( PlayerRace(player) == "Terr" ) {
-            faction = faction*4 + terran;
-        } else if( PlayerRace(player) == "Prot" ) {
-            faction = faction*4 + protoss;
-        } else if( PlayerRace(player) == "Zerg" ) {
-            faction = faction*4 + zerg;
-        } else {
-            err("unknown PlayerRace("+IntToString(player)+" == "+PlayerRace(player));
-        }
-
+        faction = get_default_faction(player);
         players_picks[player] = faction;
         notice( SPlayerName(player) + " was assigned " + race_changes[faction].name );
     }
@@ -587,6 +619,26 @@ int create_dialog_bans() {
 }
 
 
+int limit_num_bans(int num_players, int num_factions, int bans) {
+    int max_bans;
+
+    // TODO: properly handle alliances by counting the largest number of opponents any player has?
+    if(num_players > 1 && num_factions > 1 ) {
+        max_bans = num_factions - (num_players-1);
+    } else {
+        max_bans = num_factions - 1;
+    }
+
+    if( bans > max_bans ) {
+        bans = max_bans;
+    }
+    if( bans < 0 ) {
+        bans = 0;
+    }
+    return bans;
+}
+
+
 bool start_rando_button_pressed(bool testConds, bool runActions) {
     string sseed;
     string snum_factions;
@@ -601,7 +653,6 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     int loading_screen;
     int loading_text;
     int num_players;
-    int max_bans;
     int i;
 
     info("start_rando_button_pressed");
@@ -623,29 +674,19 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
     snum_factions = libNtve_gf_DialogItemEditValue(num_factions_editbox, default_player);
     if( snum_factions != "" ) {
         num_factions = StringToInt(snum_factions);
-        if( num_factions > max_factions ) {
-            num_factions = max_factions;
-        }
-        if( num_factions < 1 ) {
-            num_factions = 1;
-        }
+    }
+    if( num_factions > max_factions ) {
+        num_factions = max_factions;
+    }
+    if( num_factions < 1 ) {
+        num_factions = 1;
     }
 
     snum_bans = libNtve_gf_DialogItemEditValue(num_bans_editbox, default_player);
-    if(num_players > 1 && num_factions > 1 ) {
-        max_bans = num_factions / (num_players-1);
-    } else {
-        max_bans = num_factions - 1;
-    }
     if( snum_bans != "" ) {
         num_bans = StringToInt(snum_bans);
-        if( num_bans > max_bans ) {
-            num_bans = max_bans;
-        }
-        if( num_bans < 0 ) {
-            num_bans = 0;
-        }
     }
+    num_bans = limit_num_bans(num_players, num_factions, num_bans);
 
     schanges_per_faction = libNtve_gf_DialogItemEditValue(changes_per_faction_editbox, default_player);
     if( schanges_per_faction != "" ) {
