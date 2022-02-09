@@ -9,7 +9,7 @@ void sc2randoinit() {
     seed=1337;
     seed = RandomInt(1, 999999);
     min_percent = 25;
-    max_percent = 250;
+    max_percent = 200;
     min_resources = 60;
     max_resources = 150;
     min_supply_limit = 100;
