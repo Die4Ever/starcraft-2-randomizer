@@ -165,28 +165,18 @@ void apply_changes(int r, int player)
     int i;
     int k;
     string entry;
-    string message;
-    string s;
     text description;
 
     string[128] unit_entries;
     fixed[128] unit_buffs;
     fixed f;
 
-    message = SPlayerName(player) + " with " + race_changes[r].name + ": ";
-    info(message);
-    message = "- ";
+    //info_t(PlayerName(player) + StringToText(" with " + race_changes[r].name + ": "));
 
     for( i=0; i < race_changes[r].len; i+=1 ) {
-        if( StringLength(message) > 2 ) {
-            message += ", ";
-        }
-
         entry = race_changes[r].changes[i].entry;
         apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
-        s = change_to_string(race_changes[r].changes[i]);
-        message += s;
-        description += StringToText(s+"\n");
+        description += change_to_text(race_changes[r].changes[i]) + StringToText("\n");
 
         if( race_changes[r].changes[i].buff != 0 ) {
             f = race_changes[r].changes[i].newval / race_changes[r].changes[i].oldval;
@@ -199,23 +189,13 @@ void apply_changes(int r, int player)
                 apply_linkage(player, race_changes[r].changes[i].cat, entry, linked_units[k+1], race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
             }
         }
-
-        if( StringLength(message) > 200 ) {
-            info( message );
-            message = "- ";
-        }
     }
-
-    if( StringLength(message) > 0 ) {
-        info(message);
-    }
-    info(" ");
 
     HelpPanelAddTip(
         PlayerGroupAll(),
-        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        PlayerName(player) + StringToText(" with " + race_changes[r].name),
         description,
-        StringToText(SPlayerName(player) + " with " + race_changes[r].name),
+        PlayerName(player) + StringToText(" with " + race_changes[r].name),
         "Assets\\Textures\\ui_icon_attention.dds"
     );
 
@@ -363,7 +343,7 @@ void create_general_tips() {
     int i;
 
     for( i=0; i<race_changes[0].len; i+=1 ) {
-        general_changes += StringToText( change_to_string(race_changes[0].changes[i]) +"\n");
+        general_changes += change_to_text(race_changes[0].changes[i]) + StringToText("\n");
     }
     HelpPanelAddTip(
         PlayerGroupAll(),

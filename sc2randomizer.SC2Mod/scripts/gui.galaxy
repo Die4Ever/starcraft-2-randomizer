@@ -102,15 +102,13 @@ int create_factions_dropdown(int dialog, int list, string callback) {
 
 void show_changes(int list, playergroup players, int race) {
     int i;
-    string s;
 
     DialogControlRemoveAllItems(list, players);
 
     // TODO: zerg buildings count the cost of the drone...
 
     for( i=0; i<race_changes[race].len; i+=1 ) {
-        s = change_to_string(race_changes[race].changes[i]);
-        DialogControlAddItem(list, players, StringToText(s) );
+        DialogControlAddItem(list, players, change_to_text(race_changes[race].changes[i]) );
     }
 }
 
@@ -144,7 +142,7 @@ bool faction_banned_for_player(int player, int faction) {
         p = PlayerGroupPlayer(players, i);
 
         if( players_bans[get_player_faction_ban_slot(p, faction)] ) {
-            debug(race_changes[faction].name+" is banned for "+SPlayerName(player));
+            //debug(race_changes[faction].name+" is banned for "+SPlayerName(player));
             return true;
         }
     }
@@ -187,12 +185,12 @@ bool ban_button_click(bool testConds, bool runActions) {
 
     if( players_bans[get_player_faction_ban_slot(player, selected)] ) {
         players_bans[get_player_faction_ban_slot(player, selected)] = false;
-        info( SPlayerName(player) + " clicked unban for " + race_changes[selected].name );
+        info_t( PlayerName(player) + StringToText(" clicked unban for " + race_changes[selected].name) );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Ban"), PlayerGroupSingle(player) );
     } else {
         players_bans[get_player_faction_ban_slot(player, selected)] = true;
-        info( SPlayerName(player) + " clicked ban for " + race_changes[selected].name );
+        info_t( PlayerName(player) + StringToText(" clicked ban for " + race_changes[selected].name) );
         libNtve_gf_SetDialogItemText(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
         libNtve_gf_SetDialogItemTooltip(ban_button, StringToText("Unban"), PlayerGroupSingle(player) );
     }
@@ -209,7 +207,7 @@ bool pick_button_click(bool testConds, bool runActions) {
     selected = get_selected_faction(player, factions_dropdown);
 
     players_picks[player] = selected;
-    info( SPlayerName(player) + " clicked pick for " + race_changes[selected].name );
+    info_t( PlayerName(player) + StringToText(" clicked pick for " + race_changes[selected].name) );
     DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
     DialogControlSetEnabled(submit_button, PlayerGroupSingle(player), true);
 
@@ -318,11 +316,11 @@ bool is_waiting(int player, int button) {
     }
 
     if( num_players_waiting < PlayerGroupCount(players) ) {
-        debug("is_waiting("+SPlayerName(player)+") "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
+        //debug("is_waiting("+SPlayerName(player)+") "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
         return true;
     }
 
-    debug("is_waiting("+SPlayerName(player)+") done waiting, "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
+    //debug("is_waiting("+SPlayerName(player)+") done waiting, "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
 
     clear_waiting();
 
@@ -376,19 +374,19 @@ int get_default_faction(int player) {
 void apply_changes_player(int player) {
     int faction;
 
-    info("apply_changes_player " + SPlayerName(player) );
+    info_t(StringToText("apply_changes_player ") + PlayerName(player) );
     faction = players_picks[player];
 
     if( faction == 0 ) {
         faction = get_default_faction(player);
         players_picks[player] = faction;
-        notice( SPlayerName(player) + " was assigned " + race_changes[faction].name );
+        notice_t( PlayerName(player) + StringToText(" was assigned " + race_changes[faction].name) );
     }
     else {
-        notice( SPlayerName(player) + " chose " + race_changes[faction].name );
+        notice_t( PlayerName(player) + StringToText(" chose " + race_changes[faction].name) );
     }
     apply_changes(faction, player);
-    info("apply_changes_player done for " + SPlayerName(player) );
+    info_t(StringToText("apply_changes_player done for ") + PlayerName(player) );
 }
 
 
@@ -454,7 +452,7 @@ bool review_button_pressed(bool testConds, bool runActions) {
     int button;
 
     player = EventPlayer();
-    info("review_button_pressed "+SPlayerName(player));
+    info_t(StringToText("review_button_pressed ")+PlayerName(player));
     button = EventDialogControl();
     dialog = DialogControlGetDialog(button);
 
@@ -532,7 +530,7 @@ void start_pick_factions() {
         player = PlayerGroupPlayer(players, i);
         for( faction=0; faction < 4*max_factions; faction+=1 ) {
             if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
-                notice( SPlayerName(player) + " banned " + race_changes[faction].name );
+                notice_t( PlayerName(player) + StringToText(" banned " + race_changes[faction].name) );
             }
         }
     }
@@ -560,7 +558,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
     int button;
 
     player = EventPlayer();
-    info("bans_done_button_pressed "+SPlayerName(player));
+    info_t(StringToText("bans_done_button_pressed ")+PlayerName(player));
 
     DialogControlSetVisible(ban_button, PlayerGroupSingle(player), false);
 

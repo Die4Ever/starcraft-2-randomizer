@@ -30,7 +30,6 @@ struct Change {
     fixed oldval;
     fixed newval;
     fixed buff;
-    string as_string;
 };
 
 typedef Change[128] changes_array;

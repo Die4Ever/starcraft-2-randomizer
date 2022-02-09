@@ -82,6 +82,11 @@ void info(string message)
     //UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
 }
 
+void info_t(text message)
+{
+    TriggerDebugOutput(1, message, false );
+}
+
 void notice(string message)
 {
     text t;
@@ -89,6 +94,12 @@ void notice(string message)
     TriggerDebugOutput(1, t, false );
     //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
     UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
+}
+
+void notice_t(text message)
+{
+    TriggerDebugOutput(1, message, false );
+    UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, message);
 }
 
 void notifyplayer(string message, int player)
@@ -133,11 +144,6 @@ void fatal(string message)
     //libNtve_gf_UIErrorMessage( PlayerGroupAll(), t, SoundLink("UI_GenericError", -1));
     t = StringToText("fatal error: ") + t;
     UIDisplayMessage(PlayerGroupAll(), c_messageAreaChat, t);
-}
-
-string SPlayerName(int player)
-{
-    return TextToString(PlayerName(player));
 }
 
 
@@ -264,66 +270,82 @@ int get_race_id(int cat, string scope, string entry) {
 }
 
 
-string get_name(int cat, string entry) {
+text get_name(int cat, string entry) {
     string name;
-    string t;
+    text t;
 
     if( cat == -1 ) {
-        return entry;
-    }
-    if( entry == "OverlordTransport" ) {
-        return "Overlord Transport";
+        return StringToText(entry);
     }
     name = CatalogFieldValueGet(cat, entry, "Name", default_player);
     if( name == "" ) {
-        return entry;
+        return StringToText(entry);
     } else {
-        t = TextToString(StringExternal(name));
-        if( t == name ) {
-            return entry;
+        t = StringExternal(name);
+        if( t == StringToText(name) ) {
+            return StringToText(entry);
+        }
+        if( entry == "OverlordTransport" ) {
+            return t + StringToText(" Transport");
         }
         return t;
     }
 }
 
-string change_to_string(structref<Change> change) {
-    string s;
-    string unit_name;
+text change_to_text(structref<Change> change) {
+    text s;
+    string unit_entry;
+    text unit_name;
 
-    if(change.as_string != "") {
-        return change.as_string;
-    }
-
-    unit_name = change.unit_entry;
+    unit_entry = change.unit_entry;
     if( change.cat == c_gameCatalogUnit ) {
-        unit_name = change.entry;
+        unit_entry = change.entry;
     }
-    unit_name = get_name(c_gameCatalogUnit, unit_name);
+    unit_name = get_name(c_gameCatalogUnit, unit_entry);
     s = unit_name;
 
     if( change.cat != c_gameCatalogUnit ) {
-        s += " " + get_name(change.cat, change.entry);
+        s += StringToText(" ") + get_name(change.cat, change.entry);
     }
 
     if( change.friendly_name != "" ) {
-        s += " " + change.friendly_name;
+        s += StringToText(" " + change.friendly_name);
         //s += " {" + change.field + "}";
     } else {
-        s += " " + change.field;
+        s += StringToText(" " + change.field);
     }
-    s += " changed from ";
+    s += StringToText(" changed from ");
 
     if( IntToFixed(FixedToInt(change.oldval)) == change.oldval
         && IntToFixed(FixedToInt(change.newval)) == change.newval ) {
-        s += FixedToString(change.oldval,0)
-            + " to "+FixedToString(change.newval,0);
+        s += StringToText(FixedToString(change.oldval,0)
+            + " to "+FixedToString(change.newval,0));
     }
     else {
-        s += FixedToString(change.oldval,precision)
-            + " to "+FixedToString(change.newval,precision);
+        s += StringToText(FixedToString(change.oldval,precision)
+            + " to "+FixedToString(change.newval,precision));
     }
 
-    change.as_string = s;
+    return s;
+}
+
+
+// only for sorting
+string change_to_string(structref<Change> change) {
+    string s;
+    string unit_entry;
+
+    if( change.cat != c_gameCatalogUnit ) {
+        s = change.unit_entry;
+    }
+    s += change.entry;
+
+    if( change.friendly_name != "" ) {
+        s += " " + change.friendly_name;
+    } else {
+        s += " " + change.field;
+    }
+    
     return s;
 }
 
@@ -380,51 +402,53 @@ void copy_change(structref<Change> dst, structref<Change> src) {
     dst.oldval = src.oldval;
     dst.newval = src.newval;
     dst.buff = src.buff;
-    dst.as_string = src.as_string;
 }
-
-
-void swap_changes(structref<Change> a, structref<Change> b) {
-    Change tc;
-    copy_change(tc, a);
-    copy_change(a, b);
-    copy_change(b, tc);
-}
-
 
 typedef string[128] string_array;
-int sort_faction_partition(arrayref<changes_array> changes, int start, int end) {
+void swap_changes(arrayref<changes_array> changes, arrayref<string_array> strings, int a, int b) {
+    Change tc;
+    string ts;
+    copy_change(tc, changes[a]);
+    copy_change(changes[a], changes[b]);
+    copy_change(changes[b], tc);
+    ts = strings[a];
+    strings[a] = strings[b];
+    strings[b] = ts;
+}
+
+
+int sort_faction_partition(arrayref<changes_array> changes, arrayref<string_array> strings, int start, int end) {
     string pivot;
     int pivotIndex;
     int i;
     int j;
     int count;
 
-    pivot = change_to_string(changes[start]);
+    pivot = strings[start];
     count = 0;
     for(i=start+1; i<=end; i+=1) {
-        if(StringCompare(change_to_string(changes[i]), pivot, true) <= 0) {
+        if(StringCompare(strings[i], pivot, true) <= 0) {
             count += 1;
         }
     }
 
     pivotIndex = start + count;
-    swap_changes(changes[start], changes[pivotIndex]);
+    swap_changes(changes, strings, start, pivotIndex);
 
     i = start;
     j = end;
 
     while (i < pivotIndex && j > pivotIndex) {
-        while(StringCompare(change_to_string(changes[i]), pivot, true) <= 0) {
+        while(StringCompare(strings[i], pivot, true) <= 0) {
             i+=1;
         }
 
-        while(StringCompare(change_to_string(changes[j]), pivot, true) > 0) {
+        while(StringCompare(strings[j], pivot, true) > 0) {
             j-=1;
         }
 
         if(i < pivotIndex && j > pivotIndex) {
-            swap_changes(changes[i], changes[j]);
+            swap_changes(changes, strings, i, j);
             i+=1;
             j-=1;
         }
@@ -434,7 +458,7 @@ int sort_faction_partition(arrayref<changes_array> changes, int start, int end) 
 }
 
 
-void sort_faction_changes(arrayref<changes_array> changes, int start, int end) {
+void sort_faction_changes(arrayref<changes_array> changes, arrayref<string_array> strings, int start, int end) {
     int i;
     string a;
     string b;
@@ -446,19 +470,24 @@ void sort_faction_changes(arrayref<changes_array> changes, int start, int end) {
         return;
     }
 
-    p = sort_faction_partition(changes, start, end);
-    sort_faction_changes(changes, start, p-1);
-    sort_faction_changes(changes, p+1, end);
+    p = sort_faction_partition(changes, strings, start, end);
+    sort_faction_changes(changes, strings, start, p-1);
+    sort_faction_changes(changes, strings, p+1, end);
 }
 
 
 void sort_changes() {
     int i;
+    string_array strings;
+    int j;
 
     for(i=0; i< max_factions*4; i+=1) {
         if(race_changes[i].len > 0) {
             Wait(0.01, c_timeReal);
-            sort_faction_changes(race_changes[i].changes, 0, race_changes[i].len-1);
+            for(j=0; j<race_changes[i].len; j+=1) {
+                strings[j] = change_to_string(race_changes[i].changes[j]);
+            }
+            sort_faction_changes(race_changes[i].changes, strings, 0, race_changes[i].len-1);
         }
     }
 }
