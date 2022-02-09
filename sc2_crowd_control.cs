@@ -41,6 +41,7 @@ using Log = CrowdControl.Common.Log;
 namespace CrowdControl.Games.Packs
 {
     public enum Method {
+        // not sure if this enum is needed
         StartEffect,
         StopEffect,
     }
@@ -55,33 +56,6 @@ namespace CrowdControl.Games.Packs
             : base(player, responseHandler, statusUpdateHandler)
         {
         }
-
-        #region debug
-
-        protected string GetFields(Type t, string separator = "", BindingFlags flags = BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.DeclaredOnly) {
-            return String.Join(separator, t.GetFields(flags).ToList().Select(field => $"<Field>{field}</Field>"));
-        }
-
-        protected string GetProperties(Type t, string separator = "", BindingFlags flags = BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.DeclaredOnly) {
-            return String.Join(separator, t.GetProperties(flags).ToList().Select(property => $"<Property>{property}</Property>"));
-        }
-
-        protected string GetMethods(Type t, string separator = "", BindingFlags flags = BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.DeclaredOnly) {
-            return String.Join(separator, t.GetMethods(flags).ToList().Select(method => $"<Method>{method}</Method>"));
-        }
-
-        protected string GetConstructors(Type t, string separator = "", BindingFlags flags = BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.DeclaredOnly) {
-            return String.Join(separator, t.GetConstructors(flags).ToList().Select(constructor => $"<Constructor>{constructor}</Constructor>"));
-        }
-
-        protected string GetConnectorTypes() {
-            var q = AppDomain.CurrentDomain.GetAssemblies()
-                       .SelectMany(t => t.GetTypes())
-                       .Where(t => t.Name.Contains("EffectPack"));
-            return String.Join("\n        ", q.ToList().Select( c => $"<ConnectorType><Namespace>{c.Namespace}</Namespace><Name>{c.Name}</Name><BaseType>{c.BaseType}</BaseType><Fields>{GetFields(c)}</Fields><Properties>{GetProperties(c)}</Properties><Methods>{GetMethods(c)}</Methods><Constructors>{GetConstructors(c)}</Constructors></ConnectorType>" ));
-        }
-
-        #endregion
 
         // Unfortunately the XML Assembly is not embedded to the CrowdControl SDK, therefore we need to write and parse XML manually.
 
@@ -126,16 +100,6 @@ namespace CrowdControl.Games.Packs
             return true;
         }
 
-        protected string XmlCheckStatus(EffectRequest request, Method method) {
-            if (!File.Exists(xmlPathResponses)) {
-                return "fail";
-            }
-
-            string data = File.ReadAllText(xmlPathResponses);
-            data = GetXmlSection(data, "responses");
-            return GetXmlString(data, request.ID.ToString());
-        }
-
         protected string GetXmlSection(string xml, string section) {
             try {
                 var match = Regex.Match(xml,
@@ -164,6 +128,16 @@ namespace CrowdControl.Games.Packs
                 Log.Message(e.ToString());
                 return null;
             }
+        }
+
+        protected string XmlCheckStatus(EffectRequest request, Method method) {
+            if (!File.Exists(xmlPathResponses)) {
+                return "fail";
+            }
+
+            string data = File.ReadAllText(xmlPathResponses);
+            data = GetXmlSection(data, "responses");
+            return GetXmlString(data, request.ID.ToString());
         }
 
         protected Dictionary<string, string> ParseXml(string file) {
@@ -231,6 +205,7 @@ namespace CrowdControl.Games.Packs
         }
 
         protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 5000, int millisecondsCheckInterval = 100) {
+            // waiting in here seems to block up the queue of other incoming effects? maybe we should instead call DelayEffect(request);
             string status = null;
             SpinWait.SpinUntil(() => {
                 Thread.Sleep(millisecondsCheckInterval);
@@ -287,6 +262,7 @@ namespace CrowdControl.Games.Packs
         public override List<ItemType> ItemTypes => new List<ItemType>(new[]
         {
             new ItemType("Percent", "percent", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
+            // minerals and gas probably need to be in increments of 100, since we can't do fractional costs?
             new ItemType("Minerals", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
             new ItemType("Gas", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":9999}"),
             new ItemType("Supply", "supply", ItemType.Subtype.Slider, "{\"min\":1,\"max\":50}"),
@@ -302,11 +278,10 @@ namespace CrowdControl.Games.Packs
 
         protected override void StartEffect(EffectRequest request)
         {
-            //Log.Message(GetMethods(typeof(EffectRequest)));
             if (!IsReady(request))
             {
                 Respond(request, EffectStatus.FailTemporary, "Not ready yet");
-                //DelayEffect(request);
+                //DelayEffect(request); // can we limit how many times we delay a request?
                 return;
             }
 
@@ -333,7 +308,7 @@ namespace CrowdControl.Games.Packs
 
         const bool debug = false;
 
-        const string version = "0.23";
+        const string version = "0.26";
         
         string xmlPathRequests = "";
         string xmlPathResponses = "";
