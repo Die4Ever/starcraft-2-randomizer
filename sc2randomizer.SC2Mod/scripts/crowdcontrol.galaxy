@@ -633,7 +633,7 @@ void StartCrowdControl() {
         cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
         BankSectionRemove(cc_responses_bank[player], "header");
         BankSectionCreate(cc_responses_bank[player], "header");
-        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.27");
+        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.28");
         cc_set_last_id("", "success", player);
         cc_update_status("playing", player);
 

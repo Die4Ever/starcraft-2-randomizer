@@ -318,7 +318,7 @@ namespace CrowdControl.Games.Packs
 
         const bool debug = false;
 
-        const string version = "0.27";
+        const string version = "0.28";
         
         string xmlPathRequests = "";
         string xmlPathResponses = "";
