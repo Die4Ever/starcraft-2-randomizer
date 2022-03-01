@@ -260,10 +260,10 @@ namespace CrowdControl.Games.Packs
                     new Effect("Kill All Army", "killarmy", "mean"),
                     
                     new Effect("Resources", "resources", ItemKind.Folder),
-                    new Effect("Give Minerals", "giveminerals", new[]{"minerals"}, "resources"),
-                    new Effect("Give Gas", "givegas", new[]{"gas"}, "resources"),
-                    new Effect("Take Minerals", "takeminerals", new[]{"minerals"}, "resources"),
-                    new Effect("Take Gas", "takegas", new[]{"gas"}, "resources"),
+                    new Effect("Give Minerals (x100)", "giveminerals", new[]{"minerals"}, "resources"),
+                    new Effect("Give Gas (x100)", "givegas", new[]{"gas"}, "resources"),
+                    new Effect("Take Minerals (x100)", "takeminerals", new[]{"minerals"}, "resources"),
+                    new Effect("Take Gas (x100)", "takegas", new[]{"gas"}, "resources"),
                     new Effect("Raise Supply Limit", "raisesupply", new[]{"supply"}, "resources"),
                     new Effect("Lower Supply Limit", "lowersupply", new[]{"supply"}, "resources"),
                 };
@@ -274,8 +274,8 @@ namespace CrowdControl.Games.Packs
         public override List<ItemType> ItemTypes => new List<ItemType>(new[]
         {
             // minerals and gas probably need to be in increments of 100, since we can't do fractional costs?
-            new ItemType("Minerals x1000", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
-            new ItemType("Gas x1000", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":100}"),
+            new ItemType("Minerals x100", "minerals", ItemType.Subtype.Slider, "{\"min\":1,\"max\":1000}"),
+            new ItemType("Gas x100", "gas", ItemType.Subtype.Slider, "{\"min\":1,\"max\":1000}"),
             new ItemType("Supply", "supply", ItemType.Subtype.Slider, "{\"min\":1,\"max\":50}"),
             new ItemType("Upgrades", "upgrades", ItemType.Subtype.Slider, "{\"min\":0,\"max\":3}"),
         });

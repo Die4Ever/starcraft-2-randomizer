@@ -383,14 +383,14 @@ string cc_proc_request(int player, string code, string viewer, string params, in
             return cc_retry;
         }
     } else if( code == "giveminerals" ) {
-        add_resources(c_playerPropMinerals, iparam*1000, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam)+" minerals.");
+        add_resources(c_playerPropMinerals, iparam*100, 0, 999999, 0);
+        notice(viewer+" gave everyone "+IntToString(iparam*100)+" minerals.");
     } else if( code == "givegas") {
-        add_resources(c_playerPropVespene, iparam*1000, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam)+" gas.");
+        add_resources(c_playerPropVespene, iparam*100, 0, 999999, 0);
+        notice(viewer+" gave everyone "+IntToString(iparam*100)+" gas.");
     } else if( code == "takeminerals") {
-        if( add_resources(c_playerPropMinerals, -iparam*1000, 0, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam)+" minerals from everyone.");
+        if( add_resources(c_playerPropMinerals, -iparam*100, 0, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(iparam*100)+" minerals from everyone.");
         } else {
             if(retries == 0) {
                 notice("No one has enough minerals.");
@@ -398,8 +398,8 @@ string cc_proc_request(int player, string code, string viewer, string params, in
             return cc_retry;
         }
     } else if( code == "takegas") {
-        if( add_resources(c_playerPropVespene, -iparam*1000, 0, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam)+" gas from everyone.");
+        if( add_resources(c_playerPropVespene, -iparam*100, 0, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(iparam*100)+" gas from everyone.");
         } else {
             if(retries == 0) {
                 notice("No one has enough vespene gas.");
