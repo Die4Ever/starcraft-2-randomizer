@@ -604,8 +604,8 @@ bool cc_ticker(bool testConds, bool runActions) {
 }
 
 void cc_enable_cheat() {
-    cc_enable_cheat_trigger = TriggerCreate("cc_start_from_cheat");
-    TriggerAddEventChatMessage(cc_enable_cheat_trigger, c_playerAny, "laputan machine", true);
+    //cc_enable_cheat_trigger = TriggerCreate("cc_start_from_cheat");
+    //TriggerAddEventChatMessage(cc_enable_cheat_trigger, c_playerAny, "laputan machine", true);
 }
 
 void StartCrowdControl() {
@@ -613,7 +613,11 @@ void StartCrowdControl() {
 
     if(!crowd_control_enabled) {
         info("crowd control not enabled");
-        cc_update_status("exited", player);
+        for(player=1; player<16; player+=1) {
+            if( PlayerIsActiveHuman(player) ) {
+                cc_update_status("exited", player);
+            }
+        }
         cc_enable_cheat();
         return;
     }
