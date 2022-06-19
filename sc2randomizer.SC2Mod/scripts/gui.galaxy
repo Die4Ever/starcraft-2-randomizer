@@ -432,7 +432,7 @@ void start_review() {
     
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("start_game");
-    TriggerAddEventTimeElapsed( dialog_timeout, 30, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
 }
 
 
@@ -501,14 +501,10 @@ int create_dialog_pick_faction() {
 
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("review_timeout");
-    if( num_bans == 0 ) {
-        TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
-        DialogControlAddItem(changes_list, players, StringToText("You have 2 minutes to choose") );
-    }
-    else {
-        TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
-        DialogControlAddItem(changes_list, players, StringToText("You have 1 minute to choose") );
-    }
+
+    TriggerAddEventTimeElapsed( dialog_timeout, 180, c_timeReal );
+    DialogControlAddItem(changes_list, players, StringToText("You have 3 minutes to choose") );
+    DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your choice while this menu is open") );
 
     DialogSetVisible(dialog_pick_faction, players, true);
 
@@ -603,13 +599,14 @@ int create_dialog_bans() {
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
     DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
-    DialogControlAddItem(changes_list, players, StringToText("You have 2 minutes to choose bans") );
+    DialogControlAddItem(changes_list, players, StringToText("You have 5 minutes to choose bans") );
+    DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your bans by clicking on Unban") );
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("ban_factions_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 120, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, 300, c_timeReal );
 
     DialogSetVisible(dialog_bans, players, true);
 

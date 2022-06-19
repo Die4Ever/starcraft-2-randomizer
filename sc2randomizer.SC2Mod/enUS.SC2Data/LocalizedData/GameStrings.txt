@@ -16,6 +16,7 @@ DocInfo/PatchNote009=Fixed stalemate detection during menus
 DocInfo/PatchNote010=Sorted changes list
 DocInfo/PatchNote011=Fixed possible crashes
 DocInfo/PatchNote012=Added Crowd Control support, check https://crowdcontrol.live/ for instructions
+DocInfo/PatchNote013=Increased timeouts in the menus so you have more time to read the changes.
 DocInfo/Website=https://discord.gg/sUzjZ3RPhw
 Effect/Name/CCNuke=CCNuke
 Effect/Name/CCNukePersistent=CCNuke
