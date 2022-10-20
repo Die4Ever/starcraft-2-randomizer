@@ -48,6 +48,8 @@ Then you will pick which faction you think is the strongest (From whatever wasn'
 
 ![picks screen](https://i.imgur.com/iJsTWe2.png)
 
+You can press F12 any time during the game to see the changes again.
+
 StarCraft 2 Randomizer Discord https://discord.gg/sUzjZ3RPhw
 
 TL.net Discussion Thread https://tl.net/forum/starcraft-2/575425-sc2-randomizer-mod
