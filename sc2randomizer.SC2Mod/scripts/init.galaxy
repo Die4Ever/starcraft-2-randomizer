@@ -14,7 +14,7 @@ void sc2randoinit() {
     max_resources = 150;
     min_supply_limit = 100;
     max_supply_limit = 250;
-    num_factions = 2;
+    num_factions = 1;
     num_bans = 0;
     changes_per_faction = 15;
     changes_per_unit = 2;

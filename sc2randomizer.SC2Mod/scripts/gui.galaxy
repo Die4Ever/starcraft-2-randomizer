@@ -395,8 +395,10 @@ bool start_game(bool testConds, bool runActions) {
 
     info("start_game");
     TriggerDestroy(dialog_timeout);
-    DialogSetVisible(dialog_pick_faction, PlayerGroupAll(), false);
-    DialogDestroy(dialog_pick_faction);
+    if(dialog_pick_faction) {
+        DialogSetVisible(dialog_pick_faction, PlayerGroupAll(), false);
+        DialogDestroy(dialog_pick_faction);
+    }
 
     libNtve_gf_HideGameUI( true, PlayerGroupAll() );
     for( i=1; i<16; i+=1 ) {
@@ -411,21 +413,31 @@ bool start_game(bool testConds, bool runActions) {
 }
 
 
-void start_review() {
+void apply_all_changes() {
     int i;
     int len;
     playergroup players;
 
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
-    info("start_review, with "+IntToString(len)+" active players");
+    info("apply_all_changes, with "+IntToString(len)+" active players");
     for( i=1; i<=len; i+=1 ) {
         apply_changes_player( PlayerGroupPlayer(players, i) );
     }
 
     TipAlertPanelClear(PlayerGroupAll());
     create_general_tips();
+}
 
+
+void start_review() {
+    int i;
+    int len;
+    playergroup players;
+
+    apply_all_changes();
+
+    players = PlayerGroupActive();
     DialogControlSetVisible(pick_button, players, false);
     DialogControlDestroy(submit_button);
     create_continue_button(dialog_pick_faction, "Start Game", "start_game");
@@ -472,6 +484,13 @@ int create_dialog_pick_faction() {
     int button;
 
     info("create_dialog_pick_faction");
+    if( num_factions <= 1 ) {
+        dialog_pick_faction = 0;
+        apply_all_changes();
+        start_game(false, true);
+        return 0;
+    }
+
     players = PlayerGroupAll();
 
     dialog_pick_faction = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
