@@ -143,6 +143,32 @@ namespace CrowdControl.Games.Packs
             return GetXmlString(data, request.ID.ToString());
         }
 
+        protected string GetGameStatus() {
+            try {
+                if(xmlPathResponses == "") {
+                    fileStatus = "fail";
+                    return fileStatus;
+                }
+                if (!File.Exists(xmlPathResponses)) {
+                    fileStatus = "fail";
+                    return fileStatus;
+                }
+                var dict = ParseXml(xmlPathResponses);
+                DateTime t = DateTime.Parse(dict["date"]);
+                if( t < DateTime.Now.AddHours(-24) ) {
+                    fileStatus = "expired";
+                    return fileStatus;
+                }
+                fileStatus = dict["status"];
+                return fileStatus;
+            }
+             catch(Exception e) {
+                Log.Message("error in GetGameStatus() with "+xmlPathResponses+": "+ e.ToString());
+            }
+            fileStatus = "fail";
+            return fileStatus;
+        }
+
         protected Dictionary<string, string> ParseXml(string file) {
             var dict = new Dictionary<string, string>();
             string data = File.ReadAllText(file);
@@ -191,6 +217,7 @@ namespace CrowdControl.Games.Packs
             // we could also make the mod delete the bank instead of setting the status to exited?
             // search in the Accounts folder first, then the test folder if we don't find it
             Log.Message("FindXml");
+
             try {
                 string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
                 if(FindXmlInPath(root)) return true;
@@ -199,12 +226,41 @@ namespace CrowdControl.Games.Packs
             }
 
             try {
+                string onedrive = (string)Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\OneDrive", "UserFolder", "");
+                string root = Path.Join(onedrive, "Documents/StarCraft II/Accounts");
+                if(FindXmlInPath(root)) return true;
+            } catch(Exception e) {
+                Log.Message("error with searching onedrive path: "+ e.ToString());
+            }
+
+            // check dev path...
+            try {
                 string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
-                return FindXmlInPath(root);
+                if(FindXmlInPath(root)) return true;
             } catch(Exception e) {
                 Log.Message("error with searching dev path: "+ e.ToString());
-                return false;
             }
+
+            try {
+                string onedrive = (string)Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\OneDrive", "UserFolder", "");
+                string root = Path.Join(onedrive, "Documents/StarCraft II/Banks");
+                if(FindXmlInPath(root)) return true;
+            } catch(Exception e) {
+                Log.Message("error with searching dev onedrive path: "+ e.ToString());
+            }
+
+            /* I hope I never need this...
+            EnumerationOptions e = new EnumerationOptions();
+            e.IgnoreInaccessible = true;
+            e.RecurseSubdirectories = true;
+            e.MatchCasing = MatchCasing.CaseSensitive;
+            string[] gamePaths = Directory.GetDirectories(@"c:\", "StarCraft II", e);
+            Log.Message("gamePaths length == " + gamePaths.Length.ToString());
+            foreach (string gamePath in gamePaths) {
+                Log.Message(gamePath);
+            }*/
+
+            return false;
         }
 
         protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 1000, int millisecondsCheckInterval = 100) {
@@ -284,6 +340,7 @@ namespace CrowdControl.Games.Packs
 
         protected override bool IsReady(EffectRequest request)
         {
+            if( GetGameStatus() == "playing" ) return true;
             return FindXml() && fileStatus == "playing";
         }
 
