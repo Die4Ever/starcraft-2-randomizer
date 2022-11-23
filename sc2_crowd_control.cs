@@ -340,7 +340,11 @@ namespace CrowdControl.Games.Packs
 
         protected override bool IsReady(EffectRequest request)
         {
-            if( GetGameStatus() == "playing" ) return true;
+            if( lastSearch > DateTime.Now.AddSeconds(-30) ) {
+                // this lazy evaluation might cause issues if the game crashes, so it needs a timer
+                if( GetGameStatus() == "playing" ) return true;
+            }
+            lastSearch = DateTime.Now;
             return FindXml() && fileStatus == "playing";
         }
 
@@ -380,5 +384,6 @@ namespace CrowdControl.Games.Packs
         string xmlPathRequests = "";
         string xmlPathResponses = "";
         string fileStatus = "";
+        DateTime lastSearch = new DateTime(0);
     }
 }
