@@ -160,6 +160,16 @@ void apply_scale(string entry, fixed scale, int player)
 }
 
 
+void apply_fixed_scale(string entry, fixed scale, int player)
+{
+    fixed f;
+    f = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, entry, "Scale", player);
+    //scale *= f;
+    info("changing "+entry+" scale from " + FixedToString(f, precision) + " to " + FixedToString(scale, precision) );
+    libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, entry, "Scale", player, scale);
+}
+
+
 void apply_changes(int r, int player)
 {
     int i;
@@ -233,10 +243,10 @@ void revert_changes(int r, int player)
         }
         
         u = race_changes[r].changes[i].unit_entry;
-        apply_scale(u, 1.0, player);
+        apply_fixed_scale(u, 1.0, player);
         for( k=0; k<num_linked_units; k+=2 ) {
             if( u == linked_units[k] ) {
-                apply_scale(linked_units[k+1], 1.0, player);
+                apply_fixed_scale(linked_units[k+1], 1.0, player);
             }
         }
     }
