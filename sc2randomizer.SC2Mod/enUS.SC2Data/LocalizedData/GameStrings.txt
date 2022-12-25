@@ -19,6 +19,7 @@ DocInfo/PatchNote012=Added Crowd Control support, check https://crowdcontrol.liv
 DocInfo/PatchNote013=Increased timeouts in the menus so you have more time to read the changes.
 DocInfo/PatchNote014=Changed default factions to 1 for quicker starts.
 DocInfo/PatchNote015=Fixed Crowd Control for OneDrive users.
+DocInfo/PatchNote016=Fixed unit sizes stacking when doing musical chairs in Crowd Control
 DocInfo/Website=https://discord.gg/sUzjZ3RPhw
 Effect/Name/CCNuke=CCNuke
 Effect/Name/CCNukePersistent=CCNuke

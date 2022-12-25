@@ -16,6 +16,7 @@
             <Value>0.28</Value>
             <Value>0.29</Value>
             <Value>0.30</Value>
+            <Value>0.31</Value>
         </Version>
         <Date>
             <Value>9/3/2021</Value>
@@ -26,6 +27,7 @@
             <Value>3/30/2022</Value>
             <Value>6/19/2022</Value>
             <Value>11/23/2022</Value>
+            <Value>12/24/2022</Value>
         </Date>
         <Notes>
             <Value>1</Value>
@@ -36,6 +38,7 @@
             <Value>12</Value>
             <Value>13</Value>
             <Value>14,15</Value>
+            <Value>16</Value>
         </Notes>
     </PatchNote>
 </DocInfo>
