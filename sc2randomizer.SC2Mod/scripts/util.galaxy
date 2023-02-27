@@ -273,6 +273,7 @@ int get_race_id(int cat, string scope, string entry) {
 text get_name(int cat, string entry) {
     string name;
     text t;
+    text empty;
 
     if( cat == -1 ) {
         return StringToText(entry);
@@ -288,6 +289,8 @@ text get_name(int cat, string entry) {
         if( entry == "OverlordTransport" ) {
             return t + StringToText(" Transport");
         }
+        t = TextReplaceWord(t, StringToText("Behavior/Name/"), empty, c_stringReplaceAll, c_stringCase);
+        t = TextReplaceWord(t, StringToText("Effect/Name/"), empty, c_stringReplaceAll, c_stringCase);
         return t;
     }
 }
@@ -314,7 +317,13 @@ text change_to_text(structref<Change> change) {
     } else {
         s += StringToText(" " + change.field);
     }
-    s += StringToText(" changed from ");
+    if(change.buff < 0) {
+        s += TextWithColor(StringToText(" buffed from "), Color(0, 100, 0));
+    } else if(change.buff > 0) {
+        s += TextWithColor(StringToText(" nerfed from "), Color(90, 0, 38));
+    } else {
+        s += StringToText(" changed from ");
+    }
 
     if( IntToFixed(FixedToInt(change.oldval)) == change.oldval
         && IntToFixed(FixedToInt(change.newval)) == change.newval ) {
@@ -333,7 +342,6 @@ text change_to_text(structref<Change> change) {
 // only for sorting
 string change_to_string(structref<Change> change) {
     string s;
-    string unit_entry;
 
     if( change.cat != c_gameCatalogUnit ) {
         s = change.unit_entry;

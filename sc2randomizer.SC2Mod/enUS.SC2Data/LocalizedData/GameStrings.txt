@@ -20,6 +20,7 @@ DocInfo/PatchNote013=Increased timeouts in the menus so you have more time to re
 DocInfo/PatchNote014=Changed default factions to 1 for quicker starts.
 DocInfo/PatchNote015=Fixed Crowd Control for OneDrive users.
 DocInfo/PatchNote016=Fixed unit sizes stacking when doing musical chairs in Crowd Control
+DocInfo/PatchNote017=GUI improvements and colors
 DocInfo/Website=https://discord.gg/sUzjZ3RPhw
 Effect/Name/CCNuke=CCNuke
 Effect/Name/CCNukePersistent=CCNuke
