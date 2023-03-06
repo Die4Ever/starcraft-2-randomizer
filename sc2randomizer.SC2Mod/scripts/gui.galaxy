@@ -20,12 +20,72 @@ int ban_button;
 int pick_button;
 int factions_dropdown;
 
+text[128] info_list;
+
+void info_list_general(int start) {
+    int i;
+    int len;
+    int player;
+    int faction;
+    playergroup players;
+    text t;
+
+    info_list[start] = StringToText("Seed: "+IntToString(seed)+", Bans: "+IntToString(num_bans)+", Factions: "+IntToString(num_factions));
+    info_list[start+1] = StringToText(IntToString(changes_per_faction)+" changes per faction");
+    info_list[start+2] = StringToText(FixedToString(min_percent,1)+"% minimum, "+FixedToString(max_percent,1)+"% maximum");
+
+    start += 3;
+    players = PlayerGroupActive();
+    len = PlayerGroupCount(players);
+    for( i=1; i<=len; i+=1 ) {
+        player = PlayerGroupPlayer(players, i);
+        t = PlayerName(player) + StringToText(" is ");
+
+        faction = players_picks[player];
+        if( faction > 0 ) {
+            t += StringToText(race_changes[faction].name);
+        }
+        else if(PlayerRace(player) == "Terr") {
+            t += StringToText("Terran");
+        } else if(PlayerRace(player) == "Prot") {
+            t += StringToText("Protoss");
+        } else if(PlayerRace(player) == "Zerg") {
+            t += StringToText("Zerg");
+        } else {
+            t += StringToText("Unknown (please report this bug)");
+        }
+        info_list[start] = t;
+        start += 1;
+    }
+    for( i=1; i<=len; i+=1 ) {
+        player = PlayerGroupPlayer(players, i);
+        for( faction=0; faction < 4*max_factions; faction+=1 ) {
+            if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
+                t = PlayerName(player) + StringToText(" banned " + race_changes[faction].name);
+                info_list[start] = t;
+                start += 1;
+            }
+        }
+    }
+    info_list[start] = StringToText("");
+}
+
+
 void show_changes(int list, playergroup players, int race) {
     int i;
 
     DialogControlRemoveAllItems(list, players);
 
     // TODO: zerg buildings count the cost of the drone...
+    if(race < 0) {
+        for( i=0; i<128; i+=1 ) {
+            if(TextToString(info_list[i])=="") {
+                return;
+            }
+            DialogControlAddItem(list, players, info_list[i] );
+        }
+        return;
+    }
 
     for( i=0; i<race_changes[race].len; i+=1 ) {
         DialogControlAddItem(list, players, change_to_text(race_changes[race].changes[i]) );
@@ -74,6 +134,11 @@ bool pick_button_click(bool testConds, bool runActions) {
 
 
 void pick_faction_dropdown(int player, int selected, int race) {
+    if(race <= no_race) {
+        DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
+        return;
+    }
+
     if( faction_banned_for_player(player, selected) ) {
         DialogControlSetEnabled(pick_button, PlayerGroupSingle(player), false);
         return;
@@ -98,7 +163,7 @@ void pick_faction_dropdown(int player, int selected, int race) {
 
 
 void ban_faction_dropdown(int player, int selected, int race) {
-    if( race == no_race ) {
+    if( race <= no_race ) {
         DialogControlSetEnabled(ban_button, PlayerGroupSingle(player), false);
         return;
     }
@@ -198,10 +263,10 @@ void apply_changes_player(int player) {
     if( faction == 0 ) {
         faction = get_default_faction(player);
         players_picks[player] = faction;
-        notice_t( PlayerName(player) + StringToText(" was assigned " + race_changes[faction].name) );
+        info_t( PlayerName(player) + StringToText(" was assigned " + race_changes[faction].name) );
     }
     else {
-        notice_t( PlayerName(player) + StringToText(" chose " + race_changes[faction].name) );
+        info_t( PlayerName(player) + StringToText(" chose " + race_changes[faction].name) );
     }
     apply_changes(faction, player);
     info_t(StringToText("apply_changes_player done for ") + PlayerName(player) );
@@ -254,6 +319,13 @@ void start_review() {
     playergroup players;
 
     apply_all_changes();
+
+    info_list[0] = StringToText("Select a race/faction to see the changes");
+    info_list[1] = StringToText("Make sure to also read the General Changes");
+    info_list[2] = StringToText("You have 1 minute to review");
+    info_list_general(3);
+    DialogControlSelectItem(factions_dropdown, PlayerGroupAll(), 2);// ensure new selected item
+    DialogControlSelectItem(factions_dropdown, PlayerGroupAll(), 1);
 
     players = PlayerGroupActive();
     DialogControlSetVisible(pick_button, players, false);
@@ -325,28 +397,28 @@ int create_dialog_pick_faction() {
     libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Pick a faction"), PlayerGroupAll());
     DialogControlSetEnabled(submit_button, players, false);
 
+    info_list[0] = StringToText("Select a race/faction to see the changes");
+    info_list[1] = StringToText("Click on the Pick button to select that faction to play as");
+    info_list[2] = StringToText("Make sure to also read the General Changes");
+    info_list[3] = StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose");
+    info_list[4] = StringToText("You are allowed to change your choice while this menu is open");
+    info_list_general(5);
+
     changes_list = create_changes_list(dialog_pick_faction);
 
     factions_dropdown = create_factions_dropdown(dialog_pick_faction, changes_list, "dropdown_factions");
 
     pick_button = create_ban_pick_button(dialog_pick_faction, changes_list, "Pick", "pick_button_click");
     DialogControlSetEnabled(pick_button, players, false);
-
-    DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     
-    if( num_factions > 1 ) {
-        DialogControlAddItem(changes_list, players, StringToText("Click on the Pick button to select that faction to play as") );
-    } else {
+    if( num_factions <= 1 ) {
         start_review();
     }
-    DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
 
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("review_timeout");
 
     TriggerAddEventTimeElapsed( dialog_timeout, timeout_minutes*60, c_timeReal );
-    DialogControlAddItem(changes_list, players, StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose") );
-    DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your choice while this menu is open") );
 
     DialogSetVisible(dialog_pick_faction, players, true);
 
@@ -368,7 +440,7 @@ void start_pick_factions() {
         player = PlayerGroupPlayer(players, i);
         for( faction=0; faction < 4*max_factions; faction+=1 ) {
             if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
-                notice_t( PlayerName(player) + StringToText(" banned " + race_changes[faction].name) );
+                info_t( PlayerName(player) + StringToText(" banned " + race_changes[faction].name) );
             }
         }
     }
@@ -437,18 +509,19 @@ int create_dialog_bans() {
     width = DialogGetWidth(dialog_bans);
     height = DialogGetHeight(dialog_bans);
 
+    info_list[0] = StringToText("Select a race/faction to see the changes");
+    info_list[1] = StringToText("Click on the Ban button to disallow your opponents from picking that faction");
+    info_list[2] = StringToText("Make sure to also read the General Changes");
+    info_list[3] = StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose bans");
+    info_list[4] = StringToText("You are allowed to change your bans by clicking on Unban");
+    info_list_general(5);
+
     changes_list = create_changes_list(dialog_bans);
 
     factions_dropdown = create_factions_dropdown(dialog_bans, changes_list, "dropdown_factions");
 
     ban_button = create_ban_pick_button(dialog_bans, changes_list, "Ban", "ban_button_click");
     DialogControlSetEnabled(ban_button, players, false);
-
-    DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
-    DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
-    DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
-    DialogControlAddItem(changes_list, players, StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose bans") );
-    DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your bans by clicking on Unban") );
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 

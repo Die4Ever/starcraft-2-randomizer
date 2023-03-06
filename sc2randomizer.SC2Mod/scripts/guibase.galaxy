@@ -5,7 +5,7 @@ trigger enable_button_trigger;
 
 bool enable_button(bool testConds, bool runActions) {
     DialogControlSetEnabled(submit_button, PlayerGroupAll(), true);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(""), PlayerGroupAll());
+    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Click to continue"), PlayerGroupAll());
     return true;
 }
 
@@ -14,14 +14,16 @@ int create_continue_button(int dialog, string button_text, string callback) {
     libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
     DialogControlSetSize(submit_button, PlayerGroupAll(), 400, 60);
     DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 40);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 1 second"), PlayerGroupAll());
     TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
 
     if(!bdebug) {
+        libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 1 second"), PlayerGroupAll());
         TriggerDestroy(enable_button_trigger);
         DialogControlSetEnabled(submit_button, PlayerGroupAll(), false);
         enable_button_trigger = TriggerCreate("enable_button");
         TriggerAddEventTimeElapsed( enable_button_trigger, 1, c_timeReal );
+    } else {
+        libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Click to continue"), PlayerGroupAll());
     }
 
     return submit_button;
@@ -64,6 +66,7 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
     DialogControlSetPositionRelative( dropdown, PlayerGroupAll(), c_anchorBottom, list, c_anchorTop, 0, 0 );
 
+    DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText("Info") );
     DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText("General Changes") );
     for( race=1; race<4; race+=1 ) {
         for( faction=0; faction<num_factions; faction+=1 ) {
@@ -73,6 +76,7 @@ int create_factions_dropdown(int dialog, int list, string callback) {
     }
 
     TriggerAddEventDialogControl( TriggerCreate(callback), c_playerAny, dropdown, c_triggerControlEventTypeSelectionChanged );
+    DialogControlSelectItem(dropdown, PlayerGroupAll(), 1);
 
     return dropdown;
 }
@@ -124,18 +128,19 @@ int get_selected_faction(int player, int dropdown) {
     int selected;
     int faction;
     int race;
+    int dummy_items = 2;
 
     selected = DialogControlGetSelectedItem( dropdown, player );
-    if( selected == 1 ) {
-        selected = 0;// general changes
-    }
-    else {
-        selected -= 2;
+
+    selected -= dummy_items;
+    if(selected > 0) {
+        // convert from sets of 3 races to sets of 4
+        selected -= 1;
         faction = selected % num_factions;
         race = selected / num_factions + 1;
         selected = faction*4 + race;
     }
-    info("dropdown_factions, faction: "+IntToString(faction)+", race: "+IntToString(race));
+    info("dropdown_factions, selected: "+IntToString(selected)+", faction: "+IntToString(faction)+", race: "+IntToString(race));
     return selected;
 }
 
