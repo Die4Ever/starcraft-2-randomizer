@@ -10,6 +10,32 @@ bool testint(int result, int expected, string testname) {
     }
 }
 
+void check_rando(fixed f) {
+    if(f < min_percent) {
+        err("fail: "+FixedToString(f, 6)+" below min_percent");
+    }
+    if(f > max_percent) {
+        err("fail: "+FixedToString(f, 6)+" above max_percent");
+    }
+    if(f > 90 && f < 110) {
+        err("fail: "+FixedToString(f, 6)+" is too close to 100%");// this would be boring
+    }
+}
+
+void test_rng() {
+    int i;
+    fixed f;
+
+    for(i=0; i<1000; i+=1) {
+        f = randomize(100.0, 0);
+        check_rando(f);
+        f = randomize(100.0, 1);
+        check_rando(f);
+        f = randomize(100.0, -1);
+        check_rando(f);
+    }
+}
+
 void run_tests() {
     int player;
     int faction;
@@ -83,4 +109,6 @@ void run_tests() {
     testint( limit_num_bans(2, 8, 999), 7, "limit_num_bans 2 players, 8 factions" );
 
     testint( limit_num_bans(7, 8, 999), 2, "limit_num_bans 7 players, 8 factions" );
+
+    test_rng();
 }

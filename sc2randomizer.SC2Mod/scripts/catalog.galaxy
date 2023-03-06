@@ -74,7 +74,7 @@ string apply_change_entry(int player, int cat, string entry, string field, fixed
         oldval = FixedToString(oldf, precision);
     }
     if( ! set_field_string_player(player, cat, entry, field, val ) ) {
-        err(entry+" "+field+" failed to set to "+val);
+        warning(entry+" "+field+" failed to set to "+val);
     }
 
     if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
@@ -156,6 +156,9 @@ void apply_scale(string entry, fixed scale, int player)
     f = libNtve_gf_CatalogFieldValueGetAsReal(c_gameCatalogActor, entry, "Scale", player);
     scale *= f;
     info("changing "+entry+" scale from " + FixedToString(f, precision) + " to " + FixedToString(scale, precision) );
+    if(f == 0 || scale == 0) {
+        return;
+    }
     libNtve_gf_CatalogFieldValueSetAsReal(c_gameCatalogActor, entry, "Scale", player, scale);
 }
 

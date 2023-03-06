@@ -39,24 +39,24 @@ fixed randomize_min_max(fixed val, fixed min, fixed max) {
 }
 
 fixed randomize(fixed val, fixed buff) {
-    if(min_percent > 100 || max_percent < 100 || buff == 0.0) {
+    if(min_percent >= 85 || max_percent <= 115 || buff == 0.0) {
         return randomize_min_max(val, min_percent, max_percent);
     }
     
     if(rng(0,100) < buffs_nerfs) {
         if(buff > 0) {
-            return randomize_min_max(val, MaxF(100.0, min_percent), max_percent);
+            return randomize_min_max(val, MaxF(110.0, min_percent), max_percent);
         }
         else {
-            return randomize_min_max(val, min_percent, MinF(100.0, max_percent));
+            return randomize_min_max(val, min_percent, MinF(90.0, max_percent));
         }
     }
     else {
         if(buff > 0) {
-            return randomize_min_max(val, min_percent, MinF(100.0, max_percent));
+            return randomize_min_max(val, min_percent, MinF(90.0, max_percent));
         }
         else {
-            return randomize_min_max(val, MaxF(100.0, min_percent), max_percent);
+            return randomize_min_max(val, MaxF(110.0, min_percent), max_percent);
         }
     }
 }
