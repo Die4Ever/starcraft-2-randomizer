@@ -21,6 +21,7 @@ int pick_button;
 int factions_dropdown;
 
 text[128] info_list;
+int info_list_len = 0;
 
 void info_list_general(int start) {
     int i;
@@ -37,6 +38,18 @@ void info_list_general(int start) {
     start += 3;
     players = PlayerGroupActive();
     len = PlayerGroupCount(players);
+    // show list of bans
+    for( i=1; i<=len; i+=1 ) {
+        player = PlayerGroupPlayer(players, i);
+        for( faction=0; faction < 4*max_factions; faction+=1 ) {
+            if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
+                t = PlayerName(player) + StringToText(" banned " + race_changes[faction].name);
+                info_list[start] = t;
+                start += 1;
+            }
+        }
+    }
+    // show list of picks or races
     for( i=1; i<=len; i+=1 ) {
         player = PlayerGroupPlayer(players, i);
         t = PlayerName(player) + StringToText(" is ");
@@ -57,17 +70,8 @@ void info_list_general(int start) {
         info_list[start] = t;
         start += 1;
     }
-    for( i=1; i<=len; i+=1 ) {
-        player = PlayerGroupPlayer(players, i);
-        for( faction=0; faction < 4*max_factions; faction+=1 ) {
-            if( players_bans[get_player_faction_ban_slot(player, faction)] ) {
-                t = PlayerName(player) + StringToText(" banned " + race_changes[faction].name);
-                info_list[start] = t;
-                start += 1;
-            }
-        }
-    }
     info_list[start] = StringToText("");
+    info_list_len = start;
 }
 
 
@@ -78,10 +82,7 @@ void show_changes(int list, playergroup players, int race) {
 
     // TODO: zerg buildings count the cost of the drone...
     if(race < 0) {
-        for( i=0; i<128; i+=1 ) {
-            if(TextToString(info_list[i])=="") {
-                return;
-            }
+        for( i=0; i<info_list_len; i+=1 ) {
             DialogControlAddItem(list, players, info_list[i] );
         }
         return;
