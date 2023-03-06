@@ -3,8 +3,8 @@ void sc2randoinit() {
     int oldseed;
     int i;
     // minnerf and minbuff are used to mark things for the buff vs nerf randomization, but without affecting the display size of the unit
-    fixed minnerf = -0.01;
-    fixed minbuff = 0.01;
+    fixed minnerf = -0.05;
+    fixed minbuff = 0.05;
 
     seed=1337;
     seed = RandomInt(1, 999999);

@@ -299,6 +299,7 @@ text change_to_text(structref<Change> change) {
     text s;
     string unit_entry;
     text unit_name;
+    fixed ratio;
 
     unit_entry = change.unit_entry;
     if( change.cat == c_gameCatalogUnit ) {
@@ -317,9 +318,12 @@ text change_to_text(structref<Change> change) {
     } else {
         s += StringToText(" " + change.field);
     }
-    if(change.buff < 0) {
+
+    ratio = change.newval / change.oldval - 1.0;
+    ratio *= change.buff;
+    if(ratio > 0.0) {
         s += TextWithColor(StringToText(" buffed from "), Color(0, 100, 0));
-    } else if(change.buff > 0) {
+    } else if(ratio < 0.0) {
         s += TextWithColor(StringToText(" nerfed from "), Color(90, 0, 38));
     } else {
         s += StringToText(" changed from ");
