@@ -7,11 +7,6 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 <a href="https://www.youtube.com/watch?v=gb_XERKBfJE" target="_blank">
 <img src="https://img.youtube.com/vi/gb_XERKBfJE/0.jpg" alt="Trailer" height="300"/></a>
 
-## See it in action
-
-<a href="https://www.youtube.com/watch?v=t7GN9B9RdN0" target="_blank">
-<img src="https://img.youtube.com/vi/t7GN9B9RdN0/0.jpg" alt="Trailer" height="300"/></a>
-
 ## How it works
 
 ### Steps to play:
