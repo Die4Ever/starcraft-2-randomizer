@@ -1,6 +1,5 @@
 
 const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
-bool[16] players_waiting;
 int dialog_start;
 int seed_editbox;
 int num_factions_editbox;
@@ -20,85 +19,6 @@ int dialog_pick_faction;
 int ban_button;
 int pick_button;
 int factions_dropdown;
-int submit_button;
-trigger dialog_timeout;
-
-trigger enable_button_trigger;
-
-bool enable_button(bool testConds, bool runActions) {
-    DialogControlSetEnabled(submit_button, PlayerGroupAll(), true);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText(""), PlayerGroupAll());
-    return true;
-}
-
-int create_continue_button(int dialog, string button_text, string callback) {
-    submit_button = DialogControlCreate(dialog, c_triggerControlTypeButton);
-    libNtve_gf_SetDialogItemText(submit_button, StringToText(button_text), PlayerGroupAll() );
-    DialogControlSetSize(submit_button, PlayerGroupAll(), 400, 60);
-    DialogControlSetPosition(submit_button, PlayerGroupAll(), c_anchorBottom, 0, 40);
-    libNtve_gf_SetDialogItemTooltip(submit_button, StringToText("Button will unlock after 1 second"), PlayerGroupAll());
-    TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, submit_button, c_triggerControlEventTypeClick);
-
-    if(!bdebug) {
-        TriggerDestroy(enable_button_trigger);
-        DialogControlSetEnabled(submit_button, PlayerGroupAll(), false);
-        enable_button_trigger = TriggerCreate("enable_button");
-        TriggerAddEventTimeElapsed( enable_button_trigger, 1, c_timeReal );
-    }
-
-    return submit_button;
-}
-
-
-int create_changes_list(int dialog) {
-    int list;
-    list = DialogControlCreate(dialog, c_triggerControlTypeListBox);
-    DialogControlSetSize(list, PlayerGroupAll(), 1200, 800);
-    DialogControlSetPosition(list, PlayerGroupAll(), c_anchorCenter, 0, 0);
-
-    return list;
-}
-
-
-int create_ban_pick_button(int dialog, int list, string button_text, string callback) {
-    int button;
-
-    button = DialogControlCreate(dialog, c_triggerControlTypeButton);
-    libNtve_gf_SetDialogItemText(button, StringToText(button_text), PlayerGroupAll() );
-    DialogControlSetSize(button, PlayerGroupAll(), 200, 100);
-    DialogControlSetPositionRelative( button, PlayerGroupAll(), c_anchorRight, list, c_anchorLeft, -50, 0 );
-    libNtve_gf_SetDialogItemTooltip(button, StringToText(button_text), PlayerGroupAll());
-    TriggerAddEventDialogControl(TriggerCreate(callback), c_playerAny, button, c_triggerControlEventTypeClick);
-
-    return button;
-}
-
-
-int create_factions_dropdown(int dialog, int list, string callback) {
-    int faction;
-    int race;
-    int dropdown;
-    string name;
-
-    // hide races that aren't in the game
-
-    dropdown = DialogControlCreate(dialog, c_triggerControlTypePulldown);
-    DialogControlSetSize( dropdown, PlayerGroupAll(), 500, 50 );
-    DialogControlSetPositionRelative( dropdown, PlayerGroupAll(), c_anchorBottom, list, c_anchorTop, 0, 0 );
-
-    DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText("General Changes") );
-    for( race=1; race<4; race+=1 ) {
-        for( faction=0; faction<num_factions; faction+=1 ) {
-            name = race_changes[faction*4 + race].name;
-            DialogControlAddItem(dropdown, PlayerGroupAll(), StringToText(name) );
-        }
-    }
-
-    TriggerAddEventDialogControl( TriggerCreate(callback), c_playerAny, dropdown, c_triggerControlEventTypeSelectionChanged );
-
-    return dropdown;
-}
-
 
 void show_changes(int list, playergroup players, int race) {
     int i;
@@ -110,68 +30,6 @@ void show_changes(int list, playergroup players, int race) {
     for( i=0; i<race_changes[race].len; i+=1 ) {
         DialogControlAddItem(list, players, change_to_text(race_changes[race].changes[i]) );
     }
-}
-
-
-int get_player_faction_ban_slot(int player, int faction) {
-    return faction + player*max_factions*4;
-}
-
-
-int get_player_num_bans(int player) {
-    int faction;
-    int num;
-    for( faction=0; faction<max_factions*4; faction+=1 ) {
-        if( players_bans[ get_player_faction_ban_slot(player, faction) ] ) {
-            num+=1;
-        }
-    }
-    return num;
-}
-
-
-bool faction_banned_for_player(int player, int faction) {
-    int len;
-    int i;
-    int p;
-    playergroup players;
-
-    players = PlayerGroupAlliance(c_playerGroupEnemy, player);
-    len = PlayerGroupCount(players);
-    for( i=1; i<=len; i+=1 ) {
-        p = PlayerGroupPlayer(players, i);
-
-        if( players_bans[get_player_faction_ban_slot(p, faction)] ) {
-            //debug(race_changes[faction].name+" is banned for "+SPlayerName(player));
-            return true;
-        }
-    }
-    return false;
-}
-
-
-int get_race_from_selected(int selected) {
-    return selected % 4;
-}
-
-
-int get_selected_faction(int player, int dropdown) {
-    int selected;
-    int faction;
-    int race;
-
-    selected = DialogControlGetSelectedItem( dropdown, player );
-    if( selected == 1 ) {
-        selected = 0;// general changes
-    }
-    else {
-        selected -= 2;
-        faction = selected % num_factions;
-        race = selected / num_factions + 1;
-        selected = faction*4 + race;
-    }
-    info("dropdown_factions, faction: "+IntToString(faction)+", race: "+IntToString(race));
-    return selected;
 }
 
 
@@ -285,46 +143,6 @@ bool dropdown_factions(bool testConds, bool runActions) {
         ban_faction_dropdown(player, selected, race);
     }
     return true;
-}
-
-
-void clear_waiting() {
-    int i;
-    for( i=0; i<16; i+=1 ) {
-        players_waiting[i] = false;
-    }
-}
-
-
-bool is_waiting(int player, int button) {
-    int i;
-    int num_players_waiting;
-    playergroup players;
-
-    players_waiting[player] = true;
-
-    players = GetPlayersOfType(c_playerTypeUser);
-
-    DialogControlSetEnabled(button, PlayerGroupSingle(player), false);
-    libNtve_gf_SetDialogItemText(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
-    libNtve_gf_SetDialogItemTooltip(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
-
-    for( i=0; i<16; i+=1 ) {
-        if( PlayerGroupHasPlayer(players, i) && players_waiting[i] ) {
-            num_players_waiting += 1;
-        }
-    }
-
-    if( num_players_waiting < PlayerGroupCount(players) ) {
-        //debug("is_waiting("+SPlayerName(player)+") "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
-        return true;
-    }
-
-    //debug("is_waiting("+SPlayerName(player)+") done waiting, "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
-
-    clear_waiting();
-
-    return false;
 }
 
 
@@ -644,26 +462,6 @@ int create_dialog_bans() {
 }
 
 
-int limit_num_bans(int num_players, int num_factions, int bans) {
-    int max_bans;
-
-    // TODO: properly handle alliances by counting the largest number of opponents any player has?
-    if(num_players > 1 && num_factions > 1 ) {
-        max_bans = num_factions - (num_players-1);
-    } else {
-        max_bans = num_factions - 1;
-    }
-
-    if( bans > max_bans ) {
-        bans = max_bans;
-    }
-    if( bans < 0 ) {
-        bans = 0;
-    }
-    return bans;
-}
-
-
 bool start_rando_button_pressed(bool testConds, bool runActions) {
     string sseed;
     string snum_factions;
@@ -783,75 +581,6 @@ bool start_rando_button_pressed(bool testConds, bool runActions) {
         start_pick_factions();
     }
     return true;
-}
-
-
-int create_edit_box_with_label(int dialog, playergroup players, string defaulttext, string labeltext, string tooltip, int row) {
-    int label;
-    int editbox;
-    int y;
-    int row_height;
-
-    row_height = 80;
-    y = row*row_height - 5*row_height;
-
-    editbox = DialogControlCreate(dialog, c_triggerControlTypeEditBox);
-    DialogControlSetSize(editbox, players, 300, 50);
-    DialogControlSetPosition(editbox, players, c_anchorCenter, 150, y);
-    libNtve_gf_SetDialogItemTooltip(editbox, StringToText(tooltip), players);
-    libNtve_gf_SetDialogItemEditorValue(editbox, defaulttext, players);
-
-    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
-    DialogControlSetSize(label, players, 300, 50);
-    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
-    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
-
-    DialogControlSetPositionRelative(label, players, c_anchorRight, editbox, c_anchorLeft, 0, 15);
-    return editbox;
-}
-
-
-int create_checkbox_with_label(int dialog, playergroup players, bool checked, string labeltext, string tooltip, int row) {
-    int label;
-    int checkbox;
-    int y;
-    int row_height;
-
-    row_height = 80;
-    y = row*row_height - 5*row_height;
-
-    checkbox = DialogControlCreate(dialog, c_triggerControlTypeCheckBox);
-    DialogControlSetSize(checkbox, players, 30, 50);
-    DialogControlSetPosition(checkbox, players, c_anchorCenter, 15, y);
-    libNtve_gf_SetDialogItemTooltip(checkbox, StringToText(tooltip), players);
-    libNtve_gf_SetDialogItemChecked(checkbox, checked, players);
-
-    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
-    DialogControlSetSize(label, players, 300, 50);
-    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
-    libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
-
-    DialogControlSetPositionRelative(label, players, c_anchorRight, checkbox, c_anchorLeft, 0, 15);
-    return checkbox;
-}
-
-
-int create_label(int dialog, playergroup players, string labeltext, string tooltip, int row) {
-    int label;
-    int y;
-    int row_height;
-
-    row_height = 80;
-    y = row*row_height - 3*row_height;
-
-    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
-    DialogControlSetSize(label, players, 600, 50);
-    libNtve_gf_SetDialogItemText(label, StringToText(labeltext), players );
-    if( tooltip != "" ) {
-        libNtve_gf_SetDialogItemTooltip(label, StringToText(tooltip), players);
-    }
-    DialogControlSetPosition(label, players, c_anchorCenter, 0, y);
-    return label;
 }
 
 
