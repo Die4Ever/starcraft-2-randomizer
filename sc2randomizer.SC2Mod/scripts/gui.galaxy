@@ -482,6 +482,7 @@ bool review_button_pressed(bool testConds, bool runActions) {
 int create_dialog_pick_faction() {
     playergroup players;
     int button;
+    int timeout_minutes = 3;
 
     info("create_dialog_pick_faction");
     if( num_factions <= 1 ) {
@@ -489,6 +490,10 @@ int create_dialog_pick_faction() {
         apply_all_changes();
         start_game(false, true);
         return 0;
+    }
+
+    if(rando_mode=="competitive") {
+        timeout_minutes = 5;
     }
 
     players = PlayerGroupAll();
@@ -521,8 +526,8 @@ int create_dialog_pick_faction() {
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("review_timeout");
 
-    TriggerAddEventTimeElapsed( dialog_timeout, 180, c_timeReal );
-    DialogControlAddItem(changes_list, players, StringToText("You have 3 minutes to choose") );
+    TriggerAddEventTimeElapsed( dialog_timeout, timeout_minutes*60, c_timeReal );
+    DialogControlAddItem(changes_list, players, StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose") );
     DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your choice while this menu is open") );
 
     DialogSetVisible(dialog_pick_faction, players, true);
@@ -551,8 +556,10 @@ void start_pick_factions() {
     }
 
     clear_waiting();
-    DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
-    DialogDestroy(dialog_bans);
+    if(dialog_bans) {
+        DialogSetVisible(dialog_bans, PlayerGroupAll(), false);
+        DialogDestroy(dialog_bans);
+    }
 
     create_dialog_pick_faction();
 }
@@ -590,6 +597,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
 int create_dialog_bans() {
     int width;
     int height;
+    int timeout_minutes = 5;
     //int race;
     playergroup players;
     int button;
@@ -600,6 +608,9 @@ int create_dialog_bans() {
     // TODO: bans remaining 2 / 3
     // timer
 
+    if(rando_mode=="competitive") {
+        timeout_minutes = 10;
+    }
     dialog_bans = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(dialog_bans, StringToText(dialog_title) );
     DialogSetFullscreen(dialog_bans, true);
@@ -618,14 +629,14 @@ int create_dialog_bans() {
     DialogControlAddItem(changes_list, players, StringToText("Select a race/faction to see the changes") );
     DialogControlAddItem(changes_list, players, StringToText("Click on the Ban button to disallow your opponents from picking that faction") );
     DialogControlAddItem(changes_list, players, StringToText("Make sure to also read the General Changes") );
-    DialogControlAddItem(changes_list, players, StringToText("You have 5 minutes to choose bans") );
+    DialogControlAddItem(changes_list, players, StringToText("You have "+IntToString(timeout_minutes)+" minutes to choose bans") );
     DialogControlAddItem(changes_list, players, StringToText("You are allowed to change your bans by clicking on Unban") );
 
     create_continue_button(dialog_bans, "Continue", "bans_done_button_pressed");
 
     TriggerDestroy(dialog_timeout);
     dialog_timeout = TriggerCreate("ban_factions_timeout");
-    TriggerAddEventTimeElapsed( dialog_timeout, 300, c_timeReal );
+    TriggerAddEventTimeElapsed( dialog_timeout, timeout_minutes*60, c_timeReal );
 
     DialogSetVisible(dialog_bans, players, true);
 
@@ -853,14 +864,6 @@ int create_dialog_settings() {
 
     num_players = PlayerGroupCount(PlayerGroupActive());
     // TODO: timeouts for dialogs with countdown
-    //if( num_players > 4 ) {
-    //    num_bans = 0;
-    //    num_factions = 3;
-    //}
-    //else {
-    //    num_bans = 0;
-    //    num_factions = MaxI(2, num_players);
-    //}
 
     dialog_start = DialogCreate(500, 500, c_anchorCenter, 0, 0, true);
     DialogSetTitle(dialog_start, StringToText(dialog_title) );
@@ -886,9 +889,12 @@ int create_dialog_settings() {
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     dialog_timeout = TriggerCreate("start_rando_button_pressed");
-    TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
-
-    DialogSetVisible(dialog_start, players, true);
+    if(rando_mode=="competitive") {
+        start_rando_button_pressed(true, true);
+    } else {
+        TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
+        DialogSetVisible(dialog_start, players, true);
+    }
 
     return dialog_start;
 }

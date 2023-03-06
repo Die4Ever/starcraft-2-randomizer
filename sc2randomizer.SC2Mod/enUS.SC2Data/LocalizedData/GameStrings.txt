@@ -1,4 +1,8 @@
-﻿DocInfo/DescLong=This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game.<n/><n/>Created by Raymonster aka Die4Ever
+﻿Attribute001/Name=Randomizer Mode
+Attribute001/Value001/Name=Normal
+Attribute001/Value002/Desc=Competitive Mode skips the host's settings screen since they will likely be a spectator, 3 factions, 1 ban, and longer timeouts on the menus.
+Attribute001/Value002/Name=Competitive Mode
+DocInfo/DescLong=This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game.<n/><n/>Created by Raymonster aka Die4Ever
 DocInfo/DescShort=Any
 DocInfo/HowToPlayBasic00=If bans are enabled, ban what faction(s) you think are the strongest! Your bans only affect your opponents.
 DocInfo/HowToPlayBasic01=Then you will pick which faction you think is the strongest from whatever wasn't banned.

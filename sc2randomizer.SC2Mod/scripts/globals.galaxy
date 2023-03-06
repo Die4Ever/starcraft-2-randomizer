@@ -16,6 +16,7 @@ int min_starting_workers;
 int max_starting_workers;
 fixed buffs_nerfs;
 bool crowd_control_enabled = false;
+string rando_mode = "normal";
 
 bool[max_factions * 4 * 16] players_bans;
 int[16] players_picks;

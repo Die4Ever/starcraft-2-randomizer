@@ -22,6 +22,13 @@ void sc2randoinit() {
     max_starting_workers = 14;
     buffs_nerfs = 75.0;
 
+    rando_mode = "normal";
+    if(GameAttributeGameValue("1") == "0002") {
+        rando_mode = "competitive";
+        num_factions = 3;
+        num_bans = 1;
+    }
+
     TriggerDebugOutputEnable(true);
     TriggerDebugSetTypeFile(1, "SC2Rando.txt");
     run_tests();
