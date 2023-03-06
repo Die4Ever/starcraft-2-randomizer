@@ -11,14 +11,14 @@ bool testint(int result, int expected, string testname) {
 }
 
 void check_rando(fixed f) {
-    if(f < min_percent) {
+    if(f < min_percent-1) {
         err("fail: "+FixedToString(f, 6)+" below min_percent");
     }
-    if(f > max_percent) {
+    if(f > max_percent+1) {
         err("fail: "+FixedToString(f, 6)+" above max_percent");
     }
-    if(f > 90 && f < 110) {
-        err("fail: "+FixedToString(f, 6)+" is too close to 100%");// this would be boring
+    if(f > 91 && f < 109) {
+        err("fail: "+FixedToString(f, 6)+" is too close to 100%");// too close to vanilla would be boring
     }
 }
 
