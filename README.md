@@ -1,6 +1,6 @@
 # StarCraft 2 Randomizer
 
-This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game. Works for 1v1, 2v2, FFA, etc. We now also support [Crowd Control](https://crowdcontrol.live/guides/SC2Randomizer)!
+This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. It's like a random balance patch generator! Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game. Works for 1v1, 2v2, FFA, etc. We now also support [Crowd Control](https://crowdcontrol.live/guides/SC2Randomizer)!
 
 ## Trailer
 
