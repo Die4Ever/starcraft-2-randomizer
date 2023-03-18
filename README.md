@@ -45,6 +45,15 @@ Then you will pick which faction you think is the strongest (From whatever wasn'
 
 You can press F12 any time during the game to see the changes again.
 
+There's also a new Competitive Mode available in the lobby options. This will skip the host's setup screen, default to 3 factions and 1 ban, and go straight to the bans screen.
+
+![Competitive Mode](https://user-images.githubusercontent.com/30947252/226123788-06e27243-d007-43bb-b0a5-3ff6ae6bcba2.png)
+
+[Competitive Mode startup video:](https://youtu.be/IW71ie90UOE)
+
+<a href="https://youtu.be/IW71ie90UOE" target="_blank">
+<img src="https://img.youtube.com/vi/IW71ie90UOE/0.jpg" alt="Competitive Mode" height="300"/></a>
+
 StarCraft 2 Randomizer Discord https://discord.gg/sUzjZ3RPhw
 
 TL.net Discussion Thread https://tl.net/forum/starcraft-2/575425-sc2-randomizer-mod
