@@ -29,21 +29,28 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 
 7. Click CREATE LOBBY
 
-### Options:
+8. Optionally choose "Competitive Mode" in the lobby options in the top right.
 
-![settings](https://i.imgur.com/Nm9d8zl.png)
+## Options:
+
+#### Host Settings: (skipped in Competitive Mode)
+![host settings](https://i.imgur.com/Nm9d8zl.png)
 
 To reduce the chances of getting something too strong or too weak, there are also bans (if the host chooses to enable them) and picks. Default settings will have bans disabled, and 2 factions for each race. A faction is a randomization of a race, so Terran Faction 1 and Terran Faction 2 will both be based on Terran but have differently randomized stats.
 
-If the host chooses to enable the bans feature for extra competitiveness, players will ban what faction(s) they think are the strongest, your bans only affect your opponents.
+#### Bans Screen: (skipped by default)
+
+If the host chooses to enable the bans feature for extra competitiveness, players will ban what faction(s) they think are the strongest, your bans only affect your opponents. Competitive Mode automatically enables this with 1 ban.
 
 ![bans screen](https://i.imgur.com/B7NIeRS.png)
+
+#### Picks Screen: (skipped by default)
 
 Then you will pick which faction you think is the strongest (From whatever wasn't banned if bans are enabled).
 
 ![picks screen](https://i.imgur.com/iJsTWe2.png)
 
-You can press F12 any time during the game to see the changes again.
+## You can press F12 any time during the game to see the changes again.
 
 There's also a new Competitive Mode available in the lobby options. This will skip the host's setup screen, default to 3 factions and 1 ban, and go straight to the bans screen.
 
