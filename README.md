@@ -11,7 +11,9 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 
 ## How it works
 
-### Steps to play:
+<details>
+<summary>How to play</summary>
+### How to play:
 
 ![create lobby](https://user-images.githubusercontent.com/30947252/230750695-11308077-c0b7-404a-a617-d33e2d1602f6.png)
 
@@ -32,6 +34,8 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 7. Click CREATE LOBBY
 
 8. Optionally choose "Competitive Mode" in the lobby options in the top right.
+
+</details>
 
 ## Options:
 
@@ -61,6 +65,8 @@ Then you will pick which faction you think is the strongest (From whatever wasn'
 
 ## You can press F12 any time during the game to see the changes again.
 
+![press F12 to see changes](https://user-images.githubusercontent.com/30947252/230758099-40d947de-d013-47d9-a4f4-4c4184ffe34f.png)
+
 ## New Competitive Mode
 
 There's also a new Competitive Mode available in the lobby options. This will skip the host's setup screen, default to 3 factions and 1 ban, and go straight to the bans screen.
@@ -68,11 +74,6 @@ There's also a new Competitive Mode available in the lobby options. This will sk
 ![Competitive Mode](https://user-images.githubusercontent.com/30947252/226123788-06e27243-d007-43bb-b0a5-3ff6ae6bcba2.png)
 
 ![Choosing a faction](https://user-images.githubusercontent.com/30947252/230752134-24359b35-1234-4895-b4f7-5bad487444bd.png)
-
-[Competitive Mode startup video:](https://youtu.be/IW71ie90UOE)
-
-<a href="https://youtu.be/IW71ie90UOE" target="_blank">
-<img src="https://img.youtube.com/vi/IW71ie90UOE/0.jpg" alt="Competitive Mode" height="300"/></a>
 
 StarCraft 2 Randomizer Discord https://discord.gg/sUzjZ3RPhw
 
