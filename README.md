@@ -35,10 +35,15 @@ This is an extension mod that randomizes the stats of units for StarCraft 2 mult
 
 ## Options:
 
-#### Host Settings: (skipped in Competitive Mode)
+### Host Settings: (skipped in Competitive Mode)
 ![host settings](https://i.imgur.com/Nm9d8zl.png)
 
-To reduce the chances of getting something too strong or too weak, there are also bans (if the host chooses to enable them) and picks. Default settings will have bans disabled, and 2 factions for each race. A faction is a randomization of a race, so Terran Faction 1 and Terran Faction 2 will both be based on Terran but have differently randomized stats.
+To reduce the chances of getting something too strong or too weak, there are also bans (if the host chooses to enable them) and picks. Default settings will have bans disabled, and only 1 faction for each race, so you get into the game more quickly. A faction is a randomization of a race, so Terran Faction 1 and Terran Faction 2 will both be based on Terran but have differently randomized stats.
+
+## Advanced Options:
+
+<details>
+<summary>Advanced Settings</summary>
 
 #### Bans Screen: (skipped by default)
 
@@ -52,11 +57,17 @@ Then you will pick which faction you think is the strongest (From whatever wasn'
 
 ![picks screen](https://i.imgur.com/iJsTWe2.png)
 
+</details>
+
 ## You can press F12 any time during the game to see the changes again.
+
+## New Competitive Mode
 
 There's also a new Competitive Mode available in the lobby options. This will skip the host's setup screen, default to 3 factions and 1 ban, and go straight to the bans screen.
 
 ![Competitive Mode](https://user-images.githubusercontent.com/30947252/226123788-06e27243-d007-43bb-b0a5-3ff6ae6bcba2.png)
+
+![Choosing a faction](https://user-images.githubusercontent.com/30947252/230752134-24359b35-1234-4895-b4f7-5bad487444bd.png)
 
 [Competitive Mode startup video:](https://youtu.be/IW71ie90UOE)
 
@@ -65,4 +76,4 @@ There's also a new Competitive Mode available in the lobby options. This will sk
 
 StarCraft 2 Randomizer Discord https://discord.gg/sUzjZ3RPhw
 
-TL.net Discussion Thread https://tl.net/forum/starcraft-2/575425-sc2-randomizer-mod
+TL.net Discussion Thread https://tl.net/forum/starcraft-2/575425-balance-patch-randomizer-mod

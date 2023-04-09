@@ -552,7 +552,7 @@ void do_rando() {
     bool seed_was_locked;
 
     info("Randomizing with seed "+IntToString(seed)+", "+IntToString(num_factions)+" factions, "+IntToString(num_bans)+" bans, "+IntToString(changes_per_faction)+" changes per faction, "+FixedToString(min_percent,1)+"% minimum, "+FixedToString(max_percent,1)+"% maximum.");
-    //notice("This version is out of date. We've renamed to Balance Patch Randomizer.");
+    //notice("This version is out of date. We've renamed to Balance Patch Randomizer. Go play that instead!");
     Wait(0.01, c_timeReal);
     
     seed_was_locked = GameIsSeedLocked();
