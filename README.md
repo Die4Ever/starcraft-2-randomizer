@@ -1,19 +1,19 @@
-# StarCraft 2 Randomizer
+# StarCraft 2 Balance Patch Randomizer
 
 This is an extension mod that randomizes the stats of units for StarCraft 2 multiplayer. It's like a random balance patch generator! Now you can blame your losses on RNG! See if you can find a seed more balanced than the real game. Works for 1v1, 2v2, FFA, etc. We now also support [Crowd Control](https://crowdcontrol.live/guides/SC2Randomizer)!
 
-I'm renaming this to "Balance Patch Randomizer" soon.
+(This used to just be called "Randomizer Mod" but now it's called "Balance Patch Randomizer")
 
 ## Trailer
 
-<a href="https://www.youtube.com/watch?v=gb_XERKBfJE" target="_blank">
+<a href="https://www.youtube.com/watch?v=gb_XERKBfJE&list=PLZIQTa_kwZhBksj7UzcahPiRaHk87fWch&index=3" target="_blank">
 <img src="https://img.youtube.com/vi/gb_XERKBfJE/0.jpg" alt="Trailer" height="300"/></a>
 
 ## How it works
 
 ### Steps to play:
 
-![create lobby](https://i.imgur.com/6dAUIuu.png)
+![create lobby](https://user-images.githubusercontent.com/30947252/230750695-11308077-c0b7-404a-a617-d33e2d1602f6.png)
 
 1. Click on CUSTOM at the top
 
@@ -23,11 +23,11 @@ I'm renaming this to "Balance Patch Randomizer" soon.
 
 4. Click on CREATE WITH MOD
 
-![choose mod](https://i.imgur.com/MmUxyta.png)
+![choose mod](https://user-images.githubusercontent.com/30947252/230750614-3766e4f1-26c3-4ec6-9bea-2ddcadcdab3f.png)
 
-5. Search for "Randomizer Mod"
+5. Search for "Balance Patch Randomizer"
 
-6. Choose the "Randomizer Mod", you'll see in the description it's created by Raymonster aka Die4Ever (this is a good chance to right click on the mod and Bookmark it)
+6. Choose the "Balance Patch Randomizer", you'll see in the description it's created by Raymonster aka Die4Ever (this is a good chance to right click on the mod and Bookmark it)
 
 7. Click CREATE LOBBY
 

@@ -1,5 +1,5 @@
 
-const string dialog_title = "StarCraft 2 Randomizer Beta https://discord.gg/sUzjZ3RPhw";
+const string dialog_title = "StarCraft 2 Balance Patch Randomizer Beta https://discord.gg/sUzjZ3RPhw";
 int dialog_start;
 int seed_editbox;
 int num_factions_editbox;
@@ -692,7 +692,7 @@ int create_dialog_settings() {
     create_continue_button(dialog_start, "Continue", "start_rando_button_pressed");
 
     dialog_timeout = TriggerCreate("start_rando_button_pressed");
-    if(rando_mode=="competitive") {
+    if(rando_mode=="competitive") {// TODO: add a quick play mode
         start_rando_button_pressed(true, true);
     } else {
         TriggerAddEventTimeElapsed( dialog_timeout, 60, c_timeReal );
@@ -715,7 +715,7 @@ int create_dialog_wait_settings() {
     DialogSetFullscreen(dialog_wait, true);
 
     create_label(dialog_wait, players, "Waiting for host to choose settings...", "", 0);
-    create_label(dialog_wait, players, "StarCraft 2 Randomizer is still early in development, some bugs are expected.", "", 1);
+    create_label(dialog_wait, players, "StarCraft 2 Balance Patch Randomizer is still early in development, some bugs are expected.", "", 1);
     create_label(dialog_wait, players, "After the host chooses the settings, each race will have some randomized factions generated for them.", "", 2);
     //create_label(dialog_wait, players, "If the host chooses to allow bans, make sure to ban the factions that you think look too strong!", "", 3);
     create_label(dialog_wait, players, "Then you will pick which faction you get to play as, so pick the one you think looks the strongest.", "", 3);

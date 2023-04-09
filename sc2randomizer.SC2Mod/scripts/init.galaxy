@@ -23,7 +23,7 @@ void sc2randoinit() {
     buffs_nerfs = 75.0;
 
     rando_mode = "normal";
-    if(GameAttributeGameValue("1") == "0002") {
+    if(GameAttributeGameValue("1") == "0002") {// TODO: more lobby settings for Quick Play mode, Oops All Buffs, Oops All Nerfs, High Variance, Monthly Seed...
         rando_mode = "competitive";
         num_factions = 3;
         num_bans = 1;
