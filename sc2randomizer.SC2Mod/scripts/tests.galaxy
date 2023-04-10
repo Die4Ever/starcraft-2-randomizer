@@ -111,4 +111,7 @@ void run_tests() {
     testint( limit_num_bans(7, 8, 999), 2, "limit_num_bans 7 players, 8 factions" );
 
     test_rng();
+
+    i = FixedToInt( IntToFixed(2) * 1.2 );
+    testint(i, 2, "rounding check 2.4 to 2");
 }

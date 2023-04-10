@@ -547,6 +547,48 @@ int randomize_field(int cat, string scope, string unit_entry, string entry, stri
 }
 
 
+void adjust_unit_cost(int r, string u, fixed mult) {
+    fixed f;
+    fixed minnerf = -0.05;
+    // move the scale a bit closer to 100% so these changes are less extreme, then +/- 10% variance
+    f = (mult + 0.2) / 1.2;
+    mult_field_int(c_gameCatalogUnit, u, u, "CostResource[Minerals]", "Minerals Cost", r, f+rng(-0.1, 0.1), minnerf);
+    mult_field_int(c_gameCatalogUnit, u, u, "CostResource[Vespene]", "Gas Cost", r, f+rng(-0.1, 0.1), minnerf);
+    if(u != "Overseer" && u != "OverlordTransport") {
+        f = (mult + 0.5) / 1.5;
+        mult_field_int(c_gameCatalogUnit, u, u, "Food", "Food", r, f+rng(-0.1, 0.1), minnerf);
+    }
+}
+
+
+void adjust_units_costs(int r) {
+    int i;
+    string entry;
+    string[128] unit_entries;
+    fixed[128] unit_buffs;
+    fixed f;
+
+    for( i=0; i < race_changes[r].len; i+=1 ) {
+        entry = race_changes[r].changes[i].entry;
+        if( race_changes[r].changes[i].buff != 0 ) {
+            f = race_changes[r].changes[i].newval / race_changes[r].changes[i].oldval;
+            add_unit_buff(unit_entries, unit_buffs, race_changes[r].changes[i].unit_entry, race_changes[r].changes[i].buff, f);
+        }
+    }
+
+    for( i=0; i<128; i+=1 ) {
+        if( unit_entries[i] == "" ) {
+            break;
+        }
+        
+        f = libNtve_gf_ArithmeticRealClamp(unit_buffs[i], 0.7, 1.4);
+        GameSetSeed( 554 + seed*3 + i*2143 + r*3131);
+        adjust_unit_cost(r, unit_entries[i], f);
+    }
+    GameSetSeed(seed);
+}
+
+
 void do_rando() {
     int i;
     bool seed_was_locked;
@@ -566,6 +608,12 @@ void do_rando() {
         race_changes[i*4 + protoss].name = "Protoss Faction "+IntToString(i+1);
         race_changes[i*4 + zerg].name = "Zerg Faction "+IntToString(i+1);
         randomize_units(i, changes_per_faction);
+    }
+
+    for( i=0; i < num_factions; i+=1 ) {
+        adjust_units_costs(i*4 + terran);
+        adjust_units_costs(i*4 + protoss);
+        adjust_units_costs(i*4 + zerg);
     }
 
     sort_changes();

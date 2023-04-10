@@ -2,9 +2,9 @@
 void sc2randoinit() {
     int oldseed;
     int i;
-    // minnerf and minbuff are used to mark things for the buff vs nerf randomization, but without affecting the display size of the unit
-    fixed minnerf = -0.05;
-    fixed minbuff = 0.05;
+    // minnerf and minbuff are used to mark things for the buff vs nerf randomization, but without affecting the display size of the unit much
+    fixed minnerf = -0.3;
+    fixed minbuff = 0.3;
 
     seed=1337;
     seed = RandomInt(1, 999999);
@@ -16,7 +16,7 @@ void sc2randoinit() {
     max_supply_limit = 250;
     num_factions = 1;
     num_bans = 0;
-    changes_per_faction = 15;
+    changes_per_faction = 12;
     changes_per_unit = 2;
     min_starting_workers = 7;
     max_starting_workers = 14;
@@ -153,9 +153,11 @@ void sc2randoinit() {
 
 
     // CUnit
-    AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
-    AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
-    AddRandomizedField("CUnit", type_int, "Food", minnerf);
+    // save these for adjust_units_costs
+    //AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
+    //AddRandomizedFieldFriendlyName("CUnit", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
+    //AddRandomizedField("CUnit", type_int, "Food", minnerf);
+
     AddRandomizedField("CUnit", type_int, "LifeMax", 1.25);
     AddRandomizedField("CUnit", type_int, "ShieldsMax", 1.25);
     AddRandomizedField("CUnit", type_int, "EnergyMax", 1.25);
@@ -164,16 +166,16 @@ void sc2randoinit() {
     AddRandomizedFieldArray("CUnit", type_struct, "AbilArray", 0);
     AddRandomizedFieldArray("CUnit", type_struct, "WeaponArray", 0);
     
-    AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
-    AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
+    //AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Minerals]", "Minerals Cost", minnerf);
+    //AddRandomizedFieldFriendlyName("CUnitBuilding", type_int, "CostResource[Vespene]", "Gas Cost", minnerf);
     AddRandomizedFieldArray("CUnitBuilding", type_struct, "AbilArray", 0);
 
     // Weapons
     AddRandomizedField("CWeaponLegacy", type_fixed, "Range", 0.5);
-    AddRandomizedField("CWeaponLegacy", type_fixed, "Period", -0.35);
+    AddRandomizedField("CWeaponLegacy", type_fixed, "Period", -0.4);
     AddRandomizedField("CWeaponLegacy", type_effect, "DisplayEffect", 0);
     AddRandomizedField("CWeaponStrafe", type_fixed, "Range", 0.5);
-    AddRandomizedField("CWeaponStrafe", type_fixed, "Period", -0.35);
+    AddRandomizedField("CWeaponStrafe", type_fixed, "Period", -0.4);
     AddRandomizedField("CWeaponStrafe", type_effect, "DisplayEffect", 0);
 
     // Effects
@@ -246,7 +248,7 @@ void sc2randoinit() {
     AddRandomizedField("CBehaviorBuff", type_effect, "AINotifyEffect", 0);
     AddRandomizedFieldArray("CBehaviorBuff", type_effect, "PeriodicDisplayEffect", 0);
     AddRandomizedField("CBehaviorBuff", type_fixed, "Duration", 0.5);
-    AddRandomizedField("CBehaviorBuff", type_fixed, "Period", -0.35);
+    AddRandomizedField("CBehaviorBuff", type_fixed, "Period", -0.4);
     AddRandomizedField("CBehaviorBuff", type_struct, "Cost", 0);
 
     // Upgrades

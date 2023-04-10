@@ -74,7 +74,7 @@ string apply_change_entry(int player, int cat, string entry, string field, fixed
         oldval = FixedToString(oldf, precision);
     }
     if( ! set_field_string_player(player, cat, entry, field, val ) ) {
-        warning(entry+" "+field+" failed to set to "+val);
+        warning(entry+" "+field+" failed to set to "+val+" ("+FixedToString(f,precision)+")");
     }
 
     if( field == "LifeMax" ) {// TODO: maybe need a list of linked values to keep proportional instead of hardcoded
@@ -327,6 +327,53 @@ bool rando_field_int(int cat, string unit_entry, string entry, string field, str
         return false;
     }
     value = FixedToInt( randomize(getval, buff) );
+    if( value == getval ) {
+        return false;
+    }
+    if( ! set_field_string(cat, entry, field, IntToString(value) ) ) {
+        debug(entry+" "+field+" was "+IntToString(getval)+", failed to change to "+IntToString(value));
+        return false;
+    }
+    setval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
+    // TODO: determine if the re-read is needed
+    if( getval == setval ) { return false; }
+
+    if( ! set_field_string(cat, entry, field, IntToString(getval) ) ) {
+        err(entry+" "+field+" was "+IntToString(value)+", failed to change back to "+IntToString(getval));
+        return false;
+    }
+
+    change.cat = cat;
+    change.unit_entry = unit_entry;
+    change.entry = entry;
+    change.field = field;
+    change.friendly_name = friendly_name;
+    change.oldval = getval;
+    change.newval = setval;
+    change.buff = buff;
+    add_change(changes_id, change);
+    set_field_string(cat, entry, field, IntToString(getval) );
+
+    return true;
+}
+
+bool mult_field_int(int cat, string unit_entry, string entry, string field, string friendly_name, int changes_id, fixed mult, fixed buff)
+{
+    int getval;
+    int setval;
+    int value;
+    Change change;
+
+    if( find_change(changes_id, entry, field) != -1 ) {
+        return false;
+    }
+
+    getval = CatalogFieldValueGetAsInt(cat, entry, field, default_player);
+    if( getval == 0 ) {
+        debug(entry+" "+field+" failed to read");
+        return false;
+    }
+    value = FixedToInt( IntToFixed(getval) * mult );
     if( value == getval ) {
         return false;
     }
