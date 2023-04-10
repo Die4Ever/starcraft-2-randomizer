@@ -77,6 +77,7 @@ void info_list_general(int start) {
 
 void show_changes(int list, playergroup players, int race) {
     int i;
+    string prev_unit;
 
     DialogControlRemoveAllItems(list, players);
 
@@ -88,7 +89,12 @@ void show_changes(int list, playergroup players, int race) {
         return;
     }
 
+    prev_unit = race_changes[race].changes[0].unit_entry;
     for( i=0; i<race_changes[race].len; i+=1 ) {
+        if(prev_unit != race_changes[race].changes[i].unit_entry) {
+            DialogControlAddItem(list, players, StringToText("") );
+            prev_unit = race_changes[race].changes[i].unit_entry;
+        }
         DialogControlAddItem(list, players, change_to_text(race_changes[race].changes[i]) );
     }
 }
@@ -361,7 +367,7 @@ bool review_button_pressed(bool testConds, bool runActions) {
 
     DialogControlSetVisible(pick_button, PlayerGroupSingle(player), false);
 
-    if( is_waiting(player, button) ) {
+    if( is_anyone_stalling(player, button) ) {
         return true;
     }
 
@@ -475,7 +481,7 @@ bool bans_done_button_pressed(bool testConds, bool runActions) {
 
     DialogControlSetVisible(ban_button, PlayerGroupSingle(player), false);
 
-    if( is_waiting(player, EventDialogControl()) ) {
+    if( is_anyone_stalling(player, EventDialogControl()) ) {
         return true;
     }
 

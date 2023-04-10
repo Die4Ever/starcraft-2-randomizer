@@ -178,6 +178,7 @@ void apply_changes(int r, int player)
     int i;
     int k;
     string entry;
+    string prev_unit;
     text description;
 
     string[128] unit_entries;
@@ -186,7 +187,12 @@ void apply_changes(int r, int player)
 
     //info_t(PlayerName(player) + StringToText(" with " + race_changes[r].name + ": "));
 
+    prev_unit = race_changes[r].changes[0].unit_entry;
     for( i=0; i < race_changes[r].len; i+=1 ) {
+        if(prev_unit != race_changes[r].changes[i].unit_entry) {
+            description += StringToText("\n");
+            prev_unit = race_changes[r].changes[i].unit_entry;
+        }
         entry = race_changes[r].changes[i].entry;
         apply_change_entry(player, race_changes[r].changes[i].cat, entry, race_changes[r].changes[i].field, race_changes[r].changes[i].oldval, race_changes[r].changes[i].newval);
         description += change_to_text(race_changes[r].changes[i]) + StringToText("\n");

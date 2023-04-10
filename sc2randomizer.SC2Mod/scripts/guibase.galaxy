@@ -153,12 +153,11 @@ void clear_waiting() {
 }
 
 
-bool is_waiting(int player, int button) {
+bool is_anyone_stalling(int player, int button) {
     int i;
-    int num_players_waiting;
     playergroup players;
-
-    players_waiting[player] = true;
+    // return true if not all players want to proceed yet
+    players_waiting[player] = true;// current player wants to proceed
 
     players = GetPlayersOfType(c_playerTypeUser);
 
@@ -167,20 +166,14 @@ bool is_waiting(int player, int button) {
     libNtve_gf_SetDialogItemTooltip(button, StringToText("Waiting For Other Players"), PlayerGroupSingle(player) );
 
     for( i=0; i<16; i+=1 ) {
-        if( PlayerGroupHasPlayer(players, i) && players_waiting[i] ) {
-            num_players_waiting += 1;
+        if( PlayerGroupHasPlayer(players, i) && !players_waiting[i] ) {
+            debug("player "+IntToString(player)+" is stalling");
+            return true;
         }
     }
-
-    if( num_players_waiting < PlayerGroupCount(players) ) {
-        //debug("is_waiting("+SPlayerName(player)+") "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
-        return true;
-    }
-
-    //debug("is_waiting("+SPlayerName(player)+") done waiting, "+IntToString(num_players_waiting)+" players waiting out of "+IntToString(PlayerGroupCount(players)) );
+    debug("player "+IntToString(player)+" is done waiting");
 
     clear_waiting();
-
     return false;
 }
 
