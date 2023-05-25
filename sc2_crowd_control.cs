@@ -40,7 +40,8 @@ using Log = CrowdControl.Common.Log;
 
 namespace CrowdControl.Games.Packs
 {
-    public enum Method {
+    public enum Method
+    {
         // not sure if this enum is needed
         StartEffect,
         StopEffect,
@@ -59,7 +60,8 @@ namespace CrowdControl.Games.Packs
 
         // Unfortunately the XML Assembly is not embedded to the CrowdControl SDK, therefore we need to write and parse XML manually.
 
-        protected bool XmlWrite(EffectRequest request, Method method) {
+        protected bool XmlWrite(EffectRequest request, Method method)
+        {
             string parameterItems = String.Join(",", request.ParameterItems.Select(i => $"{i.AsSimpleType}"));
 
             string eventsXml = $@"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -103,38 +105,48 @@ namespace CrowdControl.Games.Packs
             return true;
         }
 
-        protected string GetXmlSection(string xml, string section) {
-            try {
+        protected string GetXmlSection(string xml, string section)
+        {
+            try
+            {
                 var match = Regex.Match(xml,
                         "<Bank version=\".*?\">.*"
-                        + "<Section name=\""+section+"\">(.*?)</Section>.*</Bank>",
+                        + "<Section name=\"" + section + "\">(.*?)</Section>.*</Bank>",
                         RegexOptions.Singleline);
-                
+
                 if (!match.Success) return null;
                 return match.Groups[1].Value;
-            } catch(Exception e) {
+            }
+            catch (Exception e)
+            {
                 Log.Message(e.ToString());
                 return null;
             }
         }
 
-        protected string GetXmlString(string section, string key) {
-            try {
+        protected string GetXmlString(string section, string key)
+        {
+            try
+            {
                 var match = Regex.Match(section,
-                    "<Key name=\""+key+"\">\\s*"
+                    "<Key name=\"" + key + "\">\\s*"
                     + "<Value string=\"([^\"]+)\"/>",
                     RegexOptions.Singleline);
-                
+
                 if (!match.Success) return null;
                 return match.Groups[1].Value;
-            } catch(Exception e) {
+            }
+            catch (Exception e)
+            {
                 Log.Message(e.ToString());
                 return null;
             }
         }
 
-        protected string XmlCheckStatus(EffectRequest request, Method method) {
-            if (!File.Exists(xmlPathResponses)) {
+        protected string XmlCheckStatus(EffectRequest request, Method method)
+        {
+            if (!File.Exists(xmlPathResponses))
+            {
                 return "fail";
             }
 
@@ -143,33 +155,40 @@ namespace CrowdControl.Games.Packs
             return GetXmlString(data, request.ID.ToString());
         }
 
-        protected string GetGameStatus() {
-            try {
-                if(xmlPathResponses == "") {
+        protected string GetGameStatus()
+        {
+            try
+            {
+                if (xmlPathResponses == "")
+                {
                     fileStatus = "fail";
                     return fileStatus;
                 }
-                if (!File.Exists(xmlPathResponses)) {
+                if (!File.Exists(xmlPathResponses))
+                {
                     fileStatus = "fail";
                     return fileStatus;
                 }
                 var dict = ParseXml(xmlPathResponses);
                 DateTime t = DateTime.Parse(dict["date"]);
-                if( t < DateTime.Now.AddHours(-24) ) {
+                if (t < DateTime.Now.AddHours(-24))
+                {
                     fileStatus = "expired";
                     return fileStatus;
                 }
                 fileStatus = dict["status"];
                 return fileStatus;
             }
-             catch(Exception e) {
-                Log.Message("error in GetGameStatus() with "+xmlPathResponses+": "+ e.ToString());
+            catch (Exception e)
+            {
+                Log.Message("error in GetGameStatus() with " + xmlPathResponses + ": " + e.ToString());
             }
             fileStatus = "fail";
             return fileStatus;
         }
 
-        protected Dictionary<string, string> ParseXml(string file) {
+        protected Dictionary<string, string> ParseXml(string file)
+        {
             var dict = new Dictionary<string, string>();
             string data = File.ReadAllText(file);
             data = GetXmlSection(data, "header");
@@ -178,31 +197,38 @@ namespace CrowdControl.Games.Packs
             return dict;
         }
 
-        protected bool FindXmlInPath(string root) {
+        protected bool FindXmlInPath(string root)
+        {
             string[] files = Directory.GetFiles(root, "CrowdControlResponses.SC2Bank", SearchOption.AllDirectories);
             string newest_file = "";
             string newest_status = "";
             DateTime newest = new DateTime(0);
 
-            foreach (string file in files) {
-                try {
+            foreach (string file in files)
+            {
+                try
+                {
                     var dict = ParseXml(file);
                     DateTime t = DateTime.Parse(dict["date"]);
                     Log.Message($"{file} status: {dict["status"]}, date: {t}");
 
                     // should it care about status starting?
-                    if( t > newest && dict["status"] != "exited") {
+                    if (t > newest && dict["status"] != "exited")
+                    {
                         newest = t;
                         newest_file = file;
                         newest_status = dict["status"];
                     }
-                } catch(Exception e) {
-                    Log.Message("error with "+file+": "+ e.ToString());
+                }
+                catch (Exception e)
+                {
+                    Log.Message("error with " + file + ": " + e.ToString());
                 }
             }
 
             // ignore files older than 24 hours
-            if( newest > DateTime.Now.AddHours(-24) ) {
+            if (newest > DateTime.Now.AddHours(-24))
+            {
                 Log.Message($"found file {newest_file} with date: {newest}, status: {newest_status}");
                 fileStatus = newest_status;
                 xmlPathResponses = newest_file;
@@ -212,41 +238,54 @@ namespace CrowdControl.Games.Packs
             return false;
         }
 
-        protected bool FindXml() {
+        protected bool FindXml()
+        {
             // we can use the status and date in the file to determine which one to use
             // we could also make the mod delete the bank instead of setting the status to exited?
             // search in the Accounts folder first, then the test folder if we don't find it
             Log.Message("FindXml");
 
-            try {
+            try
+            {
                 string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Accounts");
-                if(FindXmlInPath(root)) return true;
-            } catch(Exception e) {
-                Log.Message("error with searching user path: "+ e.ToString());
+                if (FindXmlInPath(root)) return true;
+            }
+            catch (Exception e)
+            {
+                Log.Message("error with searching user path: " + e.ToString());
             }
 
-            try {
+            try
+            {
                 string onedrive = (string)Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\OneDrive", "UserFolder", "");
                 string root = Path.Join(onedrive, "Documents/StarCraft II/Accounts");
-                if(FindXmlInPath(root)) return true;
-            } catch(Exception e) {
-                Log.Message("error with searching onedrive path: "+ e.ToString());
+                if (FindXmlInPath(root)) return true;
+            }
+            catch (Exception e)
+            {
+                Log.Message("error with searching onedrive path: " + e.ToString());
             }
 
             // check dev path...
-            try {
+            try
+            {
                 string root = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StarCraft II/Banks");
-                if(FindXmlInPath(root)) return true;
-            } catch(Exception e) {
-                Log.Message("error with searching dev path: "+ e.ToString());
+                if (FindXmlInPath(root)) return true;
+            }
+            catch (Exception e)
+            {
+                Log.Message("error with searching dev path: " + e.ToString());
             }
 
-            try {
+            try
+            {
                 string onedrive = (string)Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\OneDrive", "UserFolder", "");
                 string root = Path.Join(onedrive, "Documents/StarCraft II/Banks");
-                if(FindXmlInPath(root)) return true;
-            } catch(Exception e) {
-                Log.Message("error with searching dev onedrive path: "+ e.ToString());
+                if (FindXmlInPath(root)) return true;
+            }
+            catch (Exception e)
+            {
+                Log.Message("error with searching dev onedrive path: " + e.ToString());
             }
 
             /* I hope I never need this...
@@ -263,29 +302,37 @@ namespace CrowdControl.Games.Packs
             return false;
         }
 
-        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 1000, int millisecondsCheckInterval = 100) {
+        protected bool XmlWait(EffectRequest request, Method method, int millisecondsTimeout = 1000, int millisecondsCheckInterval = 100)
+        {
             // waiting in here seems to block up the queue of other incoming effects
             string status = null;
-            SpinWait.SpinUntil(() => {
+            SpinWait.SpinUntil(() =>
+            {
                 Thread.Sleep(millisecondsCheckInterval);
                 status = XmlCheckStatus(request, method);
                 return status is not null;
             }, millisecondsTimeout);
 
             Log.Message($"XmlWait got status {status}");
-            if(status is null) {
+            if (status is null)
+            {
                 DelayEffect(request);
                 return false;
-            } else if(status == "retry") {
+            }
+            else if (status == "retry")
+            {
                 DelayEffect(request);
                 return false;
-            } else if(status != "success") {
+            }
+            else if (status != "success")
+            {
                 return false;
             }
             return true;
         }
 
-        protected bool SendEffect(EffectRequest request, Method method) {
+        protected bool SendEffect(EffectRequest request, Method method)
+        {
             // don't think I need FindXml() here since we already call it in IsReady()
             XmlWrite(request, method);
             bool success = XmlWait(request, method);
@@ -303,18 +350,18 @@ namespace CrowdControl.Games.Packs
                     new Effect("Black Sheep Wall (1 min)", "fullvision"),
                     new Effect("Terrible, Terrible Damage (1 min)", "extradamage"),
                     new Effect("Reduced Damage (1 min)", "reduceddamage"),
-                    
+
                     new Effect("Slow Game Speed (1 min)", "slowspeed"),
                     new Effect("Super Game Speed (1 min)", "superspeed"),
                     new Effect("Max Upgrades", "maxupgrades"),
                     new Effect("Reset Upgrades", "resetupgrades"),
                     new Effect("Set Upgrades", "setupgrades", new[]{"upgrades"}),
-                    
+
                     new Effect("Mean Things That Kill", "mean", ItemKind.Folder),
                     new Effect("Nuke All Town Halls", "nukes", "mean"),
                     new Effect("Kill All Workers", "killworkers", "mean"),
                     new Effect("Kill All Army", "killarmy", "mean"),
-                    
+
                     new Effect("Resources", "resources", ItemKind.Folder),
                     new Effect("Give Minerals (x100)", "giveminerals", new[]{"minerals"}, "resources"),
                     new Effect("Give Gas (x100)", "givegas", new[]{"gas"}, "resources"),
@@ -340,9 +387,10 @@ namespace CrowdControl.Games.Packs
 
         protected override bool IsReady(EffectRequest request)
         {
-            if( lastSearch > DateTime.Now.AddSeconds(-30) ) {
+            if (lastSearch > DateTime.Now.AddSeconds(-30))
+            {
                 // this lazy evaluation might cause issues if the game crashes, so it needs a timer
-                if( GetGameStatus() == "playing" ) return true;
+                if (GetGameStatus() == "playing") return true;
             }
             lastSearch = DateTime.Now;
             return FindXml() && fileStatus == "playing";
@@ -380,7 +428,7 @@ namespace CrowdControl.Games.Packs
         const bool debug = false;
 
         const string version = "0.28";
-        
+
         string xmlPathRequests = "";
         string xmlPathResponses = "";
         string fileStatus = "";
