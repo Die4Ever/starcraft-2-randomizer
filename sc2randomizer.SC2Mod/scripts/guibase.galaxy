@@ -156,6 +156,7 @@ void clear_waiting() {
 bool is_anyone_stalling(int player, int button) {
     int i;
     playergroup players;
+    // TODO: this never gets called when all players are AI because there's no one to trigger the button click event
     // return true if not all players want to proceed yet
     players_waiting[player] = true;// current player wants to proceed
 

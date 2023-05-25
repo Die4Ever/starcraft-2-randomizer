@@ -361,7 +361,7 @@ bool normal_damage(bool testConds, bool runActions) {
     return true;
 }
 
-string cc_proc_request(int player, string code, string viewer, string params, int retries) {
+string cc_proc_request(int player, string code, string viewer, string params, int quantity, int duration, int retries) {
     int iparam;
     int i;
     int counter;
@@ -371,6 +371,15 @@ string cc_proc_request(int player, string code, string viewer, string params, in
     }
     if(params != "") {
         iparam = StringToInt(params);
+        // compatibility with old CC pre-2.0
+        quantity = iparam;
+        duration = iparam;
+    }
+    if(quantity == 0) {
+        quantity = 1;
+    }
+    if(duration == 0) {
+        duration = 60;// default of 1 minute
     }
     
     if( code == "nukes" ) {
@@ -383,14 +392,14 @@ string cc_proc_request(int player, string code, string viewer, string params, in
             return cc_retry;
         }
     } else if( code == "giveminerals" ) {
-        add_resources(c_playerPropMinerals, iparam*100, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam*100)+" minerals.");
+        add_resources(c_playerPropMinerals, quantity*100, 0, 999999, 0);
+        notice(viewer+" gave everyone "+IntToString(quantity*100)+" minerals.");
     } else if( code == "givegas") {
-        add_resources(c_playerPropVespene, iparam*100, 0, 999999, 0);
-        notice(viewer+" gave everyone "+IntToString(iparam*100)+" gas.");
+        add_resources(c_playerPropVespene, quantity*100, 0, 999999, 0);
+        notice(viewer+" gave everyone "+IntToString(quantity*100)+" gas.");
     } else if( code == "takeminerals") {
-        if( add_resources(c_playerPropMinerals, -iparam*100, 0, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam*100)+" minerals from everyone.");
+        if( add_resources(c_playerPropMinerals, -quantity*100, 0, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(quantity*100)+" minerals from everyone.");
         } else {
             if(retries == 0) {
                 notice("No one has enough minerals.");
@@ -398,8 +407,8 @@ string cc_proc_request(int player, string code, string viewer, string params, in
             return cc_retry;
         }
     } else if( code == "takegas") {
-        if( add_resources(c_playerPropVespene, -iparam*100, 0, 999999, 1) ) {
-            notice(viewer+" took away "+IntToString(iparam*100)+" gas from everyone.");
+        if( add_resources(c_playerPropVespene, -quantity*100, 0, 999999, 1) ) {
+            notice(viewer+" took away "+IntToString(quantity*100)+" gas from everyone.");
         } else {
             if(retries == 0) {
                 notice("No one has enough vespene gas.");
@@ -407,14 +416,14 @@ string cc_proc_request(int player, string code, string viewer, string params, in
             return cc_retry;
         }
     } else if( code == "raisesupply") {
-        if( add_resources(c_playerPropSuppliesLimit, iparam, 0, max_supply_limit, 1) ) {
+        if( add_resources(c_playerPropSuppliesLimit, quantity, 0, max_supply_limit, 1) ) {
             notice(viewer+" increased the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit))+".");
         } else {
             notice("Supply limit is already at the maximum.");
             return cc_perm_fail;
         }
     } else if( code == "lowersupply") {
-        if( add_resources(c_playerPropSuppliesLimit, -iparam, min_supply_limit/2, 9999, 1) ) {
+        if( add_resources(c_playerPropSuppliesLimit, -quantity, min_supply_limit/2, 9999, 1) ) {
             notice(viewer+" lowered the supply limit to "+IntToString(get_resource_any_player(c_playerPropSuppliesLimit)));
         } else {
             notice("Supply limit is already at the minimum.");
@@ -424,9 +433,9 @@ string cc_proc_request(int player, string code, string viewer, string params, in
         if( GameGetGlobalTimeScale() < 1.5 ) {
             TriggerDestroy(normalgamespeed_trigger);
             normalgamespeed_trigger = TriggerCreate("normal_game_speed");
-            TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
+            TriggerAddEventTimeElapsed(normalgamespeed_trigger, duration, c_timeGame);
             GameSetGlobalTimeScale(1.5);
-            notice(viewer+" set the game to super speed for 1 minute.");
+            notice(viewer+" set the game to super speed for "+IntToString(duration)+" seconds.");
         } else {
             if(retries == 0) {
                 notice("The game is already at super speed.");
@@ -437,9 +446,9 @@ string cc_proc_request(int player, string code, string viewer, string params, in
         if( GameGetGlobalTimeScale() > 0.5 ) {
             TriggerDestroy(normalgamespeed_trigger);
             normalgamespeed_trigger = TriggerCreate("normal_game_speed");
-            TriggerAddEventTimeElapsed(normalgamespeed_trigger, 60, c_timeGame);
+            TriggerAddEventTimeElapsed(normalgamespeed_trigger, duration, c_timeGame);
             GameSetGlobalTimeScale(0.5);
-            notice(viewer+" set the game to slow speed for 1 minute.");
+            notice(viewer+" set the game to slow speed for "+IntToString(duration)+" seconds.");
         } else {
             if(retries == 0) {
                 notice("The game is already at slow speed.");
@@ -471,10 +480,10 @@ string cc_proc_request(int player, string code, string viewer, string params, in
     } else if( code == "fullvision" ) {
         for(player=1; player<16; player+=1) {
             if(PlayerIsActive(player)) {
-                VisRevealArea(player, RegionEntireMap(), 60, false);
+                VisRevealArea(player, RegionEntireMap(), duration, false);
             }
         }
-        notice(viewer+" revealed the whole map for 1 minute.");
+        notice(viewer+" revealed the whole map for "+IntToString(duration)+" seconds.");
     } else if( code == "maxupgrades" ) {
         counter = 0;
         for(player=1; player<16; player+=1) {
@@ -510,17 +519,17 @@ string cc_proc_request(int player, string code, string viewer, string params, in
     } else if( code == "setupgrades" ) {
         counter = 0;
         for(player=1; player<16; player+=1) {
-            if(set_player_weapon_upgrades(player, iparam)) {
+            if(set_player_weapon_upgrades(player, quantity)) {
                 counter += 1;
             }
-            if(set_player_armor_upgrades(player, iparam)) {
+            if(set_player_armor_upgrades(player, quantity)) {
                 counter += 1;
             }
         }
         if(counter > 0) {
-            notice(viewer+" gave everyone level "+IntToString(iparam)+" upgrades.");
+            notice(viewer+" gave everyone level "+IntToString(quantity)+" upgrades.");
         } else {
-            notice("Everyone already has level "+IntToString(iparam)+" upgrades.");
+            notice("Everyone already has level "+IntToString(quantity)+" upgrades.");
             return cc_perm_fail;
         }
     } else if( code == "musicalchairs" ) {
@@ -535,19 +544,19 @@ string cc_proc_request(int player, string code, string viewer, string params, in
         TriggerDestroy(normal_damage_timer);
         damage_trigger = TriggerCreate("extra_damage");
         normal_damage_timer = TriggerCreate("normal_damage");
-        TriggerAddEventTimeElapsed(normal_damage_timer, 60, c_timeGame);
+        TriggerAddEventTimeElapsed(normal_damage_timer, duration, c_timeGame);
         set_damage(libNtve_ge_UnitDamageChangeOption_Mega2);
         TriggerAddEventUnitStartedAttack2(damage_trigger, null, null);
-        notice(viewer+" enabled extra damage for 1 minute.");
+        notice(viewer+" enabled extra damage for "+IntToString(duration)+" seconds.");
     } else if( code == "reduceddamage" ) {
         TriggerDestroy(damage_trigger);
         TriggerDestroy(normal_damage_timer);
         damage_trigger = TriggerCreate("reduced_damage");
         normal_damage_timer = TriggerCreate("normal_damage");
-        TriggerAddEventTimeElapsed(normal_damage_timer, 60, c_timeGame);
+        TriggerAddEventTimeElapsed(normal_damage_timer, duration, c_timeGame);
         set_damage(libNtve_ge_UnitDamageChangeOption_Minimal);
         TriggerAddEventUnitStartedAttack2(damage_trigger, null, null);
-        notice(viewer+" enabled reduced damage for 1 minute.");
+        notice(viewer+" enabled reduced damage for "+IntToString(duration)+" seconds.");
     } else {
         err("Unknown crowd control effect.");
         return cc_perm_fail;
@@ -563,6 +572,10 @@ void cc_read_request(int player) {
     string response;
     int ticker;
     int retries;
+    // CC 2.0 stuff
+    string s;
+    int quantity;
+    int duration;
 
     BankReload(cc_bank[player]);
     BankWait(cc_bank[player]);
@@ -583,12 +596,22 @@ void cc_read_request(int player) {
     id = BankValueGetAsString(cc_bank[player], "request", "id");
     params = BankValueGetAsString(cc_bank[player], "request", "params");
 
+    // CC 2.0 stuff
+    s = BankValueGetAsString(cc_bank[player], "request", "quantity");
+    if(s != "") {
+        quantity = StringToInt(s);
+    }
+    s = BankValueGetAsString(cc_bank[player], "request", "duration");
+    if(s != "") {
+        duration = StringToInt(s);
+    }
+
     retries = cc_id_has_processed(id, player);
     if(retries == cc_was_processed) {
         return;
     }
 
-    response = cc_proc_request(player, code, viewer, params, retries);
+    response = cc_proc_request(player, code, viewer, params, quantity, duration, retries);
     cc_set_last_id(id, response, player);
 }
 
@@ -637,7 +660,7 @@ void StartCrowdControl() {
         cc_responses_bank[player] = BankLoad("CrowdControlResponses", player);
         BankSectionRemove(cc_responses_bank[player], "header");
         BankSectionCreate(cc_responses_bank[player], "header");
-        BankValueSetFromString(cc_responses_bank[player], "header", "version", "0.28");
+        BankValueSetFromString(cc_responses_bank[player], "header", "version", "1.2");
         cc_set_last_id("", "success", player);
         cc_update_status("playing", player);
 
