@@ -367,10 +367,10 @@ public class SC2Randomizer : PCEffectPack<NullConnector>
                 new("Kill All Army", "killarmy") { Category = "Rude Things" },
 
                 ///new("Resources", "resources", ItemKind.Folder),
-                new("Give Minerals (x1000)", "giveminerals") { Category = "Resources", Quantity = 100 },
-                new("Give Gas (x1000)", "givegas") { Category = "Resources", Quantity = 100 },
-                new("Take Minerals (x1000)", "takeminerals") { Category = "Resources", Quantity = 100 },
-                new("Take Gas (x1000)", "takegas") { Category = "Resources", Quantity = 100 },
+                new("Give Minerals (x100)", "giveminerals") { Category = "Resources", Quantity = 100 },
+                new("Give Gas (x100)", "givegas") { Category = "Resources", Quantity = 100 },
+                new("Take Minerals (x100)", "takeminerals") { Category = "Resources", Quantity = 100 },
+                new("Take Gas (x100)", "takegas") { Category = "Resources", Quantity = 100 },
                 new("Raise Supply Limit", "raisesupply") { Category = "Resources", Quantity = 50 },
                 new("Lower Supply Limit", "lowersupply") { Category = "Resources", Quantity = 50  },
             };
