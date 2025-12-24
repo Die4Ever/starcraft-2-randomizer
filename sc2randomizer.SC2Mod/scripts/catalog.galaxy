@@ -415,7 +415,7 @@ void create_general_tips() {
         PlayerGroupAll(),
         StringToText("General Changes"),
         general_changes,
-        StringToText("Review Changes"),
+        StringToText("Review Randomization"),
         "Assets\\Textures\\ui_icon_attention.dds"
     );
 }
